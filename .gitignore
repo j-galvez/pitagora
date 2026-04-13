@@ -1,0 +1,21 @@
+# Dependencias (Cubre root, front/ y back/)
+node_modules/
+dist/
+dist-ssr/
+build/
+
+# Variables de Entorno (Seguridad crítica)
+.env
+.env.local
+.env.*.local
+
+# Logs y Debug
+npm-debug.log*
+yarn-debug.log*
+*.log
+
+# Archivos de Sistema y Editores
+.DS_Store
+.vscode/
+.idea/
+*.swp
