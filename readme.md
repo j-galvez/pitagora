@@ -1,12 +1,28 @@
 # Pitagora
 
+El Proyecto Pitágora consiste en el desarrollo de una aplicación web responsiva, diseñada para centralizar y automatizar la gestión de postventa de la Constructora Pitágora. Este proyecto busca eliminar la vulnerabilidad legal y pérdida de información creando un canal único que estructure los reclamos bajo un modelo ordenado de "tickets por obra".
+
+### Módulos en proceso de construcción
+- Módulo Login.
+- Módulo Evidencia y Notificaciones.
+- Módulo de Obras/Proyectos.
+- Módulos Tickets.
+- Módulo Dashboard y Estadísticas.
+- Módulo Integración IA.
+- Módulo Respaldo y Respaldo Legal.
+
+### Módulos terminados
+- Módulo preparación.
+- Módulo Base de Datos.
+
+### Stack Tecnológico
 Proyecto base con arquitectura separada:
 
 - Backend: Node.js + Express
 - Frontend: React + Vite + Bootstrap
-
-Actualmente el proyecto está en fase inicial (base creada, sin lógica de negocio implementada).
-
+- Cloud: Google Cloud -> Cloud SQL + Firebase Storage
+- Base de Datos: MySQL
+   
 ## Estructura actual
 
 - `back/`: API con Express
