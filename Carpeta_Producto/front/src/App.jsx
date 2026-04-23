@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import './App.css'
+import Login from './pages/login'
 
 const badgeByEstado = {
   Nuevo: 'secondary',
@@ -13,7 +15,7 @@ function formatDate(value) {
   return new Date(value).toLocaleString('es-CL')
 }
 
-function App() {
+function TicketsPanel() {
   const [obraId, setObraId] = useState('1')
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(false)
@@ -195,6 +197,15 @@ function App() {
         </div>
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/tickets" element={<TicketsPanel />} />
+    </Routes>
   )
 }
 

@@ -17,8 +17,8 @@ Modulos terminados:
 Se inició y terminó el modulo de preparación (ver carta gantt)
 Se construye el endpoint de ticket, con metodos GET, PUT.
 Integración a google cloud y se sube el script de bbdd sql
-
 Front para login
+
 
 
 
@@ -29,3 +29,8 @@ Front para login
 *Diseño del modelo entidad-relación
 *Normalización de datos
 *Creación del script sql
+
+
+----------------
+23-04-2026
+-----------
