@@ -1,8 +1,12 @@
 const express = require('express');
+const cors = require('cors');
 require('dotenv').config();
 const ticketRoutes = require('./routes/ticketRoutes');
 
 const app = express();
+
+// Middlewares
+app.use(cors()); // Permite peticiones desde cualquier origen (ideal para desarrollo local)
 app.use(express.json());
 
 // Rutas

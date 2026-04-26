@@ -1,38 +1,46 @@
 -- Datos Iniciales para Constructora Pitágora
--- Motor: MySQL
 
--- 1. Usuarios Base (Pass: admin123 / client123 / jefe123 - Nota: Deben ser hasheadas con bcrypt en la app real)
-INSERT INTO usuarios (nombre, correo, password, rol, telefono) VALUES
-('Francisco Castillo', 'admin@pitagora.cl', '$2a$10$X7v5uSj.6b5hR/v9f.R9EeJ3uU.7tV9r6S2l3m4n5o6p7q8r9s0t1', 'Admin', '912345678'),
-('Juan Pérez Cliente', 'juan.perez@komatsu.cl', '$2a$10$X7v5uSj.6b5hR/v9f.R9EeJ3uU.7tV9r6S2l3m4n5o6p7q8r9s0t1', 'Cliente', '987654321'),
-('Ricardo Jefe Obra', 'rjefe@pitagora.cl', '$2a$10$X7v5uSj.6b5hR/v9f.R9EeJ3uU.7tV9r6S2l3m4n5o6p7q8r9s0t1', 'Jefe Obra', '955544433');
+-- 1. Categorías del Frontend
+INSERT INTO categorias (nombre_categoria) VALUES 
+('terminaciones pisos'),
+('terminaciones muros'),
+('terminaciones cielos'),
+('puertas y/o ventanas'),
+('mobiliario'),
+('cubierta'),
+('sanitario'),
+('electrico'),
+('climatizacion'),
+('otro');
 
--- 2. Categorías solicitadas por Francisco
-INSERT INTO categorias (nombre_categoria, descripcion) VALUES
-('Instalaciones Sanitarias', 'Filtraciones, WC, sifones, llaves, red de agua potable/alcantarillado'),
-('Instalaciones Eléctricas', 'Tableros, enchufes, iluminación, cortocircuitos'),
-('Terminaciones - Cerámica', 'Pisos y muros de cerámica, porcelanato, fragüe'),
-('Terminaciones - Pintura', 'Paredes, cielos, pintura exterior e interior'),
-('Estructura', 'Muros de carga, vigas, lozas (Garantía 10 años)'),
-('Climatización', 'Aire acondicionado, ventilación, calefacción'),
-('Red de Incendio (PCI)', 'Alarmas, sensores de humo, mangueras'),
-('Carpintería y Puertas', 'Marcos, cerraduras, ajustes de puertas y ventanas'),
-('Otros', 'Cualquier otra especialidad no listada');
+-- 2. Usuarios de Prueba
+INSERT INTO usuarios (nombre, correo, password, rol) VALUES 
+('Administrador Pitágora', 'admin@pitagora.cl', 'pitagora2026', 'admin'),
+('Juan Pérez', 'juan.perez@pitagora.cl', 'pitagora2026', 'usuario'),
+('Constanza Soto', 'constanza.soto@pitagora.cl', 'pitagora2026', 'usuario');
 
--- 3. Obras de ejemplo
-INSERT INTO obras (nombre_obra, direccion, fecha_entrega, garantia_expira) VALUES
-('Torre Komatsu Lampa', 'Sector Industrial Lampa 450', '2023-01-15', '2033-01-15'),
-('Facultad Economía UC', 'Av. Vicuña Mackenna 4860, Macul', '2024-03-10', '2034-03-10'),
-('Bodega Logística Quilicura', 'Americo Vespucio 1200', '2025-02-20', '2035-02-20');
+-- 3. Obras de Prueba
+INSERT INTO obras (nombre_obra, descripcion_obra, direccion, nombre_cliente_final, correo_cliente_final, fecha_entrega, garantia_expira) VALUES 
+('Edificio Los Almendros', 'Departamento ubicado en tercer piso con vista al norte', 'Calle Las Lilas 123, Providencia', 'Juan Pérez (Propietario)', 'cliente.almendros@gmail.com', '2025-01-15', '2028-01-15'),
+('Casa Los Robles', 'Casa de 120m² en condominio Los Robles', 'Avenida El Parque 456, Lo Barnechea', 'Inversiones Comarcio', 'contacto@comarcio.cl', '2026-03-10', '2029-03-10'),
+('Edificio Vista Mar', 'Departamento en piso 8 con vista al mar', 'Avenida del Mar 789, Viña del Mar', 'Universidad Católica', 'postventa@uc.cl', '2026-04-01', '2029-04-01');
 
--- 4. Asignación de Usuarios a Obras
-INSERT INTO obras_usuarios (id_obra, id_usuario) VALUES
-(1, 2), -- Juan Pérez asignado a Komatsu Lampa
-(1, 3); -- Ricardo Jefe de Obra asignado a Komatsu Lampa
+-- 4. Asignación de trabajadores a obras
+INSERT INTO obras_usuarios (id_obra, id_usuario) VALUES 
+(1, 2), -- Juan Pérez en Los Almendros
+(2, 3), -- Constanza Soto en Los Robles
+(3, 3); -- Constanza Soto en Vista Mar
 
--- 5. Ticket y Observación inicial de prueba
-INSERT INTO tickets (id_usuario, id_obra, prioridad) VALUES (2, 1, 'Urgente');
+-- 5. Tickets de Prueba (Contenedores)
+INSERT INTO tickets (id_obra, id_usuario_creador) VALUES 
+(1, 2); -- Ticket para Los Almendros, creado por Juan Pérez
 
-INSERT INTO observaciones (id_ticket, id_categoria, ubicacion_exacta, descripcion_problema, estado_observacion) VALUES
-(1, 1, 'Baño Gerencia, Piso 1', 'Filtración masiva en sifón de lavamanos principal', 'Recibido'),
-(1, 3, 'Hall de Acceso', 'Dos palmetas de porcelanato quebradas por tránsito pesado', 'Recibido');
+-- 6. Observaciones de Prueba (Detalles)
+INSERT INTO observaciones (id_ticket, id_categoria, falla, ubicacion_exacta, descripcion_problema, urgencia, estado_observacion) VALUES(1, 2, 'Grieta en muro del dormitorio principal', 'Dormitorio principal, muro norte', 'Se observa grieta vertical de aproximadamente
+      30cm en el muro del dormitorio principal. La grieta inicia desde el techo.', 'alta', 'en proceso'),
+(1, 7, 'Filtración en baño principal', 'Baño principal, sector de ducha', 'Hay una filtración constante en la ducha que afecta el piso
+      inferior. Se requiere revisión urgente de la impermeabilización.', 'alta', 'pendiente');
+
+-- 7. Mensajes de Chat para la primera observación
+INSERT INTO mensajes (id_observacion, id_usuario, mensaje) VALUES 
+(1, 1, 'Hemos programado la reparación para el 20/04/2026. El equipo de albañilería realizará la reparación.');
