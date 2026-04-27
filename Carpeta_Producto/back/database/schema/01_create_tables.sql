@@ -1,5 +1,5 @@
 -- Script de Creación de Tablas - Sistema de Postventa Constructora Pitágora
--- Adaptado para Frontend v2 (front2) y Requerimientos de Cliente (Abril 2026)
+-- Adaptado para Frontend v2 (front) y Requerimientos de Cliente (Abril 2026)
 -- Motor: MySQL 8.0+
 
 SET FOREIGN_KEY_CHECKS = 0;

@@ -1,7 +1,0 @@
-.app-bg {
-  background: linear-gradient(135deg, #f3f7ff 0%, #f8fbff 45%, #eef2f7 100%);
-}
-
-.table > :not(caption) > * > * {
-  vertical-align: top;
-}
