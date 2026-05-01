@@ -4,13 +4,58 @@ import { useNavigate } from 'react-router-dom'
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault()
-    // Aquí iría la autenticación real
-    console.log('Login:', { email, password })
-    navigate('/tickets')
+    setError('')
+    setLoading(true)
+
+    const parseResponse = async (response) => {
+      const text = await response.text()
+      try {
+        return JSON.parse(text)
+      } catch {
+        return text
+      }
+    }
+
+    try {
+      const response = await fetch('http://localhost:8080/api/usuarios/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          correo: email,
+          password: password,
+        }),
+      })
+
+      const data = await parseResponse(response)
+
+      if (!response.ok) {
+        const message =
+          typeof data === 'string'
+            ? data
+            : data?.message || data?.error || 'Error al iniciar sesión'
+        throw new Error(message)
+      }
+
+      localStorage.setItem('usuario', JSON.stringify(data))
+
+      if (data.rol === 'admin') {
+        navigate('/admin-dashboard')
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      setError(err.message || 'Error de conexión con el servidor')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -65,6 +110,13 @@ export default function Login() {
                         Ingresa a tu cuenta
                       </h5>
 
+                      {/* Mostrar mensaje de error si existe */}
+                      {error && (
+                        <div className="alert alert-danger" role="alert">
+                          {error}
+                        </div>
+                      )}
+
                       <div className="form-outline mb-4">
                         <input
                           type="email"
@@ -118,8 +170,9 @@ export default function Login() {
                             borderColor: '#003860',
                             color: 'white',
                           }}
+                          disabled={loading}
                         >
-                          Iniciar Sesión
+                          {loading ? 'Cargando...' : 'Iniciar Sesión'}
                         </button>
                       </div>
 

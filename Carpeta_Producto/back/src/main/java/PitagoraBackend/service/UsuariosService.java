@@ -90,6 +90,20 @@ public class UsuariosService {
         }
         usuariosRepository.deleteById(id);
     }
+
+    // Nuevo método para autenticar usuario
+    public Usuarios validarCredenciales(String correo, String password) {
+        Usuarios usuario = usuariosRepository.findByCorreo(correo)
+                .orElseThrow(() -> new IllegalArgumentException("Correo o contraseña incorrectos"));
+
+        // Ojo: Si en el futuro usas encriptación (como BCrypt), debes comparar el hash aquí.
+        // Por ahora comparamos texto plano:
+        if (!usuario.getPassword().equals(password)) {
+            throw new IllegalArgumentException("Correo o contraseña incorrectos");
+        }
+
+        return usuario;
+    }
 }
 
 
