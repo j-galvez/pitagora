@@ -63,9 +63,18 @@ export default function NavbarAdmin({ usuario }) {
           <Link 
             to="/admin/usuarios" 
             className={`nav-link text-white ${location.pathname.includes('/usuarios') ? 'active' : ''}`}
-            style={{ backgroundColor: location.pathname.includes('/usuarios') ? '#003860' : 'transparent' }}
+            style={{ backgroundColor: location.pathname.includes('/admin/usuarios') ? '#003860' : 'transparent' }}
           >
-            <i className="bi bi-people me-2"></i> Gestión de Usuarios
+            <i className="bi bi-pencil-square me-2"></i> Gestión de Usuarios
+          </Link>
+        </li>
+        <li className="nav-item mb-2">
+          <Link 
+            to="/admin/crear-usuarios" 
+            className={`nav-link text-white ${location.pathname === '/admin/crear-usuarios' ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname === '/admin/crear-usuarios' ? '#003860' : 'transparent' }}
+          >
+            <i className="bi bi-person-plus me-2"></i> Creación de Usuarios
           </Link>
         </li>
         <li className="nav-item">
