@@ -3,6 +3,8 @@ package PitagoraBackend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import PitagoraBackend.dto.LoginRequest;
+import PitagoraBackend.dto.UsuarioResponse;
 import PitagoraBackend.model.Usuarios;
 import PitagoraBackend.service.UsuariosService;
 import java.util.List;
@@ -55,6 +57,29 @@ public class UsuariosController {
         try {
             usuariosService.eliminarUsuarios(id_usuario);
             return ResponseEntity.ok("Usuario eliminado correctamente");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Nuevo endpoint para login
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        try {
+            Usuarios usuarioAutenticado = usuariosService.validarCredenciales(
+                loginRequest.getCorreo(),
+                loginRequest.getPassword()
+            );
+
+            UsuarioResponse response = new UsuarioResponse(
+                usuarioAutenticado.getId_usuario(),
+                usuarioAutenticado.getNombre(),
+                usuarioAutenticado.getCorreo(),
+                usuarioAutenticado.getRol(),
+                usuarioAutenticado.getEstado()
+            );
+
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
