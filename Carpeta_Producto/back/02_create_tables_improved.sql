@@ -6,6 +6,19 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+-- 0. TABLAS MAESTRAS GEOGRÁFICAS
+CREATE TABLE IF NOT EXISTS regiones (
+    id_region INT PRIMARY KEY,
+    nombre_region VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS comunas (
+    id_comuna INT PRIMARY KEY,
+    nombre_comuna VARCHAR(100) NOT NULL,
+    id_region INT NOT NULL,
+    FOREIGN KEY (id_region) REFERENCES regiones(id_region)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 1. Tabla de Clientes (Empresas - Nuevas)
 CREATE TABLE IF NOT EXISTS clientes (
     id_cliente INT AUTO_INCREMENT PRIMARY KEY,
@@ -18,33 +31,45 @@ CREATE TABLE IF NOT EXISTS clientes (
     estado ENUM('Activo', 'Inactivo') DEFAULT 'Activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Tabla de Usuarios (Sistema Multi-perfil)
+-- 2. Tabla de Usuarios (Sistema Multi-perfil - Actualizada con RUN y Nombres Separados)
 CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    correo VARCHAR(100) NOT NULL UNIQUE, -- Correo corporativo = nombre de usuario
+    run VARCHAR(12) NOT NULL UNIQUE,          -- Ejemplo: 12.345.678-9
+    nombre VARCHAR(50) NOT NULL,
+    apellido_paterno VARCHAR(50) NOT NULL,
+    apellido_materno VARCHAR(50),
+    correo VARCHAR(100) NOT NULL UNIQUE,      -- Correo corporativo = nombre de usuario
     password VARCHAR(255) NOT NULL,
     rol ENUM('admin', 'jefe_obra', 'cliente', 'tecnico') NOT NULL DEFAULT 'cliente',
-    id_obra INT NULL, -- Para perfiles "cliente": restricción a una única obra (1-2 usuarios por obra)
+    id_obra INT NULL,                         -- Para perfiles "cliente": restricción a una única obra
     telefono VARCHAR(20),
+    direccion_calle VARCHAR(255),
+    id_region INT,
+    id_comuna INT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado ENUM('Activo', 'Inactivo') DEFAULT 'Activo',
-    FOREIGN KEY (id_obra) REFERENCES obras(id_obra) ON DELETE SET NULL
+    FOREIGN KEY (id_obra) REFERENCES obras(id_obra) ON DELETE SET NULL,
+    FOREIGN KEY (id_region) REFERENCES regiones(id_region),
+    FOREIGN KEY (id_comuna) REFERENCES comunas(id_comuna)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. Tabla de Obras (Proyectos / Unidades)
+-- 3. Tabla de Obras (Proyectos / Unidades - Dirección Normalizada)
 CREATE TABLE IF NOT EXISTS obras (
     id_obra INT AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT NOT NULL, -- FK a la empresa cliente
     nombre_obra VARCHAR(150) NOT NULL,
     descripcion_obra TEXT, -- Ej: "Departamento ubicado en tercer piso..."
-    direccion TEXT,
+    direccion_calle VARCHAR(255),
+    id_region INT NOT NULL,
+    id_comuna INT NULL,       -- Opcional según región
     planos_presupuestos VARCHAR(500), -- URL a documentos en Cloud Storage
     fecha_entrega DATE,
     garantia_expira DATE, -- 3 años para terminaciones
     estado_obra ENUM('Activa', 'Garantía Vencida', 'Cerrada') DEFAULT 'Activa',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE RESTRICT
+    FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE RESTRICT,
+    FOREIGN KEY (id_region) REFERENCES regiones(id_region),
+    FOREIGN KEY (id_comuna) REFERENCES comunas(id_comuna)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. Asignación de Usuarios (Trabajadores) a Obras (Relación N:M)
@@ -152,6 +177,28 @@ CREATE TABLE IF NOT EXISTS historial_bitacora (
     INDEX idx_usuario (id_usuario),
     INDEX idx_sello_tiempo (sello_tiempo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- DATA SEMILLA: Regiones de Chile
+INSERT INTO regiones (id_region, nombre_region) VALUES 
+(1, 'Arica y Parinacota'), (2, 'Tarapacá'), (3, 'Antofagasta'), (4, 'Atacama'), 
+(5, 'Coquimbo'), (6, 'Valparaíso'), (7, 'O’Higgins'), (8, 'Maule'), 
+(9, 'Ñuble'), (10, 'Biobío'), (11, 'Araucanía'), (12, 'Los Ríos'), 
+(13, 'Metropolitana de Santiago'), (14, 'Los Lagos'), (15, 'Aysén'), (16, 'Magallanes');
+
+-- DATA SEMILLA: Comunas RM (Ejemplos principales)
+INSERT INTO comunas (id_comuna, nombre_comuna, id_region) VALUES 
+(13101, 'Santiago', 13), (13102, 'Cerrillos', 13), (13103, 'Cerro Navia', 13), 
+(13104, 'Conchalí', 13), (13105, 'El Bosque', 13), (13106, 'Estación Central', 13), 
+(13107, 'Huechuraba', 13), (13108, 'Independencia', 13), (13109, 'La Cisterna', 13), 
+(13110, 'La Florida', 13), (13111, 'La Granja', 13), (13112, 'La Pintana', 13), 
+(13113, 'La Reina', 13), (13114, 'Las Condes', 13), (13115, 'Lo Barnechea', 13), 
+(13116, 'Lo Espejo', 13), (13117, 'Lo Prado', 13), (13118, 'Macul', 13), 
+(13119, 'Maipú', 13), (13120, 'Ñuñoa', 13), (13121, 'Pedro Aguirre Cerda', 13), 
+(13122, 'Peñalolén', 13), (13123, 'Providencia', 13), (13124, 'Pudahuel', 13), 
+(13125, 'Quilicura', 13), (13126, 'Quinta Normal', 13), (13127, 'Recoleta', 13), 
+(13128, 'Renca', 13), (13129, 'San Joaquín', 13), (13130, 'San Miguel', 13), 
+(13131, 'San Ramón', 13), (13132, 'Vitacura', 13), (13201, 'Puente Alto', 13), 
+(13401, 'San Bernardo', 13);
 
 SET FOREIGN_KEY_CHECKS = 1;
 
