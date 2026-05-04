@@ -30,6 +30,11 @@ public class UsuariosService {
             throw new IllegalArgumentException("El correo ya está registrado");
         }
 
+        // Establecer fecha de creación si no está definida
+        if (usuarios.getFecha_creacion() == null) {
+            usuarios.setFecha_creacion(java.time.LocalDateTime.now());
+        }
+
         // Guardar el usuario
         return usuariosRepository.save(usuarios);
     }
