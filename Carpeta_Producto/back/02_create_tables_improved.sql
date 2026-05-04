@@ -6,7 +6,7 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
--- 0. TABLAS MAESTRAS GEOGRÁFICAS (Chile)
+-- 0. TABLAS MAESTRAS GEOGRÁFICAS
 CREATE TABLE IF NOT EXISTS regiones (
     id_region INT PRIMARY KEY,
     nombre_region VARCHAR(100) NOT NULL
@@ -43,12 +43,9 @@ CREATE TABLE IF NOT EXISTS usuarios (
     rol ENUM('admin', 'jefe_obra', 'cliente', 'tecnico') NOT NULL DEFAULT 'cliente',
     id_obra INT NULL,                         -- Para perfiles "cliente": restricción a una única obra
     telefono VARCHAR(20),
-    
-    -- Dirección del Usuario
     direccion_calle VARCHAR(255),
     id_region INT,
     id_comuna INT,
-    
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado ENUM('Activo', 'Inactivo') DEFAULT 'Activo',
     FOREIGN KEY (id_obra) REFERENCES obras(id_obra) ON DELETE SET NULL,
@@ -62,12 +59,9 @@ CREATE TABLE IF NOT EXISTS obras (
     id_cliente INT NOT NULL, -- FK a la empresa cliente
     nombre_obra VARCHAR(150) NOT NULL,
     descripcion_obra TEXT, -- Ej: "Departamento ubicado en tercer piso..."
-    
-    -- Dirección Normalizada
     direccion_calle VARCHAR(255),
     id_region INT NOT NULL,
-    id_comuna INT NULL,       -- Opcional según región (regla de la RM)
-    
+    id_comuna INT NULL,       -- Opcional según región
     planos_presupuestos VARCHAR(500), -- URL a documentos en Cloud Storage
     fecha_entrega DATE,
     garantia_expira DATE, -- 3 años para terminaciones
