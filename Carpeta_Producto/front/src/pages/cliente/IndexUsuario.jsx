@@ -39,6 +39,13 @@ export default function IndexUsuario() {
       <NavbarUsuario usuario={usuarioLogueado} />
 
       <div className="d-flex flex-column flex-grow-1">
+        <nav className="navbar navbar-dark" style={{ backgroundColor: '#002840' }}>
+          <div className="container-fluid">
+            <button className="btn btn-outline-light" data-bs-toggle="offcanvas" data-bs-target="#navbarUsuarioOffcanvas" aria-controls="navbarUsuarioOffcanvas">
+              <i className="bi bi-list"></i> Menú
+            </button>
+          </div>
+        </nav>
         <main className="p-4 flex-grow-1">
           <div className="mb-4">
             <h1 className="h3 mb-1" style={{ color: '#003860', fontWeight: 'bold' }}>Mis Solicitudes</h1>

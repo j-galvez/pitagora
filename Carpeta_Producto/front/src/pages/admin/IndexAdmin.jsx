@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import Footer from '../../components/Footer';
 import CardTicket from '../../components/CardTicket';
+import AdminLayout from '../../components/AdminLayout';
 
 export default function IndexAdmin() {
   const [obraId, setObraId] = useState('1');
@@ -52,19 +53,11 @@ export default function IndexAdmin() {
   };
 
   return (
-    <div className="d-flex" style={{ minHeight: '100vh', backgroundColor: '#F8F9FA' }}>
-      {/* Barra lateral */}
-      <NavbarAdmin usuario={usuarioLogueado} />
-
-      {/* Contenido Principal */}
-      <div className="d-flex flex-column flex-grow-1">
-        <main className="p-4 flex-grow-1">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1 className="h3 mb-1" style={{ color: '#003860', fontWeight: 'bold' }}>Panel de Control</h1>
-              <p className="text-secondary mb-0">Vista general del sistema de postventa</p>
-            </div>
-          </div>
+    <AdminLayout 
+      usuario={usuarioLogueado} 
+      titulo="Dashboard Administrador"
+    >
+            {/* Barra de Navegación Superior */}
 
           {/* Buscador por ID Obra */}
           <div className="card shadow-sm border-0 mb-4">
@@ -125,10 +118,7 @@ export default function IndexAdmin() {
               !loading && <div className="alert alert-light border">No hay tickets para esta obra en el sistema.</div>
             )}
           </div>
-        </main>
-
         <Footer />
-      </div>
-    </div>
+      </AdminLayout>
   );
 }
