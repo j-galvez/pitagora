@@ -13,39 +13,37 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name="usuarios")
+@Table(name = "clientes")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Usuarios {
+public class Clientes {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_usuario")
-    private Integer idUsuario;
+    @Column(name = "id_cliente")
+    private Integer idCliente;
 
-    @Column(nullable = false, length = 100)
-    private String nombre;
+    @Column(name = "nombre_empresa", nullable = false, length = 150)
+    private String nombreEmpresa;
 
-    @Column(nullable = false, length = 100, unique = true)
-    private String correo;
+    @Column(nullable = false, unique = true, length = 20)
+    private String rut;
 
-    @Column(nullable = false, length = 255)
-    private String password;
-
-    @Column(nullable = false, length = 20)
-    private String rol; // 'admin', 'jefe_obra', 'cliente', 'tecnico'
-
-    @Column(name = "id_obra", nullable = true)
-    private Integer idObra; // Para perfiles "cliente": restricción a una única obra
+    @Column(name = "correo_contacto", length = 100)
+    private String correoContacto;
 
     @Column(length = 20)
     private String telefono;
+
+    @Column(columnDefinition = "TEXT")
+    private String direccion;
 
     @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaCreacion;
 
     @Column(nullable = false, length = 10)
     private String estado; // 'Activo', 'Inactivo'
-
 }
+
+// Made with Bob
