@@ -10,8 +10,8 @@ export default function NavbarUsuario({ usuario }) {
     navigate('/login');
   };
 
-  return (
-    <div className="d-flex flex-column vh-100 text-white p-3" style={{ width: '280px', backgroundColor: '#002840' }}>
+  const menuContent = (
+    <>
       {/* Logo */}
       <div className="mb-4 text-center py-2">
         <img 
@@ -74,6 +74,26 @@ export default function NavbarUsuario({ usuario }) {
       >
         <i className="bi bi-box-arrow-left me-2"></i> Cerrar Sesión
       </button>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Sidebar fijo para desktop */}
+      <div className="d-none d-lg-flex flex-column vh-100 text-white p-3" style={{ width: '280px', backgroundColor: '#002840' }}>
+        {menuContent}
+      </div>
+
+      {/* Offcanvas para móviles */}
+      <div className="offcanvas offcanvas-start text-white d-lg-none" id="navbarUsuarioOffcanvas" style={{ backgroundColor: '#002840', width: '280px' }} tabIndex="-1" aria-labelledby="navbarUsuarioOffcanvasLabel">
+        <div className="offcanvas-header">
+          <h5 className="offcanvas-title" id="navbarUsuarioOffcanvasLabel">Menú Usuario</h5>
+          <button type="button" className="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div className="offcanvas-body d-flex flex-column p-3">
+          {menuContent}
+        </div>
+      </div>
+    </>
   );
 }
