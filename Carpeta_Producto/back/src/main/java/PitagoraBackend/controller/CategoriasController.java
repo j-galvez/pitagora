@@ -1,13 +1,11 @@
 package PitagoraBackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import PitagoraBackend.model.Categorias;
 import PitagoraBackend.service.CategoriasService;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/categorias")
@@ -16,93 +14,77 @@ public class CategoriasController {
     
     @Autowired
     private CategoriasService categoriasService;
-    
-    // CREATE - Crear una nueva categoría
+
+    // CREATE - Crear categoría
     @PostMapping
-    public ResponseEntity<?> crearCategoria(@RequestBody Categorias categoria) {
+    public ResponseEntity<?> crear(@RequestBody Categorias categoria) {
         try {
-            Categorias categoriaCreada = categoriasService.crearCategoria(categoria);
-            return new ResponseEntity<>(categoriaCreada, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al crear categoría: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            Categorias nueva = categoriasService.crearCategorias(categoria);
+            return ResponseEntity.ok(nueva);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // READ - Obtener todas las categorías
+
+    // READ - Listar todas las categorías
     @GetMapping
-    public ResponseEntity<?> obtenerTodas() {
+    public List<Categorias> listar() {
+        return categoriasService.obtenerCategorias();
+    }
+
+    // READ - Obtener categoría por ID
+    @GetMapping("/{id_categoria}")
+    public ResponseEntity<?> obtenerPorId(@PathVariable("id_categoria") Integer id_categoria) {
         try {
-            List<Categorias> categorias = categoriasService.obtenerTodas();
-            return new ResponseEntity<>(categorias, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al obtener categorías: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.ok(categoriasService.obtenerCategoriaById(id_categoria));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // READ - Obtener una categoría por ID
-    @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPorId(@PathVariable Integer id) {
+
+    // UPDATE - Actualizar categoría
+    @PutMapping("/{id_categoria}")
+    public ResponseEntity<?> actualizar(@PathVariable("id_categoria") Integer id_categoria, @RequestBody Categorias categoria) {
         try {
-            Optional<Categorias> categoria = categoriasService.obtenerPorId(id);
-            if (categoria.isPresent()) {
-                return new ResponseEntity<>(categoria.get(), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Categoría no encontrada", HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al obtener categoría: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            Categorias actualizada = categoriasService.actualizarCategorias(id_categoria, categoria);
+            return ResponseEntity.ok(actualizada);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // READ - Buscar por nombre de categoría
-    @GetMapping("/buscar/nombre/{nombre}")
-    public ResponseEntity<?> buscarPorNombre(@PathVariable String nombre) {
+
+    // DELETE - Eliminar categoría
+    @DeleteMapping("/{id_categoria}")
+    public ResponseEntity<?> eliminar(@PathVariable("id_categoria") Integer id_categoria) {
         try {
-            List<Categorias> categorias = categoriasService.buscarPorNombre(nombre);
-            return new ResponseEntity<>(categorias, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al buscar categorías: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            categoriasService.eliminarCategorias(id_categoria);
+            return ResponseEntity.ok("Categoría eliminada correctamente");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // READ - Buscar por subcategoría
-    @GetMapping("/buscar/subcategoria/{subcategoria}")
-    public ResponseEntity<?> buscarPorSubcategoria(@PathVariable String subcategoria) {
+
+    // ENDPOINTS ADICIONALES
+
+    // Obtener categorías por nombre
+    @GetMapping("/nombre/{nombre}")
+    public ResponseEntity<?> obtenerPorNombre(@PathVariable("nombre") String nombre) {
         try {
-            List<Categorias> categorias = categoriasService.buscarPorSubcategoria(subcategoria);
-            return new ResponseEntity<>(categorias, HttpStatus.OK);
+            List<Categorias> categorias = categoriasService.obtenerCategoriasPorNombre(nombre);
+            return ResponseEntity.ok(categorias);
         } catch (Exception e) {
-            return new ResponseEntity<>("Error al buscar subcategorías: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // UPDATE - Actualizar una categoría
-    @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarCategoria(@PathVariable Integer id, @RequestBody Categorias categoriaActualizada) {
+
+    // Obtener categorías por subcategoría
+    @GetMapping("/subcategoria/{subcategoria}")
+    public ResponseEntity<?> obtenerPorSubcategoria(@PathVariable("subcategoria") String subcategoria) {
         try {
-            Categorias categoriaUpdated = categoriasService.actualizarCategoria(id, categoriaActualizada);
-            if (categoriaUpdated != null) {
-                return new ResponseEntity<>(categoriaUpdated, HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Categoría no encontrada", HttpStatus.NOT_FOUND);
-            }
+            List<Categorias> categorias = categoriasService.obtenerCategoriasPorSubcategoria(subcategoria);
+            return ResponseEntity.ok(categorias);
         } catch (Exception e) {
-            return new ResponseEntity<>("Error al actualizar categoría: " + e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-    
-    // DELETE - Eliminar una categoría
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarCategoria(@PathVariable Integer id) {
-        try {
-            boolean eliminada = categoriasService.eliminarCategoria(id);
-            if (eliminada) {
-                return new ResponseEntity<>("Categoría eliminada correctamente", HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Categoría no encontrada", HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al eliminar categoría: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }

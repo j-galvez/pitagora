@@ -5,72 +5,50 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "obras")
+@Table(name="obras")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Obras {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_obra;
+    @Column(name = "id_obra")
+    private Integer idObra;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "id_cliente", nullable = false)
-    private Clientes id_cliente; // FK a Clientes
+    @Column(name = "id_cliente", nullable = false)
+    private Integer idCliente;
 
-    @Column(nullable = false, length = 150)
-    private String nombre_obra;
+    @Column(name = "nombre_obra", nullable = false, length = 150)
+    private String nombreObra;
 
-    @Column(columnDefinition = "TEXT")
-    private String descripcion_obra;
+    @Column(name = "descripcion_obra", columnDefinition = "TEXT")
+    private String descripcionObra;
 
     @Column(columnDefinition = "TEXT")
     private String direccion;
 
-    @Column(length = 500)
-    private String planos_presupuestos; // URL a Cloud Storage
+    @Column(name = "planos_presupuestos", length = 500)
+    private String planosPresupuestos;
 
-    @Column
-    private LocalDate fecha_entrega;
+    @Column(name = "fecha_entrega")
+    private LocalDate fechaEntrega;
 
-    @Column
-    private LocalDate garantia_expira; // 3 años para terminaciones
+    @Column(name = "garantia_expira")
+    private LocalDate garantiaExpira;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private EstadoObraEnum estado_obra;
+    @Column(name = "estado_obra", nullable = false, length = 20)
+    private String estadoObra; // 'Activa', 'Garantía Vencida', 'Cerrada'
 
-    @Column(nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    private LocalDateTime fecha_creacion;
-
-    // Enum para estado de la obra
-    public enum EstadoObraEnum {
-        ACTIVA("Activa"),
-        GARANTIA_VENCIDA("Garantía Vencida"),
-        CERRADA("Cerrada");
-
-        private final String value;
-
-        EstadoObraEnum(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
+    @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime fechaCreacion;
 }

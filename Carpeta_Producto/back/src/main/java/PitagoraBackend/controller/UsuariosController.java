@@ -72,7 +72,7 @@ public class UsuariosController {
             );
 
             UsuarioResponse response = new UsuarioResponse(
-                usuarioAutenticado.getId_usuario(),
+                usuarioAutenticado.getIdUsuario(),
                 usuarioAutenticado.getNombre(),
                 usuarioAutenticado.getCorreo(),
                 usuarioAutenticado.getRol(),

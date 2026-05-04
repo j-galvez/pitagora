@@ -8,9 +8,10 @@ import java.util.List;
 @Repository
 public interface CategoriasRepository extends JpaRepository<Categorias, Integer> {
     
-    // Buscar por nombre de categoría
-    List<Categorias> findByNombreCategoriaContainingIgnoreCase(String nombre);
+    // Buscar categorías por nombre
+    List<Categorias> findByNombreCategoria(String nombreCategoria);
     
-    // Buscar por subcategoría
-    List<Categorias> findBySubcategoriaContainingIgnoreCase(String subcategoria);
+    // Buscar categorías por subcategoría
+    List<Categorias> findBySubcategoria(String subcategoria);
 }
+

@@ -4,6 +4,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css'; // npm install bootstrap-icon
 import Login from './pages/login';
 import IndexAdmin from './pages/admin/IndexAdmin';
 import IndexUsuario from './pages/cliente/IndexUsuario';
+import Formulario from './pages/tests/formulario';
 
 function App() {
   return (
@@ -12,6 +13,8 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/admin-dashboard" element={<IndexAdmin />} />
       <Route path="/dashboard" element={<IndexUsuario />} />
+      <Route path="/formulario-test" element={<Formulario />} />
+      
     </Routes>
   );
 }

@@ -1,112 +1,106 @@
 package PitagoraBackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import PitagoraBackend.model.Clientes;
 import PitagoraBackend.service.ClientesService;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/clientes")
 @CrossOrigin(origins = "*")
 public class ClientesController {
-    
+
     @Autowired
     private ClientesService clientesService;
-    
-    // CREATE - Crear un nuevo cliente
-    @PostMapping
-    public ResponseEntity<?> crearCliente(@RequestBody Clientes cliente) {
-        try {
-            Clientes clienteCreado = clientesService.crearCliente(cliente);
-            return new ResponseEntity<>(clienteCreado, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al crear cliente: " + e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-    
-    // READ - Obtener todos los clientes
+
+    // GET - Listar todos los clientes
     @GetMapping
-    public ResponseEntity<?> obtenerTodos() {
+    public List<Clientes> listar() {
+        return clientesService.obtenerClientes();
+    }
+
+    // POST - Crear nuevo cliente
+    @PostMapping
+    public ResponseEntity<?> crear(@RequestBody Clientes cliente) {
         try {
-            List<Clientes> clientes = clientesService.obtenerTodos();
-            return new ResponseEntity<>(clientes, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al obtener clientes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            Clientes nuevo = clientesService.crearCliente(cliente);
+            return ResponseEntity.ok(nuevo);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // READ - Obtener un cliente por ID
+
+    // GET - Obtener cliente por ID
     @GetMapping("/{id}")
     public ResponseEntity<?> obtenerPorId(@PathVariable Integer id) {
         try {
-            Optional<Clientes> cliente = clientesService.obtenerPorId(id);
-            if (cliente.isPresent()) {
-                return new ResponseEntity<>(cliente.get(), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Cliente no encontrado", HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al obtener cliente: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.ok(clientesService.obtenerClienteById(id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // READ - Obtener cliente por RUT
+
+    // PUT - Actualizar cliente
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizar(@PathVariable Integer id, @RequestBody Clientes cliente) {
+        try {
+            Clientes actualizado = clientesService.actualizarCliente(id, cliente);
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // DELETE - Eliminar cliente
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminar(@PathVariable Integer id) {
+        try {
+            clientesService.eliminarCliente(id);
+            return ResponseEntity.ok("Cliente eliminado correctamente");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // GET - Buscar cliente por RUT
     @GetMapping("/rut/{rut}")
     public ResponseEntity<?> obtenerPorRut(@PathVariable String rut) {
         try {
-            Optional<Clientes> cliente = clientesService.obtenerPorRut(rut);
-            if (cliente.isPresent()) {
-                return new ResponseEntity<>(cliente.get(), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Cliente no encontrado", HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al obtener cliente: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.ok(clientesService.obtenerClientePorRut(rut));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // READ - Buscar clientes por nombre
-    @GetMapping("/buscar/{nombre}")
-    public ResponseEntity<?> buscarPorNombre(@PathVariable String nombre) {
+
+    // GET - Buscar clientes por nombre de empresa
+    @GetMapping("/buscar")
+    public ResponseEntity<?> buscarPorNombre(@RequestParam String nombre) {
         try {
-            List<Clientes> clientes = clientesService.buscarPorNombre(nombre);
-            return new ResponseEntity<>(clientes, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al buscar clientes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            List<Clientes> clientes = clientesService.buscarClientesPorNombre(nombre);
+            return ResponseEntity.ok(clientes);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // UPDATE - Actualizar un cliente
-    @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarCliente(@PathVariable Integer id, @RequestBody Clientes clienteActualizado) {
+
+    // GET - Obtener clientes por estado
+    @GetMapping("/estado/{estado}")
+    public ResponseEntity<?> obtenerPorEstado(@PathVariable String estado) {
         try {
-            Clientes clienteUpdated = clientesService.actualizarCliente(id, clienteActualizado);
-            if (clienteUpdated != null) {
-                return new ResponseEntity<>(clienteUpdated, HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Cliente no encontrado", HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al actualizar cliente: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            List<Clientes> clientes = clientesService.obtenerClientesPorEstado(estado);
+            return ResponseEntity.ok(clientes);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    // DELETE - Eliminar un cliente
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarCliente(@PathVariable Integer id) {
-        try {
-            boolean eliminado = clientesService.eliminarCliente(id);
-            if (eliminado) {
-                return new ResponseEntity<>("Cliente eliminado correctamente", HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Cliente no encontrado", HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error al eliminar cliente: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+
+    // GET - Obtener solo clientes activos
+    @GetMapping("/activos")
+    public List<Clientes> obtenerActivos() {
+        return clientesService.obtenerClientesActivos();
     }
 }
+
+// Made with Bob

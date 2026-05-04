@@ -9,17 +9,19 @@ import java.util.List;
 public interface ObservacionesRepository extends JpaRepository<Observaciones, Integer> {
     
     // Buscar observaciones por ticket
-    List<Observaciones> findByIdTicket_IdTicket(Integer idTicket);
+    List<Observaciones> findByIdTicket(Integer idTicket);
     
     // Buscar observaciones por categoría
-    List<Observaciones> findByIdCategoria_IdCategoria(Integer idCategoria);
+    List<Observaciones> findByIdCategoria(Integer idCategoria);
     
     // Buscar observaciones por estado
-    List<Observaciones> findByEstadoObservacion(Observaciones.EstadoObservacionEnum estado);
+    List<Observaciones> findByEstadoObservacion(String estadoObservacion);
     
     // Buscar observaciones por urgencia
-    List<Observaciones> findByUrgencia(Observaciones.UrgenciaEnum urgencia);
+    List<Observaciones> findByUrgencia(String urgencia);
     
-    // Buscar por token de aceptación
-    Observaciones findByTokenAceptacion(String token);
+    // Buscar observaciones por confirmación del cliente
+    List<Observaciones> findByConfirmacionCliente(String confirmacionCliente);
 }
+
+

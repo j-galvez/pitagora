@@ -2,8 +2,8 @@ package PitagoraBackend.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import PitagoraBackend.model.Categorias;
 import PitagoraBackend.repository.CategoriasRepository;
+import PitagoraBackend.model.Categorias;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -13,60 +13,81 @@ public class CategoriasService {
     
     @Autowired
     private CategoriasRepository categoriasRepository;
-    
-    // CREATE - Crear una nueva categoría
-    public Categorias crearCategoria(Categorias categoria) {
-        categoria.setFecha_creacion(LocalDateTime.now());
-        return categoriasRepository.save(categoria);
+
+    // CREATE - Crear categoría
+    public Categorias crearCategorias(Categorias categorias) {
+        // Validación: nombreCategoria es requerido
+        if (categorias.getNombreCategoria() == null || categorias.getNombreCategoria().isEmpty()) {
+            throw new IllegalArgumentException("El nombre de la categoría es requerido");
+        }
+        
+        // La fechaCreacion se establece automáticamente
+        if (categorias.getFechaCreacion() == null) {
+            categorias.setFechaCreacion(LocalDateTime.now());
+        }
+        
+        // Guardar la categoría
+        return categoriasRepository.save(categorias);
     }
-    
+
     // READ - Obtener todas las categorías
-    public List<Categorias> obtenerTodas() {
+    public List<Categorias> obtenerCategorias() {
         return categoriasRepository.findAll();
     }
-    
-    // READ - Obtener una categoría por ID
-    public Optional<Categorias> obtenerPorId(Integer id) {
-        return categoriasRepository.findById(id);
-    }
-    
-    // READ - Buscar categorías por nombre
-    public List<Categorias> buscarPorNombre(String nombre) {
-        return categoriasRepository.findByNombreCategoriaContainingIgnoreCase(nombre);
-    }
-    
-    // READ - Buscar por subcategoría
-    public List<Categorias> buscarPorSubcategoria(String subcategoria) {
-        return categoriasRepository.findBySubcategoriaContainingIgnoreCase(subcategoria);
-    }
-    
-    // UPDATE - Actualizar una categoría
-    public Categorias actualizarCategoria(Integer id, Categorias categoriaActualizada) {
-        Optional<Categorias> categoriaExistente = categoriasRepository.findById(id);
-        if (categoriaExistente.isPresent()) {
-            Categorias categoria = categoriaExistente.get();
-            
-            if (categoriaActualizada.getNombre_categoria() != null) {
-                categoria.setNombre_categoria(categoriaActualizada.getNombre_categoria());
-            }
-            if (categoriaActualizada.getSubcategoria() != null) {
-                categoria.setSubcategoria(categoriaActualizada.getSubcategoria());
-            }
-            if (categoriaActualizada.getDescripcion() != null) {
-                categoria.setDescripcion(categoriaActualizada.getDescripcion());
-            }
-            
-            return categoriasRepository.save(categoria);
+
+    // READ - Obtener categoría por ID
+    public Categorias obtenerCategoriaById(Integer id) {
+        Optional<Categorias> categoria = categoriasRepository.findById(id);
+        if (!categoria.isPresent()) {
+            throw new IllegalArgumentException("Categoría no encontrada con ID: " + id);
         }
-        return null;
+        return categoria.get();
     }
-    
-    // DELETE - Eliminar una categoría
-    public boolean eliminarCategoria(Integer id) {
-        if (categoriasRepository.existsById(id)) {
-            categoriasRepository.deleteById(id);
-            return true;
+
+    // UPDATE - Actualizar categoría
+    public Categorias actualizarCategorias(Integer id, Categorias categoriasActualizado) {
+        // Verificar que la categoría exista
+        Categorias categoriaExistente = obtenerCategoriaById(id);
+
+        // Actualizar campos si se proporcionan
+        if (categoriasActualizado.getNombreCategoria() != null && !categoriasActualizado.getNombreCategoria().isEmpty()) {
+            categoriaExistente.setNombreCategoria(categoriasActualizado.getNombreCategoria());
         }
-        return false;
+
+        if (categoriasActualizado.getSubcategoria() != null) {
+            categoriaExistente.setSubcategoria(categoriasActualizado.getSubcategoria());
+        }
+
+        if (categoriasActualizado.getDescripcion() != null) {
+            categoriaExistente.setDescripcion(categoriasActualizado.getDescripcion());
+        }
+
+        return categoriasRepository.save(categoriaExistente);
+    }
+
+    // DELETE - Eliminar categoría
+    public void eliminarCategorias(Integer id) {
+        // Verificar que la categoría exista
+        if (!categoriasRepository.existsById(id)) {
+            throw new IllegalArgumentException("Categoría no encontrada con ID: " + id);
+        }
+        
+        // Nota: Si hay observaciones asociadas a esta categoría, la eliminación fallará
+        // debido a la FK con ON DELETE RESTRICT en la BD
+        categoriasRepository.deleteById(id);
+    }
+
+    // MÉTODOS ADICIONALES ÚTILES
+
+    // Obtener categorías por nombre
+    public List<Categorias> obtenerCategoriasPorNombre(String nombre) {
+        return categoriasRepository.findByNombreCategoria(nombre);
+    }
+
+    // Obtener categorías por subcategoría
+    public List<Categorias> obtenerCategoriasPorSubcategoria(String subcategoria) {
+        return categoriasRepository.findBySubcategoria(subcategoria);
     }
 }
+
+

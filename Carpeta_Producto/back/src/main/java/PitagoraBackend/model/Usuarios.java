@@ -21,27 +21,31 @@ public class Usuarios {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_usuario;
+    @Column(name = "id_usuario")
+    private Integer idUsuario;
 
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 100, unique = true)
     private String correo;
 
     @Column(nullable = false, length = 255)
     private String password;
 
+    @Column(nullable = false, length = 20)
+    private String rol; // 'admin', 'jefe_obra', 'cliente', 'tecnico'
+
+    @Column(name = "id_obra", nullable = true)
+    private Integer idObra; // Para perfiles "cliente": restricción a una única obra
+
     @Column(length = 20)
     private String telefono;
 
-    @Column(columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP", nullable = true)
-    private LocalDateTime fecha_creacion;
-
-    @Column(nullable = false)
-    private String rol;
+    @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime fechaCreacion;
 
     @Column(nullable = false, length = 10)
-    private String estado;
+    private String estado; // 'Activo', 'Inactivo'
 
 }

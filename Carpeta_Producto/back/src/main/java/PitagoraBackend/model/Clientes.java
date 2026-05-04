@@ -4,8 +4,6 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -23,16 +21,17 @@ public class Clientes {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_cliente;
+    @Column(name = "id_cliente")
+    private Integer idCliente;
 
-    @Column(nullable = false, length = 150)
-    private String nombre_empresa;
+    @Column(name = "nombre_empresa", nullable = false, length = 150)
+    private String nombreEmpresa;
 
-    @Column(nullable = false, length = 20, unique = true)
+    @Column(nullable = false, unique = true, length = 20)
     private String rut;
 
-    @Column(length = 100)
-    private String correo_contacto;
+    @Column(name = "correo_contacto", length = 100)
+    private String correoContacto;
 
     @Column(length = 20)
     private String telefono;
@@ -40,26 +39,11 @@ public class Clientes {
     @Column(columnDefinition = "TEXT")
     private String direccion;
 
-    @Column(nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    private LocalDateTime fecha_creacion;
+    @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime fechaCreacion;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private EstadoEnum estado;
-
-    // Enum para estado del cliente
-    public enum EstadoEnum {
-        ACTIVO("Activo"),
-        INACTIVO("Inactivo");
-
-        private final String value;
-
-        EstadoEnum(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
+    private String estado; // 'Activo', 'Inactivo'
 }
+
+// Made with Bob

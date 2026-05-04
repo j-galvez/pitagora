@@ -13,7 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "categorias")
+@Table(name="categorias")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,17 +21,21 @@ public class Categorias {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_categoria;
+    @Column(name = "id_categoria")
+    private Integer idCategoria;
 
-    @Column(nullable = false, length = 100)
-    private String nombre_categoria; // Ej: 'Instalaciones Sanitarias'
+    @Column(name = "nombre_categoria", nullable = false, length = 100)
+    private String nombreCategoria;
 
     @Column(length = 100)
-    private String subcategoria; // Ej: 'Tuberías', 'Grifería'
+    private String subcategoria;
 
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 
-    @Column(nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    private LocalDateTime fecha_creacion;
+    @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime fechaCreacion;
 }
+
+
+
