@@ -31,8 +31,8 @@ public class UsuariosService {
         }
 
         // Establecer fecha de creación si no está definida
-        if (usuarios.getFecha_creacion() == null) {
-            usuarios.setFecha_creacion(java.time.LocalDateTime.now());
+        if (usuarios.getFechaCreacion() == null) {
+            usuarios.setFechaCreacion(java.time.LocalDateTime.now());
         }
 
         // Guardar el usuario
