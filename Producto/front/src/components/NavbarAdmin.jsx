@@ -61,9 +61,27 @@ export default function NavbarAdmin({ usuario }) {
         </li>
         <li className="nav-item mb-2">
           <Link 
+            to="/admin/crear-cliente" 
+            className={`nav-link text-white ${location.pathname === '/admin/crear-cliente' ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname === '/admin/crear-cliente' ? '#003860' : 'transparent' }}
+          >
+            <i className="bi bi-building me-2"></i> Crear Cliente
+          </Link>
+        </li>
+        <li className="nav-item mb-2">
+          <Link 
+            to="/admin/crear-obra" 
+            className={`nav-link text-white ${location.pathname === '/admin/crear-obra' ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname === '/admin/crear-obra' ? '#003860' : 'transparent' }}
+          >
+            <i className="bi bi-hammer me-2"></i> Crear Obra
+          </Link>
+        </li>
+        <li className="nav-item mb-2">
+          <Link 
             to="/admin/usuarios" 
-            className={`nav-link text-white ${location.pathname.includes('/usuarios') ? 'active' : ''}`}
-            style={{ backgroundColor: location.pathname.includes('/admin/usuarios') ? '#003860' : 'transparent' }}
+            className={`nav-link text-white ${location.pathname === '/admin/usuarios' ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname === '/admin/usuarios' ? '#003860' : 'transparent' }}
           >
             <i className="bi bi-pencil-square me-2"></i> Gestión de Usuarios
           </Link>
