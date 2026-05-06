@@ -30,6 +30,24 @@ public class Usuarios {
     @Column(nullable = false, length = 100, unique = true)
     private String correo;
 
+    @Column(nullable = false, unique = true, length = 15)
+    private String run;
+
+    @Column(name = "apellido_paterno", nullable = false, length = 100)
+    private String apellidoPaterno;
+
+    @Column(name = "apellido_materno", nullable = false, length = 100)
+    private String apellidoMaterno;
+
+    @Column(name = "direccion_calle", nullable = false, length = 255)
+    private String direccionCalle;
+
+    @Column(name = "id_region")
+    private Integer idRegion;
+
+    @Column(name = "id_comuna")
+    private Integer idComuna;
+
     @Column(nullable = false, length = 255)
     private String password;
 

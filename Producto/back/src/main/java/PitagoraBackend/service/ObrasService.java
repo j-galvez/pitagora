@@ -26,6 +26,16 @@ public class ObrasService {
             throw new IllegalArgumentException("El nombre de la obra es requerido");
         }
 
+        // Validación 3: id_region es requerido
+        if (obras.getIdRegion() == null) {
+            throw new IllegalArgumentException("El ID de la región es requerido");
+        }
+
+        // Validación 4: id_comuna es requerido
+        if (obras.getIdComuna() == null) {
+            throw new IllegalArgumentException("El ID de la comuna es requerido");
+        }
+
         // Nota: Cuando implementes Clientes.java, valida que el cliente existe:
         // if (!clientesRepository.existsById(obras.getIdCliente())) {
         //     throw new IllegalArgumentException("El cliente no existe con ID: " + obras.getIdCliente());
