@@ -178,28 +178,6 @@ CREATE TABLE IF NOT EXISTS historial_bitacora (
     INDEX idx_sello_tiempo (sello_tiempo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- DATA SEMILLA: Regiones de Chile
-INSERT INTO regiones (id_region, nombre_region) VALUES 
-(1, 'Arica y Parinacota'), (2, 'Tarapacá'), (3, 'Antofagasta'), (4, 'Atacama'), 
-(5, 'Coquimbo'), (6, 'Valparaíso'), (7, 'O’Higgins'), (8, 'Maule'), 
-(9, 'Ñuble'), (10, 'Biobío'), (11, 'Araucanía'), (12, 'Los Ríos'), 
-(13, 'Metropolitana de Santiago'), (14, 'Los Lagos'), (15, 'Aysén'), (16, 'Magallanes');
-
--- DATA SEMILLA: Comunas RM (Ejemplos principales)
-INSERT INTO comunas (id_comuna, nombre_comuna, id_region) VALUES 
-(13101, 'Santiago', 13), (13102, 'Cerrillos', 13), (13103, 'Cerro Navia', 13), 
-(13104, 'Conchalí', 13), (13105, 'El Bosque', 13), (13106, 'Estación Central', 13), 
-(13107, 'Huechuraba', 13), (13108, 'Independencia', 13), (13109, 'La Cisterna', 13), 
-(13110, 'La Florida', 13), (13111, 'La Granja', 13), (13112, 'La Pintana', 13), 
-(13113, 'La Reina', 13), (13114, 'Las Condes', 13), (13115, 'Lo Barnechea', 13), 
-(13116, 'Lo Espejo', 13), (13117, 'Lo Prado', 13), (13118, 'Macul', 13), 
-(13119, 'Maipú', 13), (13120, 'Ñuñoa', 13), (13121, 'Pedro Aguirre Cerda', 13), 
-(13122, 'Peñalolén', 13), (13123, 'Providencia', 13), (13124, 'Pudahuel', 13), 
-(13125, 'Quilicura', 13), (13126, 'Quinta Normal', 13), (13127, 'Recoleta', 13), 
-(13128, 'Renca', 13), (13129, 'San Joaquín', 13), (13130, 'San Miguel', 13), 
-(13131, 'San Ramón', 13), (13132, 'Vitacura', 13), (13201, 'Puente Alto', 13), 
-(13401, 'San Bernardo', 13);
-
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================================
