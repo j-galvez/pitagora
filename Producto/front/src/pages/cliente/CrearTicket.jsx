@@ -94,10 +94,10 @@ export default function CrearTicket() {
   };
 
   return (
-    <div className="d-flex">
+    <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
       {isAdmin ? <NavbarAdmin usuario={usuarioLogueado} /> : <NavbarUsuario usuario={usuarioLogueado} />}
 
-      <div className="flex-grow-1" style={{ backgroundColor: '#F8F9FA', minHeight: '100vh' }}>
+      <div className="flex-grow-1 d-flex flex-column" style={{ backgroundColor: '#F8F9FA', height: '100vh', overflowY: 'auto' }}>
         
         {/* Barra de Navegación Superior - Exacta a AdminLayout */}
         <nav className="navbar navbar-dark" style={{ backgroundColor: '#002840' }}>
