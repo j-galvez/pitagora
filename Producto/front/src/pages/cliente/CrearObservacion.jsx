@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaCheckCircle, FaTrash, FaPlusCircle, FaCamera } from 'react-icons/fa';
 import NavbarUsuario from '../../components/NavbarUsuario';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import Footer from '../../components/Footer';
@@ -57,7 +57,6 @@ export default function CrearObservacion() {
       }
     } catch (err) {
       console.error('Error al cargar tickets:', err);
-      // Fallback para desarrollo
       setTickets([
         { id_ticket: 1, id_obra: 1, fecha_creacion: new Date() },
         { id_ticket: 2, id_obra: 1, fecha_creacion: new Date() }
@@ -156,17 +155,21 @@ export default function CrearObservacion() {
     }
   };
 
+  const handleVolver = () => {
+    navigate(-1);
+  };
+
   return (
-    <div className="d-flex" style={{ minHeight: '100vh', backgroundColor: '#F8F9FA' }}>
+    <div className="d-flex">
       {isAdmin ? <NavbarAdmin usuario={usuarioLogueado} /> : <NavbarUsuario usuario={usuarioLogueado} />}
 
       <div className="flex-grow-1" style={{ backgroundColor: '#F8F9FA', minHeight: '100vh' }}>
         
-        {/* Barra de Navegación Superior - Estandarizada */}
+        {/* Barra de Navegación Superior - Exacta a AdminLayout */}
         <nav className="navbar navbar-dark" style={{ backgroundColor: '#002840' }}>
           <div className="container-fluid d-flex justify-content-between align-items-center py-2">
             <div className="d-flex align-items-center">
-              <button className="btn btn-link text-white me-3 text-decoration-none d-flex align-items-center" onClick={() => navigate(-1)}>
+              <button className="btn btn-link text-white me-3 text-decoration-none d-flex align-items-center" onClick={handleVolver}>
                 <FaArrowLeft className="me-1" /> Volver
               </button>
               <h4 className="text-white mb-0">Crear Observación</h4>
@@ -174,16 +177,12 @@ export default function CrearObservacion() {
           </div>
         </nav>
 
-        <main className="p-4">
-          <div className="container py-4" style={{ maxWidth: '800px' }}>
-            <div className="mb-4">
-              <h1 className="h3 mb-1" style={{ color: '#003860', fontWeight: 'bold' }}>Detalles de la Solicitud</h1>
-              <p className="text-secondary mb-0">Agrega las fallas específicas al ticket seleccionado.</p>
-            </div>
-
+        <div className="container py-4" style={{ overflowX: 'auto', overflowY: 'auto', maxWidth: '100%' }}>
+          <div className="card shadow-sm border-0 rounded-3 p-4 mx-auto" style={{ maxWidth: '800px' }}>
+            
             {success && (
               <div className="alert alert-success d-flex align-items-center mb-4 border-0 shadow-sm" role="alert">
-                <i className="bi bi-check-circle-fill me-2 fs-5"></i>
+                <FaCheckCircle className="me-2 fs-5" />
                 <div>{success}</div>
               </div>
             )}
@@ -195,9 +194,13 @@ export default function CrearObservacion() {
               </div>
             )}
 
-            {/* Selector de Ticket */}
-            <div className="card shadow-sm border-0 rounded-3 p-4 mb-4">
-              <h5 className="mb-3">1. Seleccionar Ticket</h5>
+            <div className="mb-4 border-bottom pb-3">
+              <h5 className="text-dark mb-1">Detalles de la Solicitud</h5>
+              <span className="text-muted" style={{ fontSize: '13px' }}>Agrega las fallas técnicas específicas al ticket seleccionado</span>
+            </div>
+
+            {/* Paso 1: Selección de Ticket */}
+            <div className="mb-4">
               <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>TICKET ABIERTO</label>
               <select 
                 className="form-select"
@@ -212,11 +215,18 @@ export default function CrearObservacion() {
                   </option>
                 ))}
               </select>
+              {tickets.length === 0 && !loadingTickets && (
+                <div className="mt-2 text-danger small" style={{ fontSize: '12px' }}>
+                  No tienes tickets abiertos. Primero crea uno nuevo.
+                </div>
+              )}
             </div>
 
-            {/* Listado de Observaciones */}
-            <div className="card shadow-sm border-0 rounded-3 p-4 mb-4">
-              <h5 className="mb-4">2. Observaciones ({observaciones.length})</h5>
+            <hr className="my-4 text-muted" />
+
+            {/* Paso 2: Observaciones */}
+            <div className="mb-4">
+              <h6 className="fw-bold mb-3" style={{ color: '#003860' }}>Observaciones ({observaciones.length})</h6>
 
               {observaciones.length > 0 && (
                 <div className="row g-3 mb-4">
@@ -225,12 +235,12 @@ export default function CrearObservacion() {
                       <div className="card border-light shadow-none bg-light border-start border-4 border-primary">
                         <div className="card-body d-flex justify-content-between align-items-center py-2">
                           <div>
-                            <span className="fw-bold text-primary">#{index + 1}</span>
-                            <span className="ms-2 fw-semibold">{obs.falla}</span>
-                            <span className="ms-2 text-muted small">| {obs.ubicacion_exacta}</span>
+                            <span className="fw-bold text-primary" style={{ fontSize: '13px' }}>#{index + 1}</span>
+                            <span className="ms-2 fw-semibold" style={{ fontSize: '14px' }}>{obs.falla}</span>
+                            <span className="ms-2 text-muted" style={{ fontSize: '12px' }}>| {obs.ubicacion_exacta}</span>
                           </div>
                           <button type="button" className="btn btn-link text-danger p-0" onClick={() => handleRemoveObservation(obs.id)}>
-                            <i className="bi bi-trash"></i>
+                            <FaTrash size={14} />
                           </button>
                         </div>
                       </div>
@@ -241,16 +251,16 @@ export default function CrearObservacion() {
 
               {isAddingObservation ? (
                 <div className="p-4 border rounded-3 bg-light mb-3">
-                  <h6 className="fw-bold mb-3" style={{ color: '#003860' }}>Nueva Observación</h6>
+                  <h6 className="fw-bold mb-4" style={{ fontSize: '15px', color: '#333' }}>Nueva Observación</h6>
                   
                   <div className="mb-3">
-                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>FALLA</label>
-                    <input type="text" className="form-control" placeholder="Ej: Filtración" value={newObservation.falla} onChange={(e) => setNewObservation({...newObservation, falla: e.target.value})} />
+                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>¿QUÉ FALLA ENCONTRASTE?</label>
+                    <input type="text" className="form-control" placeholder="Ej: Filtración de agua" value={newObservation.falla} onChange={(e) => setNewObservation({...newObservation, falla: e.target.value})} />
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>UBICACIÓN</label>
-                    <input type="text" className="form-control" placeholder="Ej: Baño principal" value={newObservation.ubicacion_exacta} onChange={(e) => setNewObservation({...newObservation, ubicacion_exacta: e.target.value})} />
+                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>UBICACIÓN EXACTA</label>
+                    <input type="text" className="form-control" placeholder="Ej: Baño principal, bajo el lavamanos" value={newObservation.ubicacion_exacta} onChange={(e) => setNewObservation({...newObservation, ubicacion_exacta: e.target.value})} />
                   </div>
 
                   <div className="row g-3 mb-3">
@@ -275,45 +285,75 @@ export default function CrearObservacion() {
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>DESCRIPCIÓN</label>
-                    <textarea className="form-control" rows="2" value={newObservation.descripcion_problema} onChange={(e) => setNewObservation({...newObservation, descripcion_problema: e.target.value})}></textarea>
+                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>DESCRIPCIÓN DETALLADA</label>
+                    <textarea className="form-control" rows="2" placeholder="Explica brevemente el problema..." value={newObservation.descripcion_problema} onChange={(e) => setNewObservation({...newObservation, descripcion_problema: e.target.value})}></textarea>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="form-label text-secondary fw-semibold d-block" style={{ fontSize: '12px' }}>EVIDENCIA FOTOGRÁFICA</label>
+                    <div className="d-flex gap-2 flex-wrap">
+                      {newObservation.fotos.map((f, i) => (
+                        <div key={i} className="position-relative" style={{ width: '70px', height: '70px' }}>
+                          <img src={URL.createObjectURL(f)} className="w-100 h-100 object-fit-cover rounded border" alt="preview" />
+                          <button type="button" className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style={{ width: '20px', height: '20px', borderRadius: '50%', marginTop: '-5px', marginRight: '-5px' }} onClick={() => handleRemovePhoto(i)}>×</button>
+                        </div>
+                      ))}
+                      {newObservation.fotos.length < 4 && (
+                        <label className="d-flex flex-column align-items-center justify-content-center border border-dashed rounded bg-white cursor-pointer hover-bg-light" style={{ width: '70px', height: '70px', transition: 'all 0.2s' }}>
+                          <FaCamera className="text-secondary mb-1" />
+                          <span style={{ fontSize: '10px' }} className="text-muted text-uppercase fw-bold">Subir</span>
+                          <input type="file" className="d-none" accept="image/*" onChange={handlePhotoChange} multiple />
+                        </label>
+                      )}
+                    </div>
                   </div>
 
                   <div className="d-flex gap-2 justify-content-end">
-                    <button type="button" className="btn btn-outline-secondary btn-sm px-3" onClick={() => setIsAddingObservation(false)}>Cancelar</button>
-                    <button type="button" className="btn btn-primary btn-sm px-4" onClick={handleSaveObservation}>Agregar</button>
+                    <button type="button" className="btn btn-outline-secondary btn-sm px-4" onClick={() => setIsAddingObservation(false)}>Cancelar</button>
+                    <button type="button" className="btn btn-primary btn-sm px-4 fw-bold" onClick={handleSaveObservation}>Aceptar</button>
                   </div>
                 </div>
               ) : (
                 <button 
                   type="button" 
                   className="btn btn-outline-primary w-100 border-dashed py-3 fw-bold" 
+                  style={{ borderStyle: 'dashed', borderRadius: '8px', fontSize: '14px' }}
                   onClick={() => setIsAddingObservation(true)}
                   disabled={!selectedTicketId}
                 >
-                  <i className="bi bi-plus-circle me-2"></i> Agregar observación
+                  <FaPlusCircle className="me-2" /> Agregar Nueva Observación
                 </button>
               )}
             </div>
 
             <div className="d-flex justify-content-end gap-2 border-top pt-4">
-              <button className="btn btn-outline-secondary px-4" onClick={() => navigate(-1)}>Cancelar</button>
+              <button className="btn btn-outline-secondary px-4" onClick={handleVolver}>Cancelar</button>
               <button 
-                className="btn btn-success px-5 fw-bold"
+                className="btn px-5 fw-bold text-white"
+                style={{ backgroundColor: '#0B3B60' }}
                 onClick={handleSubmitAll}
                 disabled={observaciones.length === 0 || loading || !selectedTicketId}
               >
-                {loading ? 'Guardando...' : 'Guardar observaciones'}
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Guardando...
+                  </>
+                ) : (
+                  'Guardar todas las observaciones'
+                )}
               </button>
             </div>
           </div>
-        </main>
+        </div>
+
         <Footer />
       </div>
-
+      
       <style dangerouslySetInnerHTML={{ __html: `
         .border-dashed { border-style: dashed !important; }
         .object-fit-cover { object-fit: cover; }
+        .hover-bg-light:hover { background-color: #f8f9fa !important; border-color: #0d6efd !important; }
       `}} />
     </div>
   );
