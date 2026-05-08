@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
-import NavbarAdmin from '../../components/NavbarAdmin';
-import Footer from '../../components/Footer';
-import CardTicket from '../../components/CardTicket';
+import { useEffect, useState } from 'react';
+import { FaTicketAlt, FaClipboardList, FaExclamationTriangle, FaChartBar } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
+import KPICard from '../../components/dashboard/KPICard';
+import TopFallasChart from '../../components/dashboard/TopFallasChart';
+import { obtenerEstadisticas, obtenerTopFallas } from '../../services/dashboardService';
 
 export default function IndexAdmin() {
-  const [obraId, setObraId] = useState('1');
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalTickets: 0,
+    ticketsAbiertos: 0,
+    observacionesAbiertas: 0,
+    observacionesAltaUrgencia: 0
+  });
+  const [topFallas, setTopFallas] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
   // Usuario de prueba o extraído de localStorage
@@ -16,40 +22,28 @@ export default function IndexAdmin() {
     rol: 'admin'
   };
 
-  const totalObservaciones = useMemo(
-    () => tickets.reduce((acc, ticket) => acc + (ticket.observaciones?.length || 0), 0),
-    [tickets]
-  );
+  useEffect(() => {
+    cargarDatosDashboard();
+  }, []);
 
-  const cargarTickets = async (idObra) => {
+  const cargarDatosDashboard = async () => {
     setLoading(true);
     setError('');
     try {
-      // Ajusta este endpoint a tu ruta de backend
-      const response = await fetch(`/api/tickets/detalle/obra/${idObra}`);
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'No se pudieron cargar los tickets');
-      }
-
-      setTickets(data.data || []);
+      // Cargar estadísticas y top fallas en paralelo
+      const [estadisticas, fallas] = await Promise.all([
+        obtenerEstadisticas(),
+        obtenerTopFallas()
+      ]);
+      
+      setStats(estadisticas);
+      setTopFallas(fallas);
     } catch (err) {
-      setTickets([]);
-      setError(err.message);
+      console.error('Error al cargar datos del dashboard:', err);
+      setError('Error al cargar los datos del dashboard');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    cargarTickets(obraId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    cargarTickets(obraId);
   };
 
   return (
@@ -57,68 +51,125 @@ export default function IndexAdmin() {
       usuario={usuarioLogueado} 
       titulo="Dashboard Administrador"
     >
-            {/* Barra de Navegación Superior */}
-
-          {/* Buscador por ID Obra */}
-          <div className="card shadow-sm border-0 mb-4">
-            <div className="card-body">
-              <form className="row g-3 align-items-end" onSubmit={handleSubmit}>
-                <div className="col-md-6 col-lg-4">
-                  <label className="form-label fw-semibold" htmlFor="obraId">ID de Obra</label>
-                  <input
-                    id="obraId"
-                    type="number"
-                    min="1"
-                    className="form-control"
-                    value={obraId}
-                    onChange={(e) => setObraId(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="col-md-auto">
-                  <button className="btn btn-primary w-100 text-white" type="submit" style={{ backgroundColor: '#003860', borderColor: '#003860' }} disabled={loading}>
-                    {loading ? 'Cargando...' : 'Buscar tickets'}
-                  </button>
-                </div>
-              </form>
-            </div>
+      <div className="container-fluid py-4">
+        {error && (
+          <div className="alert alert-danger alert-dismissible fade show" role="alert">
+            {error}
+            <button type="button" className="btn-close" onClick={() => setError('')}></button>
           </div>
+        )}
 
-          {/* Tarjetas de estadísticas */}
-          <div className="row g-3 mb-4">
-            <div className="col-12 col-md-6 col-lg-3">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body">
-                  <p className="text-uppercase text-secondary small mb-1">Tickets encontrados</p>
-                  <p className="display-6 mb-0 fw-bold">{tickets.length}</p>
+        {loading ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Cargando...</span>
+            </div>
+            <p className="mt-3 text-muted">Cargando estadísticas...</p>
+          </div>
+        ) : (
+          <>
+            {/* KPIs - Tarjetas de estadísticas */}
+            <div className="row g-4 mb-4">
+              <div className="col-12 col-sm-6 col-lg-3">
+                <KPICard
+                  titulo="Total de Tickets"
+                  valor={stats.totalTickets}
+                  icono={<FaTicketAlt />}
+                  color="primary"
+                />
+              </div>
+              <div className="col-12 col-sm-6 col-lg-3">
+                <KPICard
+                  titulo="Tickets Abiertos"
+                  valor={stats.ticketsAbiertos}
+                  icono={<FaClipboardList />}
+                  color="info"
+                />
+              </div>
+              <div className="col-12 col-sm-6 col-lg-3">
+                <KPICard
+                  titulo="Observaciones Abiertas"
+                  valor={stats.observacionesAbiertas}
+                  icono={<FaChartBar />}
+                  color="success"
+                />
+              </div>
+              <div className="col-12 col-sm-6 col-lg-3">
+                <KPICard
+                  titulo="Alta Urgencia"
+                  valor={stats.observacionesAltaUrgencia}
+                  icono={<FaExclamationTriangle />}
+                  color="danger"
+                />
+              </div>
+            </div>
+
+            {/* Gráfico de Top Fallas */}
+            <div className="row g-4">
+              <div className="col-12 col-lg-8">
+                <TopFallasChart datos={topFallas} />
+              </div>
+              
+              {/* Panel de acciones rápidas */}
+              <div className="col-12 col-lg-4">
+                <div className="card border-0 shadow-sm">
+                  <div className="card-body">
+                    <h5 className="card-title mb-4">Acciones Rápidas</h5>
+                    <div className="d-grid gap-2">
+                      <button 
+                        className="btn btn-primary text-white"
+                        style={{ backgroundColor: '#003860', borderColor: '#003860' }}
+                        onClick={() => window.location.href = '/crear-obra'}
+                      >
+                        <FaTicketAlt className="me-2" />
+                        Nueva Obra
+                      </button>
+                      <button 
+                        className="btn btn-outline-primary"
+                        onClick={() => window.location.href = '/crear-cliente'}
+                      >
+                        Nuevo Cliente
+                      </button>
+                      <button 
+                        className="btn btn-outline-secondary"
+                        onClick={() => window.location.href = '/crear-usuario'}
+                      >
+                        Nuevo Usuario
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Resumen rápido */}
+                <div className="card border-0 shadow-sm mt-4">
+                  <div className="card-body">
+                    <h5 className="card-title mb-3">Resumen</h5>
+                    <ul className="list-unstyled mb-0">
+                      <li className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="text-muted small">Tasa de Tickets Abiertos</span>
+                        <span className="badge bg-info">
+                          {stats.totalTickets > 0 
+                            ? `${Math.round((stats.ticketsAbiertos / stats.totalTickets) * 100)}%`
+                            : '0%'
+                          }
+                        </span>
+                      </li>
+                      <li className="d-flex justify-content-between align-items-center">
+                        <span className="text-muted small">Observaciones Críticas</span>
+                        <span className="badge bg-danger">
+                          {stats.observacionesAltaUrgencia}
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="col-12 col-md-6 col-lg-3">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body">
-                  <p className="text-uppercase text-secondary small mb-1">Observaciones Totales</p>
-                  <p className="display-6 mb-0 fw-bold">{totalObservaciones}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {error && <div className="alert alert-danger">{error}</div>}
-
-          {/* Listado de tickets */}
-          <div className="row g-4">
-            {tickets.length > 0 ? (
-              tickets.map((ticket) => (
-                <div className="col-md-6 col-lg-4" key={ticket.id_ticket}>
-                  <CardTicket ticket={ticket} />
-                </div>
-              ))
-            ) : (
-              !loading && <div className="alert alert-light border">No hay tickets para esta obra en el sistema.</div>
-            )}
-          </div>
-        <Footer />
-      </AdminLayout>
+          </>
+        )}
+      </div>
+    </AdminLayout>
   );
 }
+
+// Made with Bob
