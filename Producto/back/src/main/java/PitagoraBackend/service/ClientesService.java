@@ -41,6 +41,14 @@ public class ClientesService {
             throw new IllegalArgumentException("Estado inválido. Debe ser: 'Activo' o 'Inactivo'");
         }
         
+        // Validar ubicación geográfica
+        if (cliente.getIdRegion() == null) {
+            throw new IllegalArgumentException("La región es requerida");
+        }
+        if (cliente.getIdComuna() == null) {
+            throw new IllegalArgumentException("La comuna es requerida");
+        }
+
         // La fechaCreacion se establece automáticamente
         if (cliente.getFechaCreacion() == null) {
             cliente.setFechaCreacion(LocalDateTime.now());
@@ -94,6 +102,14 @@ public class ClientesService {
 
         if (clienteActualizado.getDireccionCalle() != null) {
             clienteExistente.setDireccionCalle(clienteActualizado.getDireccionCalle());
+        }
+
+        if (clienteActualizado.getIdRegion() != null) {
+            clienteExistente.setIdRegion(clienteActualizado.getIdRegion());
+        }
+
+        if (clienteActualizado.getIdComuna() != null) {
+            clienteExistente.setIdComuna(clienteActualizado.getIdComuna());
         }
 
         if (clienteActualizado.getIdRegion() != null) {

@@ -17,7 +17,6 @@ const CrearObra = () => {
     nombreObra: '',
     descripcionObra: '',
     calle: '',
-    numeracion: '',
     idRegion: '',
     idComuna: '',
     planosPresupuestos: '',
@@ -121,9 +120,6 @@ const CrearObra = () => {
     } else if (name === 'calle') {
       setFormData({ ...formData, [name]: value });
       newErrors.calle = value.trim() === '' ? 'La calle es requerida' : '';
-    } else if (name === 'numeracion') {
-      setFormData({ ...formData, [name]: value });
-      newErrors.numeracion = value.trim() === '' ? 'La numeración es requerida' : '';
     } else if (name === 'idComuna') {
       setFormData({ ...formData, [name]: value });
       newErrors.idComuna = value === '' ? 'Debes seleccionar una comuna' : '';
@@ -165,6 +161,7 @@ const CrearObra = () => {
   };
 
   const handleVolver = () => {
+    console.log('Volver al dashboard');
     navigate('/admin-dashboard');
   };
 
@@ -191,9 +188,6 @@ const CrearObra = () => {
     }
     if (!formData.calle.trim()) {
       newErrors.calle = 'La calle es requerida';
-    }
-    if (!formData.numeracion.trim()) {
-      newErrors.numeracion = 'La numeración es requerida';
     }
     if (!formData.idComuna) {
       newErrors.idComuna = 'Debes seleccionar una comuna';
@@ -222,7 +216,7 @@ const CrearObra = () => {
         idCliente: parseInt(formData.idCliente),
         nombreObra: formData.nombreObra,
         descripcionObra: formData.descripcionObra,
-        direccion: `${formData.calle} ${formData.numeracion}`,
+        direccion: `${formData.calle}`,
         idRegion: parseInt(formData.idRegion),
         idComuna: parseInt(formData.idComuna),
         planosPresupuestos: formData.planosPresupuestos || null,
@@ -357,8 +351,7 @@ const CrearObra = () => {
             </div>
 
             {/* Dirección - Calle y Numeración */}
-            <div className="row g-3 mb-3">
-              <div className="col-md-8">
+            <div className="mb-3">
                 <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Calle *</label>
                 <input
                   type="text"
@@ -374,24 +367,6 @@ const CrearObra = () => {
                     {errors.calle}
                   </div>
                 )}
-              </div>
-              <div className="col-md-4">
-                <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Numeración *</label>
-                <input
-                  type="text"
-                  className={`form-control ${errors.numeracion ? 'is-invalid' : ''}`}
-                  name="numeracion"
-                  value={formData.numeracion}
-                  onChange={handleInputChange}
-                  placeholder="Ej: 1234"
-                  required
-                />
-                {errors.numeracion && (
-                  <div className="invalid-feedback">
-                    {errors.numeracion}
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Comuna */}
