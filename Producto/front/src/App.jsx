@@ -4,6 +4,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css'; // npm install bootstrap-icon
 import Login from './pages/login';
 import IndexAdmin from './pages/admin/IndexAdmin';
 import IndexUsuario from './pages/cliente/IndexUsuario';
+import CrearTicket from './pages/cliente/CrearTicket';
+import CrearObservacion from './pages/cliente/CrearObservacion';
 import Formulario from './pages/tests/formulario';
 import GestionUsuario from './pages/admin/GestionUsuario';
 import CrearUsuario from './pages/admin/CrearUsuario';
@@ -19,6 +21,9 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/admin-dashboard" element={<IndexAdmin />} />
       <Route path="/dashboard" element={<IndexUsuario />} />
+      <Route path="/crear-ticket" element={<CrearTicket />} />
+      <Route path="/crear-observacion" element={<CrearObservacion />} />
+      <Route path="/crear-observacion/:id_ticket" element={<CrearObservacion />} />
       <Route path="/formulario-test" element={<Formulario />} />
 
       <Route path="/admin/crear-cliente" element={<CrearCliente />} />

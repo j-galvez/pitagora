@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import NavbarUsuario from '../../components/NavbarUsuario';
 import Footer from '../../components/Footer';
 import CardTicket from '../../components/CardTicket';
@@ -7,6 +8,7 @@ export default function IndexUsuario() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const usuarioLogueado = JSON.parse(localStorage.getItem('usuario')) || {
     nombre: 'Juan Pérez',
@@ -47,9 +49,19 @@ export default function IndexUsuario() {
           </div>
         </nav>
         <main className="p-4 flex-grow-1">
-          <div className="mb-4">
-            <h1 className="h3 mb-1" style={{ color: '#003860', fontWeight: 'bold' }}>Mis Solicitudes</h1>
-            <p className="text-secondary mb-0">Revisa el estado de tus tickets y observaciones de postventa.</p>
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h1 className="h3 mb-1" style={{ color: '#003860', fontWeight: 'bold' }}>Mis Solicitudes</h1>
+              <p className="text-secondary mb-0">Revisa el estado de tus tickets y observaciones de postventa.</p>
+            </div>
+            <button 
+              className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+              onClick={() => navigate('/crear-ticket')}
+              style={{ backgroundColor: '#003860', borderColor: '#003860' }}
+            >
+              <i className="bi bi-plus-lg"></i>
+              <span>Nueva Solicitud</span>
+            </button>
           </div>
 
           {error && <div className="alert alert-danger">{error}</div>}

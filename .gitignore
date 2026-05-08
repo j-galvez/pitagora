@@ -3,6 +3,10 @@ node_modules/
 dist/
 dist-ssr/
 build/
+bin/
+out/
+.gradle/
+*.class
 
 # Variables de Entorno (Seguridad crítica)
 .env
@@ -19,3 +23,5 @@ yarn-debug.log*
 .vscode/
 .idea/
 *.swp
+
+application.properties
