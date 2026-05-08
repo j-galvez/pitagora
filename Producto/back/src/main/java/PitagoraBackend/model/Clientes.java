@@ -27,17 +27,23 @@ public class Clientes {
     @Column(name = "nombre_empresa", nullable = false, length = 150)
     private String nombreEmpresa;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(name = "rut", nullable = false, unique = true, length = 20)
     private String rut;
 
     @Column(name = "correo_contacto", length = 100)
     private String correoContacto;
 
-    @Column(length = 20)
+    @Column(name = "telefono", length = 20)
     private String telefono;
 
-    @Column(name = "direccion_calle", length = 255)
-    private String direccion;
+    @Column(name = "direccion_calle", columnDefinition = "TEXT")
+    private String direccionCalle;
+
+    @Column(name = "id_region")
+    private Integer idRegion;
+
+    @Column(name = "id_comuna")
+    private Integer idComuna;
 
     @Column(name = "id_region")
     private Integer idRegion;
@@ -48,8 +54,7 @@ public class Clientes {
     @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaCreacion;
 
-    @Column(nullable = false, length = 10)
+    @Column(name = "estado", nullable = false, length = 10)
     private String estado; // 'Activo', 'Inactivo'
 }
 
-// Made with Bob
