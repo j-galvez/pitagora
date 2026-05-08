@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { FaEdit, FaSave, FaTimes } from 'react-icons/fa';
 
 const UsuarioForm = ({
   usuario,
@@ -46,6 +47,11 @@ const UsuarioForm = ({
     setFieldError('');
   };
 
+  const handleSelectChange = (e) => {
+    setTempValue(e.target.value);
+    setFieldError('');
+  };
+
   const saveField = async () => {
     if (!editingField) return;
 
@@ -83,7 +89,7 @@ const UsuarioForm = ({
         <div className="input-group">
           {isEditing ? (
             options ? (
-              <select className="form-select" value={tempValue} onChange={handleTempChange}>
+              <select className="form-select" value={tempValue} onChange={handleSelectChange}>
                 {options.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -97,6 +103,7 @@ const UsuarioForm = ({
                 value={tempValue}
                 onChange={handleTempChange}
                 placeholder={placeholder}
+                autoFocus
               />
             )
           ) : (
@@ -111,11 +118,12 @@ const UsuarioForm = ({
           {!readOnly && (
             <button
               type="button"
-              className={`btn ${isEditing ? 'btn-success' : 'btn-outline-primary'}`}
+              className={`btn btn-outline-${isEditing ? 'success' : 'primary'}`}
               onClick={isEditing ? saveField : () => startEditing(name)}
               disabled={loading}
+              title={isEditing ? 'Guardar' : 'Editar'}
             >
-              {isEditing ? 'Guardar' : 'Editar'}
+              {isEditing ? <FaSave /> : <FaEdit />}
             </button>
           )}
           {isEditing && (
@@ -124,8 +132,9 @@ const UsuarioForm = ({
               className="btn btn-outline-secondary"
               onClick={cancelEditing}
               disabled={loading}
+              title="Cancelar"
             >
-              Cancelar
+              <FaTimes />
             </button>
           )}
         </div>
