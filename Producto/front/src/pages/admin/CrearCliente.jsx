@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaBuilding, FaArrowLeft } from 'react-icons/fa';
@@ -18,9 +18,14 @@ const CrearCliente = () => {
     correoContacto: '',
     telefono: '',
     direccion: '',
+    idRegion: '',
+    idComuna: '',
     estado: 'Activo'
   });
 
+  const [regiones, setRegiones] = useState([]);
+  const [comunas, setComunas] = useState([]);
+  const [comunasFiltradas, setComunasFiltradas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
@@ -78,6 +83,45 @@ const CrearCliente = () => {
     return soloNumeros.length === 9;
   };
 
+  const cargarRegiones = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/regiones');
+      if (!response.ok) throw new Error('Error al cargar regiones');
+      const data = await response.json();
+      setRegiones(data);
+    } catch (err) {
+      console.error('Error al cargar regiones:', err);
+    }
+  };
+
+  const cargarComunas = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/comunas');
+      if (!response.ok) throw new Error('Error al cargar comunas');
+      const data = await response.json();
+      setComunas(data);
+    } catch (err) {
+      console.error('Error al cargar comunas:', err);
+    }
+  };
+
+  useEffect(() => {
+    cargarRegiones();
+    cargarComunas();
+  }, []);
+
+  const filtrarComunasPorRegion = (regionId) => {
+    if (!regionId) {
+      setComunasFiltradas([]);
+      return;
+    }
+    const filtered = comunas.filter((comuna) => {
+      const comunaRegionId = comuna.idRegion || comuna.id_region;
+      return comunaRegionId === parseInt(regionId, 10);
+    });
+    setComunasFiltradas(filtered);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     let newErrors = { ...errors };
@@ -88,46 +132,18 @@ const CrearCliente = () => {
     } else if (name === 'rut') {
       const rutFormateado = formatearRUT(value);
       setFormData({ ...formData, [name]: rutFormateado });
-      
-      // Validar RUT chileno (formato limpio: XXXXXXXXX-X o XX.XXX.XXX-X)
-  const validarRUT = (rutCompleto) => {
-    // 1. Limpiamos todos los caracteres que no sean números o la letra K
-    const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
-    if (rutLimpio.length < 7) return false;
-
-    // Obtenemos los números del cuerpo y el dígito verificador por separado
-    const numeros = rutLimpio.slice(0, -1);
-    const dv = rutLimpio.slice(-1);
-
-    if (!/^\d+$/.test(numeros)) return false;
-
-    // 2. Algoritmo de suma ponderada
-    let suma = 0;
-    let multiplicador = 2;
-
-    for (let i = numeros.length - 1; i >= 0; i--) {
-      suma += parseInt(numeros[i]) * multiplicador;
-      multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
-    }
-
-    const dvEsperado = 11 - (suma % 11);
-    let dvCalculado = '';
-    
-    if (dvEsperado === 11) {
-      dvCalculado = '0';
-    } else if (dvEsperado === 10) {
-      dvCalculado = 'K';
-    } else {
-      dvCalculado = dvEsperado.toString();
-    }
-
-    return dv === dvCalculado;
-  };
-
-      newErrors.telefono = ''; 
+      newErrors.rut = rutFormateado.trim() === '' ? 'El RUT es requerido' : '';
     } else if (name === 'direccion') {
       setFormData({ ...formData, [name]: value });
       newErrors.direccion = value.trim() === '' ? 'La dirección es requerida' : '';
+    } else if (name === 'idRegion') {
+      setFormData({ ...formData, idRegion: value, idComuna: '' });
+      newErrors.idRegion = value === '' ? 'Debes seleccionar una región' : '';
+      newErrors.idComuna = '';
+      filtrarComunasPorRegion(value);
+    } else if (name === 'idComuna') {
+      setFormData({ ...formData, idComuna: value });
+      newErrors.idComuna = value === '' ? 'Debes seleccionar una comuna' : '';
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -181,6 +197,12 @@ const CrearCliente = () => {
     if (!formData.direccion.trim()) {
       newErrors.direccion = 'La dirección es requerida';
     }
+    if (!formData.idRegion) {
+      newErrors.idRegion = 'Debes seleccionar una región';
+    }
+    if (!formData.idComuna) {
+      newErrors.idComuna = 'Debes seleccionar una comuna';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -195,6 +217,8 @@ const CrearCliente = () => {
         correoContacto: formData.correoContacto,
         telefono: formData.telefono,
         direccion: formData.direccion,
+        idRegion: parseInt(formData.idRegion, 10),
+        idComuna: parseInt(formData.idComuna, 10),
         estado: formData.estado
       };
 
@@ -349,6 +373,71 @@ const CrearCliente = () => {
               {errors.direccion && (
                 <div className="invalid-feedback">
                   {errors.direccion}
+                </div>
+              )}
+            </div>
+
+            {/* Región */}
+            <div className="mb-3">
+              <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Región *</label>
+              <select
+                className={`form-select ${errors.idRegion ? 'is-invalid' : ''}`}
+                name="idRegion"
+                value={formData.idRegion}
+                onChange={handleInputChange}
+              >
+                <option value="">Selecciona una región</option>
+                {regiones.length === 0 ? (
+                  <option value="" disabled>No hay regiones cargadas</option>
+                ) : (
+                  regiones.map((region) => {
+                    const regionId = region.idRegion || region.id_region;
+                    const regionNombre = region.nombreRegion || region.nombre_region;
+                    return (
+                      <option key={regionId} value={regionId}>
+                        {regionNombre}
+                      </option>
+                    );
+                  })
+                )}
+              </select>
+              {errors.idRegion && (
+                <div className="invalid-feedback">
+                  {errors.idRegion}
+                </div>
+              )}
+            </div>
+
+            {/* Comuna */}
+            <div className="mb-3">
+              <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Comuna *</label>
+              <select
+                className={`form-select ${errors.idComuna ? 'is-invalid' : ''}`}
+                name="idComuna"
+                value={formData.idComuna}
+                onChange={handleInputChange}
+                disabled={!formData.idRegion}
+              >
+                <option value="">{formData.idRegion ? 'Selecciona una comuna' : 'Selecciona región primero'}</option>
+                {comunasFiltradas.length === 0 ? (
+                  formData.idRegion ? (
+                    <option value="" disabled>No hay comunas para esa región</option>
+                  ) : null
+                ) : (
+                  comunasFiltradas.map((comuna) => {
+                    const comunaId = comuna.idComuna || comuna.id_comuna;
+                    const comunaNombre = comuna.nombreComuna || comuna.nombre_comuna;
+                    return (
+                      <option key={comunaId} value={comunaId}>
+                        {comunaNombre}
+                      </option>
+                    );
+                  })
+                )}
+              </select>
+              {errors.idComuna && (
+                <div className="invalid-feedback">
+                  {errors.idComuna}
                 </div>
               )}
             </div>
