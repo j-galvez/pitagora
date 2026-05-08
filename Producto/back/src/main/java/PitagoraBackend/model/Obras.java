@@ -34,7 +34,7 @@ public class Obras {
     @Column(name = "descripcion_obra", columnDefinition = "TEXT")
     private String descripcionObra;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "direccion_calle", columnDefinition = "TEXT")
     private String direccion;
 
     @Column(name = "id_region", nullable = false)

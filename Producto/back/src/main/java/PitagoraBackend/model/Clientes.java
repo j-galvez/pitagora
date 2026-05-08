@@ -36,8 +36,14 @@ public class Clientes {
     @Column(length = 20)
     private String telefono;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "direccion_calle", length = 255)
     private String direccion;
+
+    @Column(name = "id_region")
+    private Integer idRegion;
+
+    @Column(name = "id_comuna")
+    private Integer idComuna;
 
     @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaCreacion;
