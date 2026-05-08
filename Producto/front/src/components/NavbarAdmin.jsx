@@ -66,6 +66,10 @@ export default function NavbarAdmin({ usuario }) {
             style={{ backgroundColor: location.pathname.includes('/crear-observacion') ? '#003860' : 'transparent' }}
           >
             <i className="bi bi-search me-2"></i> Crear Observación
+          </Link>
+        </li>
+        <li className="nav-item mb-2">
+          <Link 
             to="/admin/crear-cliente" 
             className={`nav-link text-white ${location.pathname === '/admin/crear-cliente' ? 'active' : ''}`}
             style={{ backgroundColor: location.pathname === '/admin/crear-cliente' ? '#003860' : 'transparent' }}
