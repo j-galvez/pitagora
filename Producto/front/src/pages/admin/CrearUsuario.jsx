@@ -34,6 +34,7 @@ const CrearUsuario = () => {
   const [obras, setObras] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
   const [telefonoError, setTelefonoError] = useState('');
   const [runError, setRunError] = useState('');
 
@@ -109,11 +110,11 @@ const CrearUsuario = () => {
     const runLimpio = value.replace(/[^0-9kK]/g, '').toUpperCase();
     if (runLimpio.length === 0) return '';
     
-    const cuerpo = runLimpio.slice(0, -1);
+    const numeros = runLimpio.slice(0, -1);
     const dv = runLimpio.slice(-1);
     
-    const cuerpoFormateado = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return cuerpoFormateado ? `${cuerpoFormateado}-${dv}` : '';
+    let rutFormateado = numeros.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return dv ? rutFormateado + '-' + dv : rutFormateado;
   };
 
   const validarCorreo = (value) => {
@@ -134,13 +135,13 @@ const CrearUsuario = () => {
         return;
       }
       
+      setFormData({ ...formData, [name]: soloNumeros });
+      
       if (soloNumeros.length > 0 && soloNumeros.length !== 9) {
         setTelefonoError('El teléfono debe tener exactamente 9 dígitos.');
       } else {
         setTelefonoError('');
       }
-      
-      setFormData({ ...formData, [name]: soloNumeros });
       return;
     }
 
@@ -155,6 +156,16 @@ const CrearUsuario = () => {
       } else {
         setRunError('');
       }
+      return;
+    }
+
+    if (name === 'correo') {
+      setFormData({ ...formData, [name]: value });
+      let correoError = '';
+      if (value && !validarCorreo(value)) {
+        correoError = 'Formato de correo inválido. Ej: usuario@empresa.com';
+      }
+      setErrors({ ...errors, correo: correoError });
       return;
     }
 
@@ -487,7 +498,7 @@ const CrearUsuario = () => {
               </div>
             </div>
 
-            <div className="row g-3 mb-3">
+            <div className="mb-3">
               <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Calle</label>
               <div className="input-group col-md-6">
                 <input
