@@ -79,13 +79,14 @@ const GestionUsuario = () => {
   };
 
   const handleEditClick = (usuario) => {
-    navigate(`/admin/usuarios/${usuario.id_usuario}`);
+    const userId = usuario.id_usuario || usuario.idUsuario;
+    navigate(`/admin/usuarios/${userId}`);
   };
 
   const filteredUsuarios = usuarios.filter((u) => {
     const lowerSearch = searchTerm.toLowerCase();
     const matchesSearch =
-      u.nombre?.toLowerCase().includes(lowerSearch) ||
+      `${u.nombre || ''} ${u.apellidoPaterno || ''} ${u.apellidoMaterno || ''}`.toLowerCase().includes(lowerSearch) ||
       u.correo?.toLowerCase().includes(lowerSearch) ||
       u.telefono?.includes(lowerSearch);
 
@@ -164,38 +165,44 @@ const GestionUsuario = () => {
                       </td>
                     </tr>
                   ) : filteredUsuarios.length > 0 ? (
-                    filteredUsuarios.map((u) => (
-                      <tr key={u.id_usuario} style={{ fontSize: '14px' }}>
-                        <td className="fw-semibold">{u.nombre}</td>
-                        <td>{u.correo}</td>
-                        <td>{u.telefono || '-'}</td>
-                        <td>
-                          <span className={`badge ${u.rol === 'admin' ? 'bg-primary' : 'bg-secondary'}`}>
-                            {u.rol === 'admin' ? 'Admin' : 'Usuario'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`badge ${u.estado === 'Activo' ? 'bg-success' : 'bg-danger'}`}>
-                            {u.estado}
-                          </span>
-                        </td>
-                        <td>{u.fecha_creacion ? new Date(u.fecha_creacion).toLocaleDateString('es-ES') : '-'}</td>
-                        <td>
-                          <button
-                            className="btn btn-light btn-sm text-primary me-2"
-                            onClick={() => handleEditClick(u)}
-                          >
-                            <FaEdit />
-                          </button>
-                          <button
-                            className="btn btn-light btn-sm text-danger"
-                            onClick={() => eliminarUsuario(u.id_usuario)}
-                          >
-                            <FaTrash />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    filteredUsuarios.map((u) => {
+                      const userId = u.id_usuario || u.idUsuario;
+                      const fullName = `${u.nombre || ''} ${u.apellidoPaterno || ''} ${u.apellidoMaterno || ''}`.trim();
+                      const roleLabel = u.rol === 'admin' ? 'Admin' : u.rol === 'cliente' ? 'Cliente' : u.rol;
+
+                      return (
+                        <tr key={userId} style={{ fontSize: '14px' }}>
+                          <td className="fw-semibold">{fullName || '-'} </td>
+                          <td>{u.correo || '-'}</td>
+                          <td>{u.telefono || '-'}</td>
+                          <td>
+                            <span className={`badge ${u.rol === 'admin' ? 'bg-primary' : 'bg-secondary'}`}>
+                              {roleLabel}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`badge ${u.estado === 'Activo' ? 'bg-success' : 'bg-danger'}`}>
+                              {u.estado || '-'}
+                            </span>
+                          </td>
+                          <td>{u.fecha_creacion ? new Date(u.fecha_creacion).toLocaleDateString('es-ES') : '-'}</td>
+                          <td>
+                            <button
+                              className="btn btn-light btn-sm text-primary me-2"
+                              onClick={() => handleEditClick(u)}
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              className="btn btn-light btn-sm text-danger"
+                              onClick={() => eliminarUsuario(userId)}
+                            >
+                              <FaTrash />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan="7" className="text-center text-muted py-3">

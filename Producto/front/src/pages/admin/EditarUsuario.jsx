@@ -14,7 +14,19 @@ const EditarUsuario = () => {
     rol: 'admin'
   };
   const [usuario, setUsuario] = useState(null);
-  const [formData, setFormData] = useState({ telefono: '', estado: 'Activo' });
+  const [formData, setFormData] = useState({
+    nombre: '',
+    apellidoPaterno: '',
+    apellidoMaterno: '',
+    correo: '',
+    telefono: '',
+    direccionCalle: '',
+    rol: '',
+    idObra: '',
+    idRegion: '',
+    idComuna: '',
+    estado: 'Activo'
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -30,7 +42,19 @@ const EditarUsuario = () => {
         }
         const data = await response.json();
         setUsuario(data);
-        setFormData({ telefono: data.telefono || '', estado: data.estado || 'Activo' });
+        setFormData({
+          nombre: data.nombre || '',
+          apellidoPaterno: data.apellidoPaterno || '',
+          apellidoMaterno: data.apellidoMaterno || '',
+          correo: data.correo || '',
+          telefono: data.telefono || '',
+          direccionCalle: data.direccionCalle || '',
+          rol: data.rol || '',
+          idObra: data.idObra != null ? data.idObra : '',
+          idRegion: data.idRegion != null ? data.idRegion : '',
+          idComuna: data.idComuna != null ? data.idComuna : '',
+          estado: data.estado || 'Activo'
+        });
       } catch (err) {
         setError(err.message || 'Error al cargar el usuario');
       } finally {
@@ -42,9 +66,30 @@ const EditarUsuario = () => {
     fetchUsuario();
   }, [id_usuario]);
 
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleFieldSave = async (name, value) => {
+    setLoading(true);
+    setError('');
+    try {
+      const payload = { [name]: value };
+      const response = await fetch(`http://localhost:8080/api/usuarios/${id_usuario}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Error al guardar el campo');
+      }
+
+      const updatedUsuario = await response.json();
+      setUsuario(updatedUsuario);
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    } catch (err) {
+      setError(err.message || 'Error al guardar el campo');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -56,7 +101,19 @@ const EditarUsuario = () => {
       const response = await fetch(`http://localhost:8080/api/usuarios/${id_usuario}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telefono: formData.telefono, estado: formData.estado }),
+        body: JSON.stringify({
+          nombre: formData.nombre,
+          apellidoPaterno: formData.apellidoPaterno,
+          apellidoMaterno: formData.apellidoMaterno,
+          correo: formData.correo,
+          telefono: formData.telefono,
+          direccionCalle: formData.direccionCalle,
+          rol: formData.rol,
+          idObra: formData.idObra || null,
+          idRegion: formData.idRegion || null,
+          idComuna: formData.idComuna || null,
+          estado: formData.estado,
+        }),
       });
 
       if (!response.ok) {
@@ -137,7 +194,7 @@ const EditarUsuario = () => {
           formData={formData}
           loading={loading}
           error={error}
-          onInputChange={handleInputChange}
+          onFieldSave={handleFieldSave}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
         />
