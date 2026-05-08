@@ -92,8 +92,16 @@ public class ClientesService {
             clienteExistente.setTelefono(clienteActualizado.getTelefono());
         }
 
-        if (clienteActualizado.getDireccion() != null) {
-            clienteExistente.setDireccion(clienteActualizado.getDireccion());
+        if (clienteActualizado.getDireccionCalle() != null) {
+            clienteExistente.setDireccionCalle(clienteActualizado.getDireccionCalle());
+        }
+
+        if (clienteActualizado.getIdRegion() != null) {
+            clienteExistente.setIdRegion(clienteActualizado.getIdRegion());
+        }
+
+        if (clienteActualizado.getIdComuna() != null) {
+            clienteExistente.setIdComuna(clienteActualizado.getIdComuna());
         }
 
         if (clienteActualizado.getEstado() != null && !clienteActualizado.getEstado().isEmpty()) {
