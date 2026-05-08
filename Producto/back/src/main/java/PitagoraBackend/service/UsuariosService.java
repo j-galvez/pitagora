@@ -15,19 +15,77 @@ public class UsuariosService {
 
     // CREATE
     public Usuarios crearUsuarios(Usuarios usuarios) {
-        // Validaciones básicas
+        if (usuarios.getRun() == null || usuarios.getRun().isEmpty()) {
+            throw new IllegalArgumentException("El RUN es requerido");
+        }
+        String runLimpio = usuarios.getRun().replaceAll("[^0-9kK]", "").toUpperCase();
+        if (!runLimpio.matches("^[0-9]+[0-9K]$")) {
+            throw new IllegalArgumentException("El RUN es inválido");
+        }
+        usuarios.setRun(runLimpio);
 
         if (usuarios.getNombre() == null || usuarios.getNombre().isEmpty()) {
             throw new IllegalArgumentException("El nombre es requerido");
         }
 
+        if (usuarios.getApellidoPaterno() == null || usuarios.getApellidoPaterno().isEmpty()) {
+            throw new IllegalArgumentException("El apellido paterno es requerido");
+        }
+
+        if (usuarios.getApellidoMaterno() == null || usuarios.getApellidoMaterno().isEmpty()) {
+            throw new IllegalArgumentException("El apellido materno es requerido");
+        }
+
         if (usuarios.getCorreo() == null || usuarios.getCorreo().isEmpty()) {
             throw new IllegalArgumentException("El correo es requerido");
+        }
+        if (!validarCorreo(usuarios.getCorreo())) {
+            throw new IllegalArgumentException("El correo es inválido");
         }
 
         // Verificar que el correo no exista
         if (usuariosRepository.existsByCorreo(usuarios.getCorreo())) {
             throw new IllegalArgumentException("El correo ya está registrado");
+        }
+
+        // Verificar que el RUN no exista
+        if (usuariosRepository.existsByRun(usuarios.getRun())) {
+            throw new IllegalArgumentException("El RUN ya está registrado");
+        }
+
+        if (usuarios.getPassword() == null || usuarios.getPassword().isEmpty()) {
+            throw new IllegalArgumentException("La contraseña es requerida");
+        }
+
+        if (usuarios.getRol() == null || usuarios.getRol().isEmpty()) {
+            throw new IllegalArgumentException("El rol es requerido");
+        }
+        if (!usuarios.getRol().equals("admin") && !usuarios.getRol().equals("usuario")) {
+            throw new IllegalArgumentException("Rol inválido. Debe ser: 'admin' o 'usuario'");
+        }
+
+        if (usuarios.getRol().equals("usuario") && usuarios.getIdObra() == null) {
+            throw new IllegalArgumentException("Para el rol usuario debe asignarse una obra");
+        }
+
+        if (usuarios.getTelefono() != null && !usuarios.getTelefono().isEmpty() && !validarTelefono(usuarios.getTelefono())) {
+            throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos");
+        }
+
+        if (usuarios.getDireccionCalle() == null || usuarios.getDireccionCalle().isEmpty()) {
+            throw new IllegalArgumentException("La calle es requerida");
+        }
+
+        if (usuarios.getIdRegion() == null) {
+            throw new IllegalArgumentException("La región es requerida");
+        }
+
+        if (usuarios.getIdComuna() == null) {
+            throw new IllegalArgumentException("La comuna es requerida");
+        }
+
+        if (usuarios.getEstado() == null || usuarios.getEstado().isEmpty()) {
+            usuarios.setEstado("Activo");
         }
 
         // Establecer fecha de creación si no está definida
@@ -59,25 +117,65 @@ public class UsuariosService {
         Usuarios usuarioExistente = obtenerUsuarioById(id);
 
         // Validar campos
+        if (usuariosActualizado.getRun() != null && !usuariosActualizado.getRun().isEmpty()) {
+            String runLimpio = usuariosActualizado.getRun().replaceAll("[^0-9kK]", "").toUpperCase();
+            if (!runLimpio.matches("^[0-9]+[0-9K]$")) {
+                throw new IllegalArgumentException("El RUN es inválido");
+            }
+            if (!usuarioExistente.getRun().equals(runLimpio) && usuariosRepository.existsByRun(runLimpio)) {
+                throw new IllegalArgumentException("El RUN ya está registrado");
+            }
+            usuarioExistente.setRun(runLimpio);
+        }
+
         if (usuariosActualizado.getNombre() != null && !usuariosActualizado.getNombre().isEmpty()) {
             usuarioExistente.setNombre(usuariosActualizado.getNombre());
         }
 
+        if (usuariosActualizado.getApellidoPaterno() != null && !usuariosActualizado.getApellidoPaterno().isEmpty()) {
+            usuarioExistente.setApellidoPaterno(usuariosActualizado.getApellidoPaterno());
+        }
+
+        if (usuariosActualizado.getApellidoMaterno() != null && !usuariosActualizado.getApellidoMaterno().isEmpty()) {
+            usuarioExistente.setApellidoMaterno(usuariosActualizado.getApellidoMaterno());
+        }
+
         if (usuariosActualizado.getCorreo() != null && !usuariosActualizado.getCorreo().isEmpty()) {
-            // Verificar que el nuevo correo no esté en uso por otro usuario
             if (!usuarioExistente.getCorreo().equals(usuariosActualizado.getCorreo()) && 
                 usuariosRepository.existsByCorreo(usuariosActualizado.getCorreo())) {
                 throw new IllegalArgumentException("El correo ya está registrado");
+            }
+            if (!validarCorreo(usuariosActualizado.getCorreo())) {
+                throw new IllegalArgumentException("El correo es inválido");
             }
             usuarioExistente.setCorreo(usuariosActualizado.getCorreo());
         }
 
         if (usuariosActualizado.getTelefono() != null && !usuariosActualizado.getTelefono().isEmpty()) {
+            if (!validarTelefono(usuariosActualizado.getTelefono())) {
+                throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos");
+            }
             usuarioExistente.setTelefono(usuariosActualizado.getTelefono());
+        }
+
+        if (usuariosActualizado.getDireccionCalle() != null && !usuariosActualizado.getDireccionCalle().isEmpty()) {
+            usuarioExistente.setDireccionCalle(usuariosActualizado.getDireccionCalle());
+        }
+
+        if (usuariosActualizado.getIdRegion() != null) {
+            usuarioExistente.setIdRegion(usuariosActualizado.getIdRegion());
+        }
+
+        if (usuariosActualizado.getIdComuna() != null) {
+            usuarioExistente.setIdComuna(usuariosActualizado.getIdComuna());
         }
 
         if (usuariosActualizado.getRol() != null && !usuariosActualizado.getRol().isEmpty()) {
             usuarioExistente.setRol(usuariosActualizado.getRol());
+        }
+
+        if (usuariosActualizado.getIdObra() != null) {
+            usuarioExistente.setIdObra(usuariosActualizado.getIdObra());
         }
 
         if (usuariosActualizado.getEstado() != null && !usuariosActualizado.getEstado().isEmpty()) {
@@ -108,6 +206,14 @@ public class UsuariosService {
         }
 
         return usuario;
+    }
+
+    private boolean validarCorreo(String correo) {
+        return correo != null && correo.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    }
+
+    private boolean validarTelefono(String telefono) {
+        return telefono != null && telefono.matches("^\\d{9}$");
     }
 }
 

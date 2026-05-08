@@ -37,6 +37,12 @@ public class Obras {
     @Column(columnDefinition = "TEXT")
     private String direccion;
 
+    @Column(name = "id_region", nullable = false)
+    private Integer idRegion;
+
+    @Column(name = "id_comuna", nullable = false)
+    private Integer idComuna;
+
     @Column(name = "planos_presupuestos", length = 500)
     private String planosPresupuestos;
 
