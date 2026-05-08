@@ -45,12 +45,6 @@ public class Clientes {
     @Column(name = "id_comuna")
     private Integer idComuna;
 
-    @Column(name = "id_region")
-    private Integer idRegion;
-
-    @Column(name = "id_comuna")
-    private Integer idComuna;
-
     @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaCreacion;
 
@@ -58,3 +52,4 @@ public class Clientes {
     private String estado; // 'Activo', 'Inactivo'
 }
 
+// Made with Bob

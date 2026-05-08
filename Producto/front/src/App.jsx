@@ -27,7 +27,7 @@ function App() {
       <Route path="/admin/usuarios/:id_usuario" element={<ProtectedRoute requiredRole="admin"><EditarUsuario /></ProtectedRoute>} />
 
       {/* Rutas de Cliente */}
-      <Route path="/dashboard" element={<ProtectedRoute requiredRole="cliente"><IndexUsuario /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute requiredRole="usuario"><IndexUsuario /></ProtectedRoute>} />
 
       {/* Rutas compartidas */}
       <Route path="/crear-ticket" element={<ProtectedRoute><CrearTicket /></ProtectedRoute>} />
