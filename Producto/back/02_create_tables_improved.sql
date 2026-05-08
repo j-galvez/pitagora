@@ -26,9 +26,13 @@ CREATE TABLE IF NOT EXISTS clientes (
     rut VARCHAR(20) NOT NULL UNIQUE, -- Identificación legal única
     correo_contacto VARCHAR(100),
     telefono VARCHAR(20),
-    direccion TEXT,
+    direccion_calle VARCHAR(255),
+    id_region INT,
+    id_comuna INT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    estado ENUM('Activo', 'Inactivo') DEFAULT 'Activo'
+    estado ENUM('Activo', 'Inactivo') DEFAULT 'Activo',
+    FOREIGN KEY (id_region) REFERENCES regiones(id_region),
+    FOREIGN KEY (id_comuna) REFERENCES comunas(id_comuna)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Tabla de Usuarios (Sistema Multi-perfil - Actualizada con RUN y Nombres Separados)
