@@ -185,7 +185,7 @@ const GestionUsuario = () => {
                               {u.estado || '-'}
                             </span>
                           </td>
-                          <td>{u.fecha_creacion ? new Date(u.fecha_creacion).toLocaleDateString('es-ES') : '-'}</td>
+                          <td>{u.fechaCreacion ? new Date(u.fechaCreacion).toLocaleDateString('es-ES') : '-'}</td>
                           <td>
                             <button
                               className="btn btn-light btn-sm text-primary me-2"
