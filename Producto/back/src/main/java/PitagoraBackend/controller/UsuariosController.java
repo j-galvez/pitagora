@@ -76,7 +76,8 @@ public class UsuariosController {
                 usuarioAutenticado.getNombre(),
                 usuarioAutenticado.getCorreo(),
                 usuarioAutenticado.getRol(),
-                usuarioAutenticado.getEstado()
+                usuarioAutenticado.getEstado(),
+                usuarioAutenticado.getFechaCreacion()
             );
 
             return ResponseEntity.ok(response);

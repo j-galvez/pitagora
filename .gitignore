@@ -24,4 +24,4 @@ yarn-debug.log*
 .idea/
 *.swp
 
-application.properties
+application.propertiesProducto/front/.vite/

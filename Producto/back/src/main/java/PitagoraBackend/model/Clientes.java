@@ -52,3 +52,4 @@ public class Clientes {
     private String estado; // 'Activo', 'Inactivo'
 }
 
+// Made with Bob

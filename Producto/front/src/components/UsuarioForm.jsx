@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaEdit, FaSave, FaTimes } from 'react-icons/fa';
 
@@ -14,6 +14,39 @@ const UsuarioForm = ({
   const [editingField, setEditingField] = useState(null);
   const [tempValue, setTempValue] = useState('');
   const [fieldError, setFieldError] = useState('');
+  const [regiones, setRegiones] = useState([]);
+  const [comunas, setComunas] = useState([]);
+  const [comunasFiltradas, setComunasFiltradas] = useState([]);
+  const [obras, setObras] = useState([]);
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const cargarDatos = async () => {
+    try {
+      const [regionesRes, comunasRes, obrasRes] = await Promise.all([
+        fetch('http://localhost:8080/api/regiones'),
+        fetch('http://localhost:8080/api/comunas'),
+        fetch('http://localhost:8080/api/obras')
+      ]);
+
+      const regionesData = await regionesRes.json();
+      const comunasData = await comunasRes.json();
+      const obrasData = await obrasRes.json();
+
+      setRegiones(regionesData);
+      setComunas(comunasData);
+      setObras(obrasData);
+
+      if (formData.idRegion) {
+        const filtradas = comunasData.filter((c) => c.idRegion === Number(formData.idRegion));
+        setComunasFiltradas(filtradas);
+      }
+    } catch (err) {
+      console.error('Error cargando datos:', err);
+    }
+  };
 
   const startEditing = (fieldName) => {
     setEditingField(fieldName);
@@ -30,15 +63,17 @@ const UsuarioForm = ({
     const { value } = e.target;
 
     if (editingField === 'telefono') {
-      const digits = value.replace(/\D/g, '');
-      if (digits.length > 9) {
-        return;
-      }
-      setTempValue(digits);
-      if (digits && !digits.startsWith('9')) {
-        setFieldError('El teléfono debe comenzar con 9.');
-      } else {
-        setFieldError('');
+      const soloNumeros = value.replace(/\D/g, '');
+      // Solo limita a 9 dígitos máximo, pero permite escribir y borrar libremente
+      if (soloNumeros.length <= 9) {
+        setTempValue(soloNumeros);
+        if (soloNumeros.length > 0 && soloNumeros.length < 9) {
+          setFieldError('El teléfono debe tener exactamente 9 dígitos.');
+        } else if (soloNumeros.length === 0) {
+          setFieldError('');
+        } else {
+          setFieldError('');
+        }
       }
       return;
     }
@@ -47,17 +82,12 @@ const UsuarioForm = ({
     setFieldError('');
   };
 
-  const handleSelectChange = (e) => {
-    setTempValue(e.target.value);
-    setFieldError('');
-  };
-
   const saveField = async () => {
     if (!editingField) return;
 
     if (editingField === 'telefono') {
-      if (!/^[9]\d{8}$/.test(tempValue)) {
-        setFieldError('El teléfono debe tener 9 dígitos y comenzar con 9.');
+      if (!/^\d{9}$/.test(tempValue)) {
+        setFieldError('El teléfono debe tener exactamente 9 dígitos.');
         return;
       }
     }
@@ -77,9 +107,21 @@ const UsuarioForm = ({
     setEditingField(null);
   };
 
-  const renderField = ({ label, name, type = 'text', placeholder = '', options = null, readOnly = false }) => {
+   const renderField = ({ label, name, type = 'text', placeholder = '', options = null, readOnly = false }) => {
     const value = formData[name] != null ? String(formData[name]) : '';
     const isEditing = editingField === name;
+
+    const handleSelectChangeForField = (e) => {
+      const { value } = e.target;
+      setTempValue(value);
+      
+      if (name === 'idRegion') {
+        const filtradas = comunas.filter((c) => c.idRegion === Number(value));
+        setComunasFiltradas(filtradas);
+      }
+      
+      setFieldError('');
+    };
 
     return (
       <div className="col-md-6">
@@ -89,7 +131,7 @@ const UsuarioForm = ({
         <div className="input-group">
           {isEditing ? (
             options ? (
-              <select className="form-select" value={tempValue} onChange={handleSelectChange}>
+              <select className="form-select" value={tempValue} onChange={handleSelectChangeForField}>
                 {options.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -98,7 +140,8 @@ const UsuarioForm = ({
               </select>
             ) : (
               <input
-                type={type}
+                type={name === 'telefono' ? 'text' : type}
+                inputMode={name === 'telefono' ? 'numeric' : 'text'}
                 className={`form-control ${fieldError ? 'is-invalid' : ''}`}
                 value={tempValue}
                 onChange={handleTempChange}
@@ -209,12 +252,33 @@ const UsuarioForm = ({
 
           <div className="row g-3 mb-3">
             {renderField({ label: 'Dirección', name: 'direccionCalle' })}
-            {renderField({ label: 'ID Región', name: 'idRegion', type: 'number', placeholder: 'Ej. 1' })}
+            {renderField({
+              label: 'Región',
+              name: 'idRegion',
+              options: [
+                { value: '', label: 'Seleccionar región' },
+                ...regiones.map(r => ({ value: r.idRegion, label: r.nombreRegion }))
+              ]
+            })}
           </div>
 
           <div className="row g-3 mb-3">
-            {renderField({ label: 'ID Comuna', name: 'idComuna', type: 'number', placeholder: 'Ej. 2' })}
-            {renderField({ label: 'ID Obra', name: 'idObra', type: 'number', placeholder: 'Ej. 3' })}
+            {renderField({
+              label: 'Comuna',
+              name: 'idComuna',
+              options: [
+                { value: '', label: 'Seleccionar comuna' },
+                ...comunasFiltradas.map(c => ({ value: c.idComuna, label: c.nombreComuna }))
+              ]
+            })}
+            {renderField({
+              label: 'Obra',
+              name: 'idObra',
+              options: [
+                { value: '', label: 'Seleccionar obra' },
+                ...obras.map(o => ({ value: o.idObra, label: o.nombreObra }))
+              ]
+            })}
           </div>
 
           <div className="row g-3 mb-3">
@@ -225,7 +289,7 @@ const UsuarioForm = ({
               <input
                 type="text"
                 className="form-control"
-                value={usuario.fecha_creacion ? new Date(usuario.fecha_creacion).toLocaleString('es-ES') : ''}
+                value={usuario.fechaCreacion ? new Date(usuario.fechaCreacion).toLocaleString('es-ES') : ''}
                 readOnly
               />
             </div>
