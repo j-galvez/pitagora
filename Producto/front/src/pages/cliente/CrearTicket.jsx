@@ -11,30 +11,61 @@ export default function CrearTicket() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [obras, setObras] = useState([]);
+  const [usuariosObra, setUsuariosObra] = useState([]);
   
-  // Recuperar usuario y asegurar que id_obra esté presente
+  // Recuperar usuario
   const usuarioLocalStorage = JSON.parse(localStorage.getItem('usuario'));
-  const usuarioLogueado = usuarioLocalStorage || {
-    id_usuario: 1,
-    nombre: 'Usuario de Prueba',
-    rol: 'cliente',
-    obraActual: 'Edificio Los Almendros - Depto 305',
-    id_obra: 1
-  };
+  const usuarioLogueado = usuarioLocalStorage || {};
 
   const isAdmin = usuarioLogueado.rol === 'admin';
+  const idUsuarioActual = usuarioLogueado.idUsuario || usuarioLogueado.id_usuario;
+  const idObraActual = usuarioLogueado.idObra || usuarioLogueado.id_obra;
+
+  // Estado para el nombre de la obra (lo buscamos si no viene en el login)
+  const [nombreObraReal, setNombreObraReal] = useState(usuarioLogueado.nombre_obra || usuarioLogueado.nombreObra || '');
 
   const [formData, setFormData] = useState({
-    id_obra: isAdmin ? '' : (usuarioLogueado.id_obra || 1),
-    id_usuario_creador: usuarioLogueado.id_usuario,
-    estado_general: 'abierto'
+    idObra: isAdmin ? '' : (idObraActual || ''),
+    idUsuarioCreador: idUsuarioActual || '',
+    idUsuario: isAdmin ? '' : (idUsuarioActual || ''),
+    estadoGeneral: 'abierto'
   });
+
+  useEffect(() => {
+    // Sincronizar el formulario con los datos reales del usuario una vez que estén disponibles
+    if (!isAdmin && idObraActual) {
+      setFormData(prev => ({
+        ...prev,
+        idObra: idObraActual,
+        idUsuarioCreador: idUsuarioActual,
+        idUsuario: idUsuarioActual
+      }));
+    }
+  }, [isAdmin, idObraActual, idUsuarioActual]);
 
   useEffect(() => {
     if (isAdmin) {
       cargarObras();
+    } else if (idObraActual && !nombreObraReal) {
+      // Si no tenemos el nombre de la obra pero sí el ID, buscarlo en el servidor
+      fetch(`http://localhost:8080/api/obras/${idObraActual}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Error al cargar obra');
+          return res.json();
+        })
+        .then(data => setNombreObraReal(data.nombreObra || data.nombre_obra))
+        .catch(err => {
+          console.error("Error al obtener nombre de obra:", err);
+          setNombreObraReal(`Obra ID: ${idObraActual}`);
+        });
     }
-  }, [isAdmin]);
+  }, [isAdmin, idObraActual, nombreObraReal]);
+
+  useEffect(() => {
+    if (isAdmin && formData.idObra) {
+      cargarUsuariosPorObra(formData.idObra);
+    }
+  }, [isAdmin, formData.idObra]);
 
   const cargarObras = async () => {
     try {
@@ -54,10 +85,33 @@ export default function CrearTicket() {
     }
   };
 
+  const cargarUsuariosPorObra = async (idObra) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/usuarios/obra/${idObra}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUsuariosObra(data || []);
+      } else {
+        throw new Error('Error al cargar usuarios de la obra');
+      }
+    } catch (err) {
+      console.error('Error al cargar usuarios:', err);
+      setUsuariosObra([
+        { id_usuario: 6, nombre: 'Roberto Silva', apellido_paterno: 'Silva' },
+        { id_usuario: 7, nombre: 'Patricia Jiménez', apellido_paterno: 'Jiménez' }
+      ]);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.id_obra) {
+    if (!formData.idObra) {
       setError('Por favor selecciona una obra');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (isAdmin && !formData.idUsuario) {
+      setError('Por favor selecciona un usuario para asignar el ticket');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -66,6 +120,8 @@ export default function CrearTicket() {
     setError('');
     setSuccess('');
 
+    console.log("Enviando ticket con datos finales:", formData);
+
     try {
       const response = await fetch('http://localhost:8080/api/tickets', {
         method: 'POST',
@@ -73,17 +129,21 @@ export default function CrearTicket() {
         body: JSON.stringify(formData)
       });
 
-      if (!response.ok) throw new Error('Error al crear el ticket');
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || 'Error al crear el ticket');
+      }
       const ticketData = await response.json();
 
       setSuccess('¡Ticket creado exitosamente! Redirigiendo a observaciones...');
       setTimeout(() => {
-        navigate(`/crear-observacion/${ticketData.id_ticket || ticketData.id || 1}`);
+        // Usamos idTicket que es como lo devuelve el Backend
+        const ticketId = ticketData.idTicket || ticketData.id_ticket || ticketData.id || 1;
+        navigate(`/crear-observacion/${ticketId}`);
       }, 2000);
     } catch (err) {
       console.error(err);
-      setError('No se pudo conectar con el servidor. Usando modo demostración.');
-      setTimeout(() => navigate('/crear-observacion/1'), 3000);
+      setError(err.message || 'No se pudo conectar con el servidor.');
     } finally {
       setLoading(false);
     }
@@ -139,8 +199,8 @@ export default function CrearTicket() {
                 {isAdmin ? (
                   <select 
                     className="form-select"
-                    value={formData.id_obra}
-                    onChange={(e) => setFormData({...formData, id_obra: e.target.value})}
+                    value={formData.idObra}
+                    onChange={(e) => setFormData({...formData, idObra: e.target.value, idUsuario: ''})}
                     required
                   >
                     <option value="">Seleccione una obra...</option>
@@ -152,11 +212,31 @@ export default function CrearTicket() {
                   </select>
                 ) : (
                   <div className="p-3 bg-light rounded border">
-                    <p className="mb-0 fw-bold">{usuarioLogueado.obraActual || 'Edificio Los Almendros - Depto 305'}</p>
-                    <small className="text-muted" style={{ fontSize: '12px' }}>ID Obra: {usuarioLogueado.id_obra || 1}</small>
+                    <p className="mb-0 fw-bold">{nombreObraReal || 'Cargando obra...'}</p>
+                    <small className="text-muted" style={{ fontSize: '12px' }}>ID Obra: {idObraActual || 'N/A'}</small>
                   </div>
                 )}
               </div>
+
+              {isAdmin && (
+                <div className="mb-4">
+                  <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>ASIGNAR A USUARIO</label>
+                  <select 
+                    className="form-select"
+                    value={formData.idUsuario}
+                    onChange={(e) => setFormData({...formData, idUsuario: e.target.value})}
+                    required
+                    disabled={!formData.idObra}
+                  >
+                    <option value="">{formData.idObra ? 'Seleccione un usuario...' : 'Primero seleccione una obra...'}</option>
+                    {usuariosObra.map(user => (
+                      <option key={user.idUsuario || user.id_usuario} value={user.idUsuario || user.id_usuario}>
+                        {user.nombre} {user.apellidoPaterno || user.apellido_paterno} ({user.correo})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="alert alert-info border-0 shadow-none py-3 mb-4" style={{ backgroundColor: '#e7f3ff', color: '#004085', fontSize: '13px' }}>
                 <div className="d-flex">

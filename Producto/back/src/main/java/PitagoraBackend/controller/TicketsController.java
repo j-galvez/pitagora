@@ -26,10 +26,28 @@ public class TicketsController {
         }
     }
 
-    // READ - Listar todos los tickets
+    // READ - Listar todos los tickets (opcionalmente filtrado por estado)
     @GetMapping
-    public List<Tickets> listar() {
+    public List<Tickets> listar(@RequestParam(value = "estado", required = false) String estado) {
+        if (estado != null && !estado.isEmpty()) {
+            return ticketsService.obtenerTicketsPorEstado(estado);
+        }
         return ticketsService.obtenerTickets();
+    }
+
+    // READ - Obtener tickets por usuario (opcionalmente filtrado por estado)
+    @GetMapping("/usuario/{id_usuario}")
+    public List<Tickets> listarPorUsuario(
+            @PathVariable("id_usuario") Integer id_usuario,
+            @RequestParam(value = "estado", required = false) String estado) {
+        
+        List<Tickets> tickets = ticketsService.obtenerTicketsPorUsuario(id_usuario);
+        if (estado != null && !estado.isEmpty()) {
+            return tickets.stream()
+                    .filter(t -> t.getEstadoGeneral().equals(estado))
+                    .toList();
+        }
+        return tickets;
     }
 
     // READ - Obtener ticket por ID

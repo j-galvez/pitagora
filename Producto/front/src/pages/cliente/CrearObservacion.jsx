@@ -18,14 +18,17 @@ export default function CrearObservacion() {
   const [success, setSuccess] = useState('');
 
   const usuarioLocalStorage = JSON.parse(localStorage.getItem('usuario'));
-  const usuarioLogueado = usuarioLocalStorage || {
-    id_usuario: 1,
-    nombre: 'Usuario de Prueba',
-    rol: 'cliente',
-    id_obra: 1
-  };
+  const usuarioLogueado = usuarioLocalStorage || {};
+  const idUsuarioActual = usuarioLogueado.idUsuario || usuarioLogueado.id_usuario;
 
   const isAdmin = usuarioLogueado.rol === 'admin';
+
+  // Helper para formatear fecha de forma segura
+  const formatearFecha = (fechaStr) => {
+    if (!fechaStr) return 'Fecha no disponible';
+    const fecha = new Date(fechaStr);
+    return isNaN(fecha) ? 'Fecha inválida' : fecha.toLocaleDateString();
+  };
 
   // Estado para nueva observación
   const [newObservation, setNewObservation] = useState({
@@ -42,11 +45,13 @@ export default function CrearObservacion() {
   }, []);
 
   const cargarTicketsDisponibles = async () => {
+    if (!idUsuarioActual && !isAdmin) return;
+    
     setLoadingTickets(true);
     try {
       const endpoint = isAdmin 
         ? 'http://localhost:8080/api/tickets?estado=abierto' 
-        : `http://localhost:8080/api/tickets/usuario/${usuarioLogueado.id_usuario}?estado=abierto`;
+        : `http://localhost:8080/api/tickets/usuario/${idUsuarioActual}?estado=abierto`;
       
       const response = await fetch(endpoint);
       if (response.ok) {
@@ -57,10 +62,7 @@ export default function CrearObservacion() {
       }
     } catch (err) {
       console.error('Error al cargar tickets:', err);
-      setTickets([
-        { id_ticket: 1, id_obra: 1, fecha_creacion: new Date() },
-        { id_ticket: 2, id_obra: 1, fecha_creacion: new Date() }
-      ]);
+      setTickets([]);
     } finally {
       setLoadingTickets(false);
     }
@@ -127,17 +129,18 @@ export default function CrearObservacion() {
 
     try {
       for (const obs of observaciones) {
+        // Adaptamos el envío al formato camelCase que espera el backend
         await fetch('http://localhost:8080/api/observaciones', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            id_ticket: selectedTicketId,
-            id_categoria: parseInt(obs.id_categoria),
+            idTicket: selectedTicketId,
+            idCategoria: parseInt(obs.id_categoria),
             falla: obs.falla,
-            ubicacion_exacta: obs.ubicacion_exacta,
-            descripcion_problema: obs.descripcion_problema,
+            ubicacionExacta: obs.ubicacion_exacta,
+            descripcionProblema: obs.descripcion_problema,
             urgencia: obs.urgencia,
-            estado_observacion: 'pendiente'
+            estadoObservacion: 'pendiente'
           })
         });
       }
@@ -148,8 +151,7 @@ export default function CrearObservacion() {
       }, 2000);
     } catch (err) {
       console.error(err);
-      setError('Error al guardar. Usando modo simulación.');
-      setTimeout(() => navigate(isAdmin ? '/admin-dashboard' : '/dashboard'), 3000);
+      setError('Error al guardar las observaciones. Por favor intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -209,11 +211,15 @@ export default function CrearObservacion() {
                 disabled={loadingTickets}
               >
                 <option value="">-- Selecciona un Ticket --</option>
-                {tickets.map(t => (
-                  <option key={t.id_ticket} value={t.id_ticket}>
-                    Ticket #{t.id_ticket} - (Creado: {new Date(t.fecha_creacion).toLocaleDateString()})
-                  </option>
-                ))}
+                {tickets.map(t => {
+                  const tId = t.idTicket || t.id_ticket;
+                  const tFecha = t.fechaCreacion || t.fecha_creacion;
+                  return (
+                    <option key={tId} value={tId}>
+                      Ticket #{tId} - (Creado: {formatearFecha(tFecha)})
+                    </option>
+                  );
+                })}
               </select>
               {tickets.length === 0 && !loadingTickets && (
                 <div className="mt-2 text-danger small" style={{ fontSize: '12px' }}>
