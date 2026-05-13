@@ -205,8 +205,8 @@ export default function CrearTicket() {
                   >
                     <option value="">Seleccione una obra...</option>
                     {obras.map(obra => (
-                      <option key={obra.id_obra} value={obra.id_obra}>
-                        {obra.nombre_obra}
+                      <option key={obra.idObra || obra.id_obra} value={obra.idObra || obra.id_obra}>
+                        {obra.nombreObra || obra.nombre_obra}
                       </option>
                     ))}
                   </select>
