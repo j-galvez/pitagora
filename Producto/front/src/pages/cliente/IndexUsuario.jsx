@@ -60,7 +60,7 @@ export default function IndexUsuario() {
             {openTicket ? (
               <button 
                 className="btn btn-info d-flex align-items-center gap-2 shadow-sm text-white"
-                onClick={() => navigate(`/crear-observacion/${openTicket.id_ticket}`)}
+                onClick={() => navigate(`/crear-observacion/${openTicket.idTicket || openTicket.id_ticket}`)}
                 style={{ backgroundColor: '#0056b3', borderColor: '#0056b3' }}
               >
                 <i className="bi bi-pencil-square"></i>

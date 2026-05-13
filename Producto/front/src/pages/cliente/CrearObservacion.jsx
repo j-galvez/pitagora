@@ -10,10 +10,12 @@ export default function CrearObservacion() {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [selectedTicketId, setSelectedTicketId] = useState(urlTicketId || '');
-  const [observaciones, setObservaciones] = useState([]);
+  const [observacionesExistentes, setObservacionesExistentes] = useState([]);
+  const [nuevasObservaciones, setNuevasObservaciones] = useState([]);
   const [isAddingObservation, setIsAddingObservation] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingTickets, setLoadingTickets] = useState(false);
+  const [loadingExistentes, setLoadingExistentes] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -44,6 +46,14 @@ export default function CrearObservacion() {
     cargarTicketsDisponibles();
   }, []);
 
+  useEffect(() => {
+    if (selectedTicketId) {
+      cargarObservacionesExistentes(selectedTicketId);
+    } else {
+      setObservacionesExistentes([]);
+    }
+  }, [selectedTicketId]);
+
   const cargarTicketsDisponibles = async () => {
     if (!idUsuarioActual && !isAdmin) return;
     
@@ -68,6 +78,23 @@ export default function CrearObservacion() {
     }
   };
 
+  const cargarObservacionesExistentes = async (ticketId) => {
+    setLoadingExistentes(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/observaciones/ticket/${ticketId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setObservacionesExistentes(data || []);
+      } else {
+        console.error("No se pudieron cargar observaciones existentes");
+      }
+    } catch (err) {
+      console.error("Error cargando observaciones:", err);
+    } finally {
+      setLoadingExistentes(false);
+    }
+  };
+
   const handleSaveObservation = () => {
     if (!newObservation.falla || !newObservation.ubicacion_exacta || !newObservation.descripcion_problema) {
       setError('Por favor completa todos los campos obligatorios de la observación');
@@ -75,7 +102,7 @@ export default function CrearObservacion() {
       return;
     }
 
-    setObservaciones([...observaciones, { ...newObservation, id: Date.now() }]);
+    setNuevasObservaciones([...nuevasObservaciones, { ...newObservation, id: Date.now() }]);
     setIsAddingObservation(false);
     setNewObservation({
       falla: '',
@@ -88,8 +115,8 @@ export default function CrearObservacion() {
     setError('');
   };
 
-  const handleRemoveObservation = (id) => {
-    setObservaciones(observaciones.filter(obs => obs.id !== id));
+  const handleRemoveNuevasObservaciones = (id) => {
+    setNuevasObservaciones(nuevasObservaciones.filter(obs => obs.id !== id));
   };
 
   const handlePhotoChange = (e) => {
@@ -117,8 +144,8 @@ export default function CrearObservacion() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (observaciones.length === 0) {
-      setError('Debes agregar al menos una observación');
+    if (nuevasObservaciones.length === 0) {
+      setError('Debes agregar al menos una observación nueva');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -128,7 +155,7 @@ export default function CrearObservacion() {
     setSuccess('');
 
     try {
-      for (const obs of observaciones) {
+      for (const obs of nuevasObservaciones) {
         // Adaptamos el envío al formato camelCase que espera el backend
         await fetch('http://localhost:8080/api/observaciones', {
           method: 'POST',
@@ -145,10 +172,14 @@ export default function CrearObservacion() {
         });
       }
 
-      setSuccess('¡Observaciones guardadas correctamente!');
+      setSuccess('¡Nuevas observaciones guardadas correctamente!');
+      // Recargar las observaciones existentes
+      cargarObservacionesExistentes(selectedTicketId);
+      setNuevasObservaciones([]);
+      
       setTimeout(() => {
-        navigate(isAdmin ? '/admin-dashboard' : '/dashboard');
-      }, 2000);
+        setSuccess('');
+      }, 3000);
     } catch (err) {
       console.error(err);
       setError('Error al guardar las observaciones. Por favor intenta de nuevo.');
@@ -158,7 +189,7 @@ export default function CrearObservacion() {
   };
 
   const handleVolver = () => {
-    navigate(-1);
+    navigate(isAdmin ? '/admin-dashboard' : '/dashboard');
   };
 
   return (
@@ -167,14 +198,14 @@ export default function CrearObservacion() {
 
       <div className="flex-grow-1 d-flex flex-column" style={{ backgroundColor: '#F8F9FA', height: '100vh', overflowY: 'auto' }}>
         
-        {/* Barra de Navegación Superior - Exacta a AdminLayout */}
+        {/* Barra de Navegación Superior */}
         <nav className="navbar navbar-dark" style={{ backgroundColor: '#002840' }}>
           <div className="container-fluid d-flex justify-content-between align-items-center py-2">
             <div className="d-flex align-items-center">
               <button className="btn btn-link text-white me-3 text-decoration-none d-flex align-items-center" onClick={handleVolver}>
                 <FaArrowLeft className="me-1" /> Volver
               </button>
-              <h4 className="text-white mb-0">Crear Observación</h4>
+              <h4 className="text-white mb-0">Gestión de Observaciones</h4>
             </div>
           </div>
         </nav>
@@ -198,12 +229,12 @@ export default function CrearObservacion() {
 
             <div className="mb-4 border-bottom pb-3">
               <h5 className="text-dark mb-1">Detalles de la Solicitud</h5>
-              <span className="text-muted" style={{ fontSize: '13px' }}>Agrega las fallas técnicas específicas al ticket seleccionado</span>
+              <span className="text-muted" style={{ fontSize: '13px' }}>Gestiona las fallas técnicas del ticket seleccionado</span>
             </div>
 
             {/* Paso 1: Selección de Ticket */}
             <div className="mb-4">
-              <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>TICKET ABIERTO</label>
+              <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>TICKET SELECCIONADO</label>
               <select 
                 className="form-select"
                 value={selectedTicketId}
@@ -221,134 +252,171 @@ export default function CrearObservacion() {
                   );
                 })}
               </select>
-              {tickets.length === 0 && !loadingTickets && (
-                <div className="mt-2 text-danger small" style={{ fontSize: '12px' }}>
-                  No tienes tickets abiertos. Primero crea uno nuevo.
-                </div>
-              )}
             </div>
 
             <hr className="my-4 text-muted" />
 
-            {/* Paso 2: Observaciones */}
-            <div className="mb-4">
-              <h6 className="fw-bold mb-3" style={{ color: '#003860' }}>Observaciones ({observaciones.length})</h6>
-
-              {observaciones.length > 0 && (
-                <div className="row g-3 mb-4">
-                  {observaciones.map((obs, index) => (
-                    <div className="col-12" key={obs.id}>
-                      <div className="card border-light shadow-none bg-light border-start border-4 border-primary">
-                        <div className="card-body d-flex justify-content-between align-items-center py-2">
-                          <div>
-                            <span className="fw-bold text-primary" style={{ fontSize: '13px' }}>#{index + 1}</span>
-                            <span className="ms-2 fw-semibold" style={{ fontSize: '14px' }}>{obs.falla}</span>
-                            <span className="ms-2 text-muted" style={{ fontSize: '12px' }}>| {obs.ubicacion_exacta}</span>
+            {/* Listado de Observaciones EXISTENTES en la BD */}
+            {selectedTicketId && (
+              <div className="mb-5">
+                <h6 className="fw-bold mb-3" style={{ color: '#003860' }}>
+                  Observaciones Registradas ({observacionesExistentes.length})
+                </h6>
+                {loadingExistentes ? (
+                  <div className="text-center py-3">
+                    <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
+                  </div>
+                ) : observacionesExistentes.length > 0 ? (
+                  <div className="row g-3">
+                    {observacionesExistentes.map((obs, index) => (
+                      <div className="col-12" key={obs.idObservacion || obs.id_observacion}>
+                        <div className="card border-0 shadow-none bg-white border-start border-4 border-success">
+                          <div className="card-body py-2">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div>
+                                <span className="fw-bold text-success" style={{ fontSize: '13px' }}>#{index + 1}</span>
+                                <span className="ms-2 fw-semibold" style={{ fontSize: '14px' }}>{obs.falla}</span>
+                                <span className="ms-2 text-muted" style={{ fontSize: '12px' }}>| {obs.ubicacionExacta || obs.ubicacion_exacta}</span>
+                              </div>
+                              <span className="badge bg-light text-dark border" style={{ fontSize: '10px' }}>
+                                {obs.estadoObservacion || obs.estado_observacion}
+                              </span>
+                            </div>
                           </div>
-                          <button type="button" className="btn btn-link text-danger p-0" onClick={() => handleRemoveObservation(obs.id)}>
-                            <FaTrash size={14} />
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {isAddingObservation ? (
-                <div className="p-4 border rounded-3 bg-light mb-3">
-                  <h6 className="fw-bold mb-4" style={{ fontSize: '15px', color: '#333' }}>Nueva Observación</h6>
-                  
-                  <div className="mb-3">
-                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>¿QUÉ FALLA ENCONTRASTE?</label>
-                    <input type="text" className="form-control" placeholder="Ej: Filtración de agua" value={newObservation.falla} onChange={(e) => setNewObservation({...newObservation, falla: e.target.value})} />
+                    ))}
                   </div>
-
-                  <div className="mb-3">
-                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>UBICACIÓN EXACTA</label>
-                    <input type="text" className="form-control" placeholder="Ej: Baño principal, bajo el lavamanos" value={newObservation.ubicacion_exacta} onChange={(e) => setNewObservation({...newObservation, ubicacion_exacta: e.target.value})} />
+                ) : (
+                  <div className="alert alert-light border text-center py-3" style={{ fontSize: '13px' }}>
+                    No hay observaciones registradas para este ticket.
                   </div>
+                )}
+              </div>
+            )}
 
-                  <div className="row g-3 mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>CATEGORÍA</label>
-                      <select className="form-select" value={newObservation.id_categoria} onChange={(e) => setNewObservation({...newObservation, id_categoria: e.target.value})}>
-                        <option value="1">Instalaciones Sanitarias</option>
-                        <option value="4">Instalaciones Eléctricas</option>
-                        <option value="7">Terminaciones</option>
-                        <option value="10">Estructuras</option>
-                        <option value="13">Sistemas Especiales</option>
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>URGENCIA</label>
-                      <select className="form-select" value={newObservation.urgencia} onChange={(e) => setNewObservation({...newObservation, urgencia: e.target.value})}>
-                        <option value="baja">Baja</option>
-                        <option value="media">Media</option>
-                        <option value="alta">Alta</option>
-                      </select>
-                    </div>
-                  </div>
+            {/* Paso 2: Nuevas Observaciones (Aún no guardadas) */}
+            {selectedTicketId && (
+              <div className="mb-4">
+                <h6 className="fw-bold mb-3" style={{ color: '#003860' }}>Agregar Nuevas Fallas ({nuevasObservaciones.length})</h6>
 
-                  <div className="mb-3">
-                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>DESCRIPCIÓN DETALLADA</label>
-                    <textarea className="form-control" rows="2" placeholder="Explica brevemente el problema..." value={newObservation.descripcion_problema} onChange={(e) => setNewObservation({...newObservation, descripcion_problema: e.target.value})}></textarea>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="form-label text-secondary fw-semibold d-block" style={{ fontSize: '12px' }}>EVIDENCIA FOTOGRÁFICA</label>
-                    <div className="d-flex gap-2 flex-wrap">
-                      {newObservation.fotos.map((f, i) => (
-                        <div key={i} className="position-relative" style={{ width: '70px', height: '70px' }}>
-                          <img src={URL.createObjectURL(f)} className="w-100 h-100 object-fit-cover rounded border" alt="preview" />
-                          <button type="button" className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style={{ width: '20px', height: '20px', borderRadius: '50%', marginTop: '-5px', marginRight: '-5px' }} onClick={() => handleRemovePhoto(i)}>×</button>
+                {nuevasObservaciones.length > 0 && (
+                  <div className="row g-3 mb-4">
+                    {nuevasObservaciones.map((obs, index) => (
+                      <div className="col-12" key={obs.id}>
+                        <div className="card border-light shadow-none bg-light border-start border-4 border-primary">
+                          <div className="card-body d-flex justify-content-between align-items-center py-2">
+                            <div>
+                              <span className="fw-bold text-primary" style={{ fontSize: '13px' }}>Nueva #{index + 1}</span>
+                              <span className="ms-2 fw-semibold" style={{ fontSize: '14px' }}>{obs.falla}</span>
+                              <span className="ms-2 text-muted" style={{ fontSize: '12px' }}>| {obs.ubicacion_exacta}</span>
+                            </div>
+                            <button type="button" className="btn btn-link text-danger p-0" onClick={() => handleRemoveNuevasObservaciones(obs.id)}>
+                              <FaTrash size={14} />
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                      {newObservation.fotos.length < 4 && (
-                        <label className="d-flex flex-column align-items-center justify-content-center border border-dashed rounded bg-white cursor-pointer hover-bg-light" style={{ width: '70px', height: '70px', transition: 'all 0.2s' }}>
-                          <FaCamera className="text-secondary mb-1" />
-                          <span style={{ fontSize: '10px' }} className="text-muted text-uppercase fw-bold">Subir</span>
-                          <input type="file" className="d-none" accept="image/*" onChange={handlePhotoChange} multiple />
-                        </label>
-                      )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {isAddingObservation ? (
+                  <div className="p-4 border rounded-3 bg-light mb-3">
+                    <h6 className="fw-bold mb-4" style={{ fontSize: '15px', color: '#333' }}>Nueva Observación</h6>
+                    
+                    <div className="mb-3">
+                      <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>¿QUÉ FALLA ENCONTRASTE?</label>
+                      <input type="text" className="form-control" placeholder="Ej: Filtración de agua" value={newObservation.falla} onChange={(e) => setNewObservation({...newObservation, falla: e.target.value})} />
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>UBICACIÓN EXACTA</label>
+                      <input type="text" className="form-control" placeholder="Ej: Baño principal, bajo el lavamanos" value={newObservation.ubicacion_exacta} onChange={(e) => setNewObservation({...newObservation, ubicacion_exacta: e.target.value})} />
+                    </div>
+
+                    <div className="row g-3 mb-3">
+                      <div className="col-md-6">
+                        <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>CATEGORÍA</label>
+                        <select className="form-select" value={newObservation.id_categoria} onChange={(e) => setNewObservation({...newObservation, id_categoria: e.target.value})}>
+                          <option value="1">Instalaciones Sanitarias</option>
+                          <option value="4">Instalaciones Eléctricas</option>
+                          <option value="7">Terminaciones</option>
+                          <option value="10">Estructuras</option>
+                          <option value="13">Sistemas Especiales</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>URGENCIA</label>
+                        <select className="form-select" value={newObservation.urgencia} onChange={(e) => setNewObservation({...newObservation, urgencia: e.target.value})}>
+                          <option value="baja">Baja</option>
+                          <option value="media">Media</option>
+                          <option value="alta">Alta</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>DESCRIPCIÓN DETALLADA</label>
+                      <textarea className="form-control" rows="2" placeholder="Explica brevemente el problema..." value={newObservation.descripcion_problema} onChange={(e) => setNewObservation({...newObservation, descripcion_problema: e.target.value})}></textarea>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="form-label text-secondary fw-semibold d-block" style={{ fontSize: '12px' }}>EVIDENCIA FOTOGRÁFICA</label>
+                      <div className="d-flex gap-2 flex-wrap">
+                        {newObservation.fotos.map((f, i) => (
+                          <div key={i} className="position-relative" style={{ width: '70px', height: '70px' }}>
+                            <img src={URL.createObjectURL(f)} className="w-100 h-100 object-fit-cover rounded border" alt="preview" />
+                            <button type="button" className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style={{ width: '20px', height: '20px', borderRadius: '50%', marginTop: '-5px', marginRight: '-5px' }} onClick={() => handleRemovePhoto(i)}>×</button>
+                          </div>
+                        ))}
+                        {newObservation.fotos.length < 4 && (
+                          <label className="d-flex flex-column align-items-center justify-content-center border border-dashed rounded bg-white cursor-pointer hover-bg-light" style={{ width: '70px', height: '70px', transition: 'all 0.2s' }}>
+                            <FaCamera className="text-secondary mb-1" />
+                            <span style={{ fontSize: '10px' }} className="text-muted text-uppercase fw-bold">Subir</span>
+                            <input type="file" className="d-none" accept="image/*" onChange={handlePhotoChange} multiple />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="d-flex gap-2 justify-content-end">
+                      <button type="button" className="btn btn-outline-secondary btn-sm px-4" onClick={() => setIsAddingObservation(false)}>Cancelar</button>
+                      <button type="button" className="btn btn-primary btn-sm px-4 fw-bold" onClick={handleSaveObservation}>Aceptar</button>
                     </div>
                   </div>
-
-                  <div className="d-flex gap-2 justify-content-end">
-                    <button type="button" className="btn btn-outline-secondary btn-sm px-4" onClick={() => setIsAddingObservation(false)}>Cancelar</button>
-                    <button type="button" className="btn btn-primary btn-sm px-4 fw-bold" onClick={handleSaveObservation}>Aceptar</button>
-                  </div>
-                </div>
-              ) : (
-                <button 
-                  type="button" 
-                  className="btn btn-outline-primary w-100 border-dashed py-3 fw-bold" 
-                  style={{ borderStyle: 'dashed', borderRadius: '8px', fontSize: '14px' }}
-                  onClick={() => setIsAddingObservation(true)}
-                  disabled={!selectedTicketId}
-                >
-                  <FaPlusCircle className="me-2" /> Agregar Nueva Observación
-                </button>
-              )}
-            </div>
+                ) : (
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-primary w-100 border-dashed py-3 fw-bold" 
+                    style={{ borderStyle: 'dashed', borderRadius: '8px', fontSize: '14px' }}
+                    onClick={() => setIsAddingObservation(true)}
+                  >
+                    <FaPlusCircle className="me-2" /> Agregar Nueva Observación
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="d-flex justify-content-end gap-2 border-top pt-4">
-              <button className="btn btn-outline-secondary px-4" onClick={handleVolver}>Cancelar</button>
-              <button 
-                className="btn px-5 fw-bold text-white"
-                style={{ backgroundColor: '#0B3B60' }}
-                onClick={handleSubmitAll}
-                disabled={observaciones.length === 0 || loading || !selectedTicketId}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Guardando...
-                  </>
-                ) : (
-                  'Guardar todas las observaciones'
-                )}
-              </button>
+              <button className="btn btn-outline-secondary px-4" onClick={handleVolver}>Volver al Dashboard</button>
+              {nuevasObservaciones.length > 0 && (
+                <button 
+                  className="btn px-5 fw-bold text-white"
+                  style={{ backgroundColor: '#0B3B60' }}
+                  onClick={handleSubmitAll}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar nuevas observaciones'
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
