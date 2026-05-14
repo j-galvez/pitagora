@@ -118,8 +118,9 @@ dependencies {
 
 ## Dependencias Frontend (React + Vite)(`front/package.json`)
 
-json
-   {
+json {
+
+    {
      "dependencies": {
        "bootstrap": "^5.3.8",
        "bootstrap-icons": "^1.13.1",
