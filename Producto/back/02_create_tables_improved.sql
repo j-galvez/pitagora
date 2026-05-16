@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     apellido_materno VARCHAR(50),
     correo VARCHAR(100) NOT NULL UNIQUE,      -- Correo corporativo = nombre de usuario
     password VARCHAR(255) NOT NULL,
-    rol ENUM('admin', 'jefe_obra', 'cliente', 'tecnico') NOT NULL DEFAULT 'cliente',
+    rol ENUM('admin', 'jefe_obra', 'cliente', 'tecnico', 'usuario') NOT NULL DEFAULT 'cliente',
     id_obra INT NULL,                         -- Para perfiles "cliente": restricción a una única obra
     telefono VARCHAR(20),
     direccion_calle VARCHAR(255),
