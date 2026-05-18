@@ -20,7 +20,8 @@ export default function IndexUsuario() {
     setError('');
     try {
       // Simulación o petición a endpoint específico de usuario
-      const response = await fetch(`/api/tickets/usuario/${usuarioLogueado.id_usuario}`);
+      const response = await fetch(`http://localhost:8080/api/tickets/usuario/${usuarioLogueado.id_usuario}?estado=abierto`);
+      if (!response.ok) throw new Error('Error al cargar tickets');
       const data = await response.json();
       
       setTickets(data || []);
@@ -35,6 +36,8 @@ export default function IndexUsuario() {
     cargarMisTickets();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const openTicket = tickets.find(t => t.estado_general === 'abierto' || t.estado_general === 'en proceso');
 
   return (
     <div className="d-flex" style={{ minHeight: '100vh', backgroundColor: '#F8F9FA' }}>
@@ -54,14 +57,25 @@ export default function IndexUsuario() {
               <h1 className="h3 mb-1" style={{ color: '#003860', fontWeight: 'bold' }}>Mis Solicitudes</h1>
               <p className="text-secondary mb-0">Revisa el estado de tus tickets y observaciones de postventa.</p>
             </div>
-            <button 
-              className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
-              onClick={() => navigate('/crear-ticket')}
-              style={{ backgroundColor: '#003860', borderColor: '#003860' }}
-            >
-              <i className="bi bi-plus-lg"></i>
-              <span>Nueva Solicitud</span>
-            </button>
+            {openTicket ? (
+              <button 
+                className="btn btn-info d-flex align-items-center gap-2 shadow-sm text-white"
+                onClick={() => navigate(`/crear-observacion/${openTicket.idTicket || openTicket.id_ticket}`)}
+                style={{ backgroundColor: '#0056b3', borderColor: '#0056b3' }}
+              >
+                <i className="bi bi-pencil-square"></i>
+                <span>Gestionar Solicitud Abierta</span>
+              </button>
+            ) : (
+              <button 
+                className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+                onClick={() => navigate('/crear-ticket')}
+                style={{ backgroundColor: '#003860', borderColor: '#003860' }}
+              >
+                <i className="bi bi-plus-lg"></i>
+                <span>Nueva Solicitud</span>
+              </button>
+            )}
           </div>
 
           {error && <div className="alert alert-danger">{error}</div>}

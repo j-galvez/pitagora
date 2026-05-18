@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     apellido_materno VARCHAR(50),
     correo VARCHAR(100) NOT NULL UNIQUE,      -- Correo corporativo = nombre de usuario
     password VARCHAR(255) NOT NULL,
-    rol ENUM('admin', 'jefe_obra', 'cliente', 'tecnico') NOT NULL DEFAULT 'cliente',
+    rol ENUM('admin', 'jefe_obra', 'cliente', 'tecnico', 'usuario') NOT NULL DEFAULT 'cliente',
     id_obra INT NULL,                         -- Para perfiles "cliente": restricción a una única obra
     telefono VARCHAR(20),
     direccion_calle VARCHAR(255),
@@ -102,10 +102,12 @@ CREATE TABLE IF NOT EXISTS tickets (
     id_ticket INT AUTO_INCREMENT PRIMARY KEY,
     id_obra INT NOT NULL,
     id_usuario_creador INT NOT NULL, -- Quien registra el ticket (Admin, Jefe Obra o Usuario)
+    id_usuario INT NOT NULL,         -- El usuario al que pertenece el ticket (dueño de la unidad/cliente)
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado_general ENUM('abierto', 'en proceso', 'terminado') DEFAULT 'abierto',
     FOREIGN KEY (id_obra) REFERENCES obras(id_obra) ON DELETE CASCADE,
-    FOREIGN KEY (id_usuario_creador) REFERENCES usuarios(id_usuario) ON DELETE RESTRICT
+    FOREIGN KEY (id_usuario_creador) REFERENCES usuarios(id_usuario) ON DELETE RESTRICT,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 7. Tabla de Observaciones (La unidad atómica de trabajo - "Hojas del libro")
