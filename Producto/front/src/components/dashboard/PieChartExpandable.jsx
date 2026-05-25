@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Modal } from 'react-bootstrap';
 import { obtenerObrasPorCategoria } from '../../services/dashboardService';
+import ObraDetalleModal from '../ObraDetalleModal';
 
 /**
  * Componente de gráfico de torta expandible
@@ -15,6 +16,8 @@ const PieChartExpandable = ({ datos, titulo = "Distribución", onNavigate }) => 
   const [drillDownMode, setDrillDownMode] = useState(false);
   const [obrasData, setObrasData] = useState([]);
   const [loadingObras, setLoadingObras] = useState(false);
+  const [showObraModal, setShowObraModal] = useState(false);
+  const [selectedObraId, setSelectedObraId] = useState(null);
 
   // Transformar datos brutos a formato interno
   const transformedData = useMemo(() => {
@@ -334,7 +337,16 @@ const PieChartExpandable = ({ datos, titulo = "Distribución", onNavigate }) => 
                       </thead>
                       <tbody>
                         {obrasData.map((obra, index) => (
-                          <tr key={index} style={{ cursor: 'pointer' }}>
+                          <tr 
+                            key={index} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                              if (obra.idObra || obra.id_obra) {
+                                setSelectedObraId(obra.idObra || obra.id_obra);
+                                setShowObraModal(true);
+                              }
+                            }}
+                          >
                             <td>{obra.nombreObra}</td>
                             <td className="text-end">
                               <span 
@@ -454,6 +466,12 @@ const PieChartExpandable = ({ datos, titulo = "Distribución", onNavigate }) => 
           </button>
         </Modal.Footer>
       </Modal>
+
+      <ObraDetalleModal
+        show={showObraModal}
+        onHide={() => setShowObraModal(false)}
+        idObra={selectedObraId}
+      />
     </>
   );
 };

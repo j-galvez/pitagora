@@ -276,7 +276,7 @@ const CrearUsuario = () => {
     }
 
     const usuarioPayload = {
-      run: formData.run.replace(/[^0-9kK]/g, '').toUpperCase(),
+      run: formData.run, // Enviamos el RUN con formato ya que el backend lo espera así
       nombre: formData.nombre,
       apellidoPaterno: formData.apellidoPaterno,
       apellidoMaterno: formData.apellidoMaterno,
@@ -284,7 +284,7 @@ const CrearUsuario = () => {
       password: formData.password,
       rol: formData.rol,
       idObra: formData.idObra ? parseInt(formData.idObra, 10) : null,
-      telefono: formData.telefono,
+      telefono: formData.telefono.startsWith('+56') ? formData.telefono : `+56${formData.telefono}`,
       direccionCalle: formData.calle,
       idRegion: parseInt(formData.idRegion, 10),
       idComuna: parseInt(formData.idComuna, 10),
@@ -305,7 +305,19 @@ const CrearUsuario = () => {
         navigate('/admin/usuarios');
       } else {
         const errorMessage = await response.text();
-        setError(errorMessage || 'Error al crear el usuario');
+        console.error('Error detallado del servidor:', errorMessage);
+        
+        let parsedError = errorMessage;
+        try {
+          const errorJson = JSON.parse(errorMessage);
+          parsedError = errorJson.message || errorJson.error || errorMessage;
+        } catch (e) {} // Si no es JSON, se queda con el texto original
+
+        if (parsedError.includes("Duplicate entry") || parsedError.includes("ConstraintViolation")) {
+          setError("Error: El RUN o el Correo ingresado ya se encuentran registrados en el sistema.");
+        } else {
+          setError(`Error del servidor: ${parsedError || 'No se pudo crear el usuario'}`);
+        }
       }
     } catch (fetchError) {
       console.error('Error creando usuario:', fetchError);

@@ -244,7 +244,7 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
                           <div className="d-flex justify-content-between align-items-center w-100 me-3">
                             <div>
                               <strong className="me-2">#{obs.idObservacion}</strong>
-                              <span className="text-muted">{obs.titulo || 'Sin título'}</span>
+                              <span className="text-muted">{obs.falla || obs.titulo || 'Sin título'}</span>
                             </div>
                             <div className="d-flex gap-2">
                               {getEstadoObservacionBadge(obs.estadoObservacion || obs.estado_observacion)}
@@ -256,18 +256,18 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
                           <div className="row g-3">
                             <div className="col-md-12">
                               <small className="text-muted d-block">Descripción</small>
-                              <p className="mb-2">{obs.descripcion || 'Sin descripción'}</p>
+                              <p className="mb-2">{obs.descripcionProblema || obs.descripcion_problema || obs.descripcion || 'Sin descripción'}</p>
                             </div>
                             <div className="col-md-6">
-                              <small className="text-muted d-block">Fecha de Creación</small>
+                              <small className="text-muted d-block">Fecha de Registro</small>
                               <p className="mb-0">
                                 <FaClock className="me-1" />
-                                {formatFecha(obs.fechaCreacion || obs.fecha_creacion)}
+                                {formatFecha(obs.fechaRegistro || obs.fecha_registro || obs.fechaCreacion || obs.fecha_creacion)}
                               </p>
                             </div>
                             <div className="col-md-6">
                               <small className="text-muted d-block">Categoría</small>
-                              <p className="mb-0">{obs.nombreCategoria || obs.nombre_categoria || '-'}</p>
+                              <p className="mb-0">{obs.nombreCategoria || obs.nombre_categoria || (obs.idCategoria ? `Cat. #${obs.idCategoria}` : '-')}</p>
                             </div>
                           </div>
                         </Accordion.Body>
