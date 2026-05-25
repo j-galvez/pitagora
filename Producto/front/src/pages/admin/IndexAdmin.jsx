@@ -25,37 +25,6 @@ export default function IndexAdmin() {
     rol: 'admin'
   };
 
-  // Datos para el gráfico de torta (transformados desde topFallas)
-  const datosPieChart = topFallas.map((falla, index) => ({
-    nombre: falla.nombreCategoria,
-    valor: falla.cantidad,
-    color: ['#003860', '#0dcaf0', '#198754', '#ffc107', '#dc3545'][index % 5],
-    descripcion: `Problemas relacionados con ${falla.nombreCategoria.toLowerCase()}`,
-    detalles: [
-      {
-        titulo: 'Tickets activos',
-        subtitulo: 'En proceso de resolución',
-        valor: falla.cantidad
-      },
-      {
-        titulo: 'Prioridad promedio',
-        valor: 'Media-Alta'
-      }
-    ],
-    acciones: [
-      {
-        texto: 'Ver Tickets',
-        icono: 'bi bi-file-text',
-        onClick: () => navigate(`/admin/tickets?categoria=${falla.nombreCategoria}`)
-      },
-      {
-        texto: 'Asignar Técnico',
-        icono: 'bi bi-person-plus',
-        onClick: () => alert(`Asignar técnico para ${falla.nombreCategoria}`)
-      }
-    ]
-  }));
-
   useEffect(() => {
     cargarDatosDashboard();
   }, []);
@@ -148,7 +117,8 @@ export default function IndexAdmin() {
               <div className="col-12 col-lg-6">
                 <PieChartExpandable
                   titulo="Distribución de Categorías"
-                  datos={datosPieChart}
+                  datos={topFallas}
+                  onNavigate={navigate}
                 />
               </div>
             </div>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaEdit, FaTrash, FaUserPlus, FaArrowLeft } from 'react-icons/fa';
+import { FaSearch, FaEdit, FaTrash, FaUserPlus, FaArrowLeft, FaEye } from 'react-icons/fa';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import AdminLayout from '../../components/AdminLayout';
+import UsuarioDetalleModal from '../../components/UsuarioDetalleModal';
 
 const GestionUsuario = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const GestionUsuario = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Todos');
+  const [showModalDetalle, setShowModalDetalle] = useState(false);
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
 
   useEffect(() => {
     cargarUsuarios();
@@ -83,6 +86,11 @@ const GestionUsuario = () => {
     navigate(`/admin/usuarios/${userId}`);
   };
 
+  const handleVerDetalle = (idUsuario) => {
+    setUsuarioSeleccionado(idUsuario);
+    setShowModalDetalle(true);
+  };
+
   const filteredUsuarios = usuarios.filter((u) => {
     const lowerSearch = searchTerm.toLowerCase();
     const matchesSearch =
@@ -104,10 +112,24 @@ const GestionUsuario = () => {
       titulo="Gestión de Usuarios" 
       handleVolver={handleVolver}
     >
+      <UsuarioDetalleModal 
+        show={showModalDetalle}
+        onHide={() => setShowModalDetalle(false)}
+        idUsuario={usuarioSeleccionado}
+      />
 
         <div className="container py-4">
           <div className="card shadow-sm border-0 rounded-3 p-4">
-            <h5 className="mb-3">Usuarios del Sistema</h5>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0">Usuarios del Sistema</h5>
+              <button 
+                className="btn btn-primary"
+                onClick={handleCreateClick}
+              >
+                <FaUserPlus className="me-2" />
+                Crear Usuario
+              </button>
+            </div>
 
             {error && (
               <div className="alert alert-danger" role="alert">
@@ -171,7 +193,7 @@ const GestionUsuario = () => {
                       const roleLabel = u.rol === 'admin' ? 'Admin' : u.rol === 'cliente' ? 'Cliente' : u.rol;
 
                       return (
-                        <tr key={userId} style={{ fontSize: '14px' }}>
+                        <tr key={userId} style={{ fontSize: '14px', cursor: 'pointer' }} onClick={() => handleVerDetalle(userId)}>
                           <td className="fw-semibold">{fullName || '-'} </td>
                           <td>{u.correo || '-'}</td>
                           <td>{u.telefono || '-'}</td>
@@ -186,7 +208,7 @@ const GestionUsuario = () => {
                             </span>
                           </td>
                           <td>{u.fechaCreacion ? new Date(u.fechaCreacion).toLocaleDateString('es-ES') : '-'}</td>
-                          <td>
+                          <td onClick={(e) => e.stopPropagation()}>
                             <button
                               className="btn btn-light btn-sm text-primary me-2"
                               onClick={() => handleEditClick(u)}

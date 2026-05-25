@@ -19,4 +19,7 @@ public interface TicketsRepository extends JpaRepository <Tickets, Integer>{
     java.util.List<Tickets> findByIdUsuario(Integer idUsuario);
 
     java.util.List<Tickets> findByEstadoGeneral(String estadoGeneral);
+
+    // Buscar tickets por obra
+    java.util.List<Tickets> findByIdObra(Integer idObra);
 }

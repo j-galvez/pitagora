@@ -50,6 +50,8 @@ export default function NavbarAdmin({ usuario }) {
             <i className="bi bi-file-text me-2"></i> Tickets
           </Link>
         </li>
+
+        {/*
         <li className="nav-item mb-2">
           <Link 
             to="/crear-ticket" 
@@ -59,6 +61,9 @@ export default function NavbarAdmin({ usuario }) {
             <i className="bi bi-plus-circle me-2"></i> Crear Nuevo Ticket
           </Link>
         </li>
+          */}
+
+        {/*
         <li className="nav-item mb-2">
           <Link 
             to="/crear-observacion" 
@@ -68,15 +73,32 @@ export default function NavbarAdmin({ usuario }) {
             <i className="bi bi-search me-2"></i> Crear Observación
           </Link>
         </li>
+
+        */}
+        
+        {/*
         <li className="nav-item mb-2">
           <Link 
             to="/admin/crear-cliente" 
             className={`nav-link text-white ${location.pathname === '/admin/crear-cliente' ? 'active' : ''}`}
             style={{ backgroundColor: location.pathname === '/admin/crear-cliente' ? '#003860' : 'transparent' }}
-          >
+          > 
             <i className="bi bi-building me-2"></i> Crear Cliente
           </Link>
         </li>
+          */}
+
+        <li className="nav-item mb-2">
+          <Link 
+            to="/admin/clientes" 
+            className={`nav-link text-white ${location.pathname === '/admin/clientes' ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname === '/admin/clientes' ? '#003860' : 'transparent' }}
+          >
+            <i className="bi bi-people me-2"></i> Clientes
+          </Link>
+        </li>
+          
+          {/*
         <li className="nav-item mb-2">
           <Link 
             to="/admin/crear-obra" 
@@ -86,15 +108,29 @@ export default function NavbarAdmin({ usuario }) {
             <i className="bi bi-hammer me-2"></i> Crear Obra
           </Link>
         </li>
+            */}
+
+
+        <li className="nav-item mb-2">
+          <Link 
+            to="/admin/obras" 
+            className={`nav-link text-white ${location.pathname === '/admin/obras' ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname === '/admin/obras' ? '#003860' : 'transparent' }}
+          >
+            <i className="bi bi-building me-2"></i> Obras
+          </Link>
+        </li>
+
         <li className="nav-item mb-2">
           <Link 
             to="/admin/usuarios" 
             className={`nav-link text-white ${location.pathname === '/admin/usuarios' ? 'active' : ''}`}
             style={{ backgroundColor: location.pathname === '/admin/usuarios' ? '#003860' : 'transparent' }}
           >
-            <i className="bi bi-pencil-square me-2"></i> Gestión de Usuarios
+            <i className="bi bi-pencil-square me-2"></i> Usuarios
           </Link>
         </li>
+        {/*
         <li className="nav-item mb-2">
           <Link 
             to="/admin/crear-usuarios" 
@@ -104,6 +140,8 @@ export default function NavbarAdmin({ usuario }) {
             <i className="bi bi-person-plus me-2"></i> Creación de Usuarios
           </Link>
         </li>
+          */}
+
         <li className="nav-item">
           <Link 
             to="/mensajes" 

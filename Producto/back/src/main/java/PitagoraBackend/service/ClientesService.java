@@ -3,6 +3,7 @@ package PitagoraBackend.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import PitagoraBackend.repository.ClientesRepository;
+import PitagoraBackend.dto.ClienteDTO;
 import PitagoraBackend.model.Clientes;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -61,6 +62,11 @@ public class ClientesService {
     // READ - Obtener todos los clientes
     public List<Clientes> obtenerClientes() {
         return clientesRepository.findAll();
+    }
+
+    // READ - Obtener todos los clientes con su conteo de observaciones
+    public List<ClienteDTO> obtenerClientesConObservaciones() {
+        return clientesRepository.findAllClientesConObservaciones();
     }
 
     // READ - Obtener cliente por ID

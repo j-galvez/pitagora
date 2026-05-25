@@ -130,9 +130,17 @@ const GestionTickets = () => {
         <div className="card shadow-sm border-0 rounded-3 p-4">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="mb-0">Tickets de Postventa</h5>
-            <button className="btn btn-sm btn-outline-primary" onClick={inicializarDatos}>
-              <FaSync className="me-1" /> Actualizar
-            </button>
+            <div className="d-flex gap-2">
+              <button className="btn btn-sm btn-outline-primary" onClick={inicializarDatos}>
+                <FaSync className="me-1" /> Actualizar
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/crear-ticket')}
+              >
+                <FaPlus className="me-1" /> Crear Ticket
+              </button>
+            </div>
           </div>
 
           <p className="text-muted mb-4" style={{ fontSize: '14px' }}>

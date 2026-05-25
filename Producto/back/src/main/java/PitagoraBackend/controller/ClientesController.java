@@ -3,13 +3,13 @@ package PitagoraBackend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import PitagoraBackend.dto.ClienteDTO;
 import PitagoraBackend.model.Clientes;
 import PitagoraBackend.service.ClientesService;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/clientes")
-@CrossOrigin(origins = "*")
 public class ClientesController {
 
     @Autowired
@@ -17,8 +17,9 @@ public class ClientesController {
 
     // GET - Listar todos los clientes
     @GetMapping
-    public List<Clientes> listar() {
-        return clientesService.obtenerClientes();
+    public ResponseEntity<List<ClienteDTO>> listar() {
+        List<ClienteDTO> clientes = clientesService.obtenerClientesConObservaciones();
+        return ResponseEntity.ok(clientes);
     }
 
     // POST - Crear nuevo cliente

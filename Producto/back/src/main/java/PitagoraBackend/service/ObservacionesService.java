@@ -239,5 +239,22 @@ public class ObservacionesService {
     public List<Observaciones> obtenerObservacionesPorConfirmacion(String confirmacion) {
         return observacionesRepository.findByConfirmacionCliente(confirmacion);
     }
+
+    // Obtener observaciones por obra (a través de tickets)
+    public List<Observaciones> obtenerObservacionesPorObra(Integer idObra) {
+        // Obtener todos los tickets de la obra
+        List<Integer> ticketIds = ticketsRepository.findByIdObra(idObra)
+            .stream()
+            .map(ticket -> ticket.getIdTicket())
+            .toList();
+        
+        // Si no hay tickets, retornar lista vacía
+        if (ticketIds.isEmpty()) {
+            return List.of();
+        }
+        
+        // Obtener todas las observaciones de esos tickets
+        return observacionesRepository.findByIdTicketIn(ticketIds);
+    }
 }
 
