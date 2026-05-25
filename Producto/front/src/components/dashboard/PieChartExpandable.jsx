@@ -1,21 +1,60 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Modal } from 'react-bootstrap';
+import { obtenerObrasPorCategoria } from '../../services/dashboardService';
 
 /**
  * Componente de gráfico de torta expandible
+ * Recibe datos brutos y los transforma internamente
  * Al hacer click en una sección, se expande mostrando detalles
+ * Permite drill-down a nivel de obras
  */
-const PieChartExpandable = ({ datos, titulo = "Distribución" }) => {
+const PieChartExpandable = ({ datos, titulo = "Distribución", onNavigate }) => {
   const [selectedSegment, setSelectedSegment] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [drillDownMode, setDrillDownMode] = useState(false);
+  const [obrasData, setObrasData] = useState([]);
+  const [loadingObras, setLoadingObras] = useState(false);
+
+  // Transformar datos brutos a formato interno
+  const transformedData = useMemo(() => {
+    return datos.map((item, index) => ({
+      nombre: item.nombreCategoria,
+      valor: item.cantidad,
+      color: ['#003860', '#0dcaf0', '#198754', '#ffc107', '#dc3545'][index % 5],
+      descripcion: `Problemas relacionados con ${item.nombreCategoria.toLowerCase()}`,
+      detalles: [
+        {
+          titulo: 'Tickets activos',
+          subtitulo: 'En proceso de resolución',
+          valor: item.cantidad
+        },
+        {
+          titulo: 'Prioridad promedio',
+          valor: 'Media-Alta'
+        }
+      ],
+      acciones: [
+        {
+          texto: 'Ver Tickets',
+          icono: 'bi bi-file-text',
+          onClick: () => onNavigate && onNavigate(`/admin/tickets?categoria=${item.nombreCategoria}`)
+        },
+        {
+          texto: 'Asignar Técnico',
+          icono: 'bi bi-person-plus',
+          onClick: () => alert(`Asignar técnico para ${item.nombreCategoria}`)
+        }
+      ]
+    }));
+  }, [datos, onNavigate]);
 
   // Calcular total y porcentajes
-  const total = datos.reduce((sum, item) => sum + item.valor, 0);
+  const total = transformedData.reduce((sum, item) => sum + item.valor, 0);
   
   // Calcular ángulos para cada segmento
   let currentAngle = 0;
-  const segments = datos.map((item, index) => {
+  const segments = transformedData.map((item, index) => {
     const percentage = (item.valor / total) * 100;
     const angle = (item.valor / total) * 360;
     const segment = {
@@ -66,16 +105,27 @@ const PieChartExpandable = ({ datos, titulo = "Distribución" }) => {
     };
   }
 
-  // Manejar click en segmento
-  const handleSegmentClick = (segment) => {
+  // Manejar click en segmento - carga automáticamente las obras
+  const handleSegmentClick = async (segment) => {
     setSelectedSegment(segment);
     setShowModal(true);
+    setLoadingObras(true);
+    try {
+      const obras = await obtenerObrasPorCategoria(segment.nombre);
+      setObrasData(obras);
+    } catch (error) {
+      console.error('Error al cargar obras:', error);
+      alert('Error al cargar obras de esta categoría');
+    } finally {
+      setLoadingObras(false);
+    }
   };
 
   // Cerrar modal
   const handleClose = () => {
     setShowModal(false);
     setSelectedSegment(null);
+    setObrasData([]);
   };
 
   return (
@@ -216,7 +266,7 @@ const PieChartExpandable = ({ datos, titulo = "Distribución" }) => {
         <Modal.Body>
           {selectedSegment && (
             <div className="container-fluid">
-              {/* Estadísticas principales */}
+              {/* 1. Estadísticas principales */}
               <div className="row g-3 mb-4">
                 <div className="col-md-4">
                   <div className="card bg-light border-0">
@@ -250,7 +300,7 @@ const PieChartExpandable = ({ datos, titulo = "Distribución" }) => {
                 </div>
               </div>
 
-              {/* Descripción */}
+              {/* 2. Descripción */}
               {selectedSegment.descripcion && (
                 <div className="mb-4">
                   <h6 className="fw-bold mb-2">Descripción</h6>
@@ -258,7 +308,80 @@ const PieChartExpandable = ({ datos, titulo = "Distribución" }) => {
                 </div>
               )}
 
-              {/* Detalles adicionales */}
+              {/* 3. Obras - se carga automáticamente */}
+              <hr className="my-4" />
+              <h6 className="fw-bold mb-3">
+                <i className="bi bi-building me-2"></i>
+                Incidencias por Obra
+              </h6>
+
+              {loadingObras ? (
+                <div className="text-center py-5">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Cargando...</span>
+                  </div>
+                  <p className="mt-3 text-muted">Cargando obras...</p>
+                </div>
+              ) : obrasData.length > 0 ? (
+                <>
+                  <div className="table-responsive mb-3">
+                    <table className="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Obra</th>
+                          <th className="text-end">Cantidad</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {obrasData.map((obra, index) => (
+                          <tr key={index} style={{ cursor: 'pointer' }}>
+                            <td>{obra.nombreObra}</td>
+                            <td className="text-end">
+                              <span 
+                                className="badge" 
+                                style={{ backgroundColor: selectedSegment.color }}
+                              >
+                                {obra.cantidad}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* 4. Estadísticas resumen */}
+                  <div className="row g-2 mb-4">
+                    <div className="col-md-6">
+                      <div className="card bg-light border-0">
+                        <div className="card-body text-center">
+                          <div className="small text-muted mb-1">Total Obras Afectadas</div>
+                          <div className="h5 mb-0 fw-bold" style={{ color: selectedSegment.color }}>
+                            {obrasData.length}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="card bg-light border-0">
+                        <div className="card-body text-center">
+                          <div className="small text-muted mb-1">Total Incidencias</div>
+                          <div className="h5 mb-0 fw-bold" style={{ color: selectedSegment.color }}>
+                            {obrasData.reduce((sum, o) => sum + o.cantidad, 0)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="alert alert-info text-center mb-4">
+                  <i className="bi bi-info-circle me-2"></i>
+                  No hay obras con incidencias en esta categoría
+                </div>
+              )}
+
+              {/* 5. Detalles adicionales */}
               {selectedSegment.detalles && selectedSegment.detalles.length > 0 && (
                 <div className="mb-4">
                   <h6 className="fw-bold mb-3">Detalles</h6>
@@ -282,8 +405,8 @@ const PieChartExpandable = ({ datos, titulo = "Distribución" }) => {
                 </div>
               )}
 
-              {/* Barra de progreso visual */}
-              <div className="mb-3">
+              {/* 6. Barra de progreso visual */}
+              <div className="mb-4">
                 <h6 className="fw-bold mb-2">Proporción del Total</h6>
                 <div className="progress" style={{ height: '30px' }}>
                   <div
@@ -302,7 +425,7 @@ const PieChartExpandable = ({ datos, titulo = "Distribución" }) => {
                 </div>
               </div>
 
-              {/* Acciones */}
+              {/* 7. Acciones */}
               {selectedSegment.acciones && selectedSegment.acciones.length > 0 && (
                 <div className="d-flex gap-2 flex-wrap">
                   {selectedSegment.acciones.map((accion, index) => (
@@ -339,28 +462,11 @@ PieChartExpandable.propTypes = {
   titulo: PropTypes.string,
   datos: PropTypes.arrayOf(
     PropTypes.shape({
-      nombre: PropTypes.string.isRequired,
-      valor: PropTypes.number.isRequired,
-      color: PropTypes.string,
-      descripcion: PropTypes.string,
-      detalles: PropTypes.arrayOf(
-        PropTypes.shape({
-          titulo: PropTypes.string,
-          subtitulo: PropTypes.string,
-          valor: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-        })
-      ),
-      acciones: PropTypes.arrayOf(
-        PropTypes.shape({
-          texto: PropTypes.string.isRequired,
-          icono: PropTypes.string,
-          onClick: PropTypes.func
-        })
-      )
+      nombreCategoria: PropTypes.string.isRequired,
+      cantidad: PropTypes.number.isRequired
     })
-  ).isRequired
+  ).isRequired,
+  onNavigate: PropTypes.func
 };
 
 export default PieChartExpandable;
-
-// Made with Bob

@@ -107,7 +107,16 @@ const GestionUsuario = () => {
 
         <div className="container py-4">
           <div className="card shadow-sm border-0 rounded-3 p-4">
-            <h5 className="mb-3">Usuarios del Sistema</h5>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0">Usuarios del Sistema</h5>
+              <button 
+                className="btn btn-primary"
+                onClick={handleCreateClick}
+              >
+                <FaUserPlus className="me-2" />
+                Crear Usuario
+              </button>
+            </div>
 
             {error && (
               <div className="alert alert-danger" role="alert">

@@ -203,7 +203,7 @@ const CrearUsuario = () => {
   };
 
   const handleVolver = () => {
-    navigate('/admin-dashboard');
+    navigate('/admin/usuarios');
   };
 
   const handleCancel = () => {

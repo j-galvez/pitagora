@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import PitagoraBackend.service.DashboardService;
 import PitagoraBackend.dto.DashboardStatsDTO;
 import PitagoraBackend.dto.TopFallaDTO;
+import PitagoraBackend.dto.ObraConIncidenciasDTO;
 import java.util.List;
 
 @RestController
@@ -39,6 +40,21 @@ public class DashboardController {
         try {
             List<TopFallaDTO> topFallas = dashboardService.obtenerTopFallas();
             return ResponseEntity.ok(topFallas);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * GET /api/dashboard/obras-por-categoria?categoria={nombreCategoria}
+     * Obtiene las obras asociadas a una categoría (drill-down)
+     */
+    @GetMapping("/obras-por-categoria")
+    public ResponseEntity<List<ObraConIncidenciasDTO>> obtenerObrasPorCategoria(
+            @RequestParam("categoria") String nombreCategoria) {
+        try {
+            List<ObraConIncidenciasDTO> obras = dashboardService.obtenerObrasPorCategoria(nombreCategoria);
+            return ResponseEntity.ok(obras);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }

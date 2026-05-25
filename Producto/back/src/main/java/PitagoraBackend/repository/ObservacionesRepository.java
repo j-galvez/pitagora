@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import PitagoraBackend.model.Observaciones;
 import PitagoraBackend.dto.TopFallaDTO;
+import PitagoraBackend.dto.ObraConIncidenciasDTO;
 import java.util.List;
 
 @Repository
@@ -37,10 +38,21 @@ public interface ObservacionesRepository extends JpaRepository<Observaciones, In
     
     // Top 5 categorías más reportadas
     @Query("SELECT new PitagoraBackend.dto.TopFallaDTO(c.nombreCategoria, COUNT(o)) " +
-           "FROM Observaciones o JOIN Categorias c ON o.idCategoria = c.idCategoria " +
+           "FROM Observaciones o, Categorias c " +
+           "WHERE o.idCategoria = c.idCategoria " +
            "GROUP BY c.nombreCategoria " +
            "ORDER BY COUNT(o) DESC")
     List<TopFallaDTO> findTop5Fallas();
+    
+    // Obras por categoría (drill-down)
+    @Query("SELECT new PitagoraBackend.dto.ObraConIncidenciasDTO(ob.idObra, ob.nombreObra, COUNT(o)) " +
+           "FROM Observaciones o, Tickets t, Obras ob " +
+           "WHERE o.idTicket = t.idTicket " +
+           "AND t.idObra = ob.idObra " +
+           "AND o.idCategoria = :idCategoria " +
+           "GROUP BY ob.idObra, ob.nombreObra " +
+           "ORDER BY COUNT(o) DESC")
+    List<ObraConIncidenciasDTO> findObrasByCategoria(Integer idCategoria);
 }
 
 
