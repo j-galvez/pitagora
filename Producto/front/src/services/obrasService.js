@@ -85,6 +85,48 @@ export const obrasService = {
       throw error;
     }
   },
+
+  // Obtener observaciones de una obra
+  getObservacionesByObra: async (idObra) => {
+    try {
+      const response = await fetch(`${API_URL}/obras/${idObra}/observaciones`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener las observaciones de la obra');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error en getObservacionesByObra:', error);
+      throw error;
+    }
+  },
+
+  // Obtener obras de un cliente
+  getObrasByCliente: async (idCliente) => {
+    try {
+      const response = await fetch(`${API_URL}/obras/cliente/${idCliente}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener las obras del cliente');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error en getObrasByCliente:', error);
+      throw error;
+    }
+  },
 };
 
 // Made with Bob

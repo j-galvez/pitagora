@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaEye, FaPlus, FaArrowLeft } from 'react-icons/fa';
+import { FaSearch, FaEye, FaPlus, FaArrowLeft, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
+import ObraDetalleModal from '../../components/ObraDetalleModal';
 import { obrasService } from '../../services/obrasService';
 
 const ListaObras = () => {
@@ -17,6 +18,10 @@ const ListaObras = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Todos');
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [showModal, setShowModal] = useState(false);
+  const [selectedObraId, setSelectedObraId] = useState(null);
 
   useEffect(() => {
     cargarObras();
@@ -27,6 +32,8 @@ const ListaObras = () => {
     setError('');
 
     try {
+      // El backend ahora hace el trabajo mediante un DTO (findAllObrasConDetalles).
+      // Envía los nombres exactos: nombreEmpresa, nombreRegion, nombreComuna.
       const data = await obrasService.getAllObras();
       setObras(data);
     } catch (error) {
@@ -42,26 +49,87 @@ const ListaObras = () => {
   };
 
   const handleVerDetalle = (idObra) => {
-    navigate(`/admin/obras/${idObra}`);
+    setSelectedObraId(idObra);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedObraId(null);
   };
 
   const handleCrearObra = () => {
     navigate('/admin/crear-obra');
   };
 
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (column) => {
+    if (sortColumn !== column) return <FaSort className="ms-1" style={{ opacity: 0.3 }} />;
+    return sortDirection === 'asc' ? <FaSortUp className="ms-1" /> : <FaSortDown className="ms-1" />;
+  };
+
   const filteredObras = obras.filter((obra) => {
     const lowerSearch = searchTerm.toLowerCase();
     const matchesSearch =
-      obra.nombreObra?.toLowerCase().includes(lowerSearch) ||
-      obra.nombreEmpresa?.toLowerCase().includes(lowerSearch) ||
-      obra.nombreRegion?.toLowerCase().includes(lowerSearch) ||
-      obra.nombreComuna?.toLowerCase().includes(lowerSearch);
+      (obra.nombreObra || obra.nombre_obra)?.toLowerCase().includes(lowerSearch) ||
+      (obra.nombreEmpresa || obra.nombre_empresa)?.toLowerCase().includes(lowerSearch) ||
+      (obra.nombreRegion || obra.nombre_region)?.toLowerCase().includes(lowerSearch) ||
+      (obra.nombreComuna || obra.nombre_comuna)?.toLowerCase().includes(lowerSearch);
 
     if (activeTab === 'Todos') return matchesSearch;
-    if (activeTab === 'Activas') return matchesSearch && obra.estadoObra === 'Activa';
-    if (activeTab === 'Garantía Vencida') return matchesSearch && obra.estadoObra === 'Garantía Vencida';
-    if (activeTab === 'Cerradas') return matchesSearch && obra.estadoObra === 'Cerrada';
+    const estado = obra.estadoObra || obra.estado_obra;
+    if (activeTab === 'Activas') return matchesSearch && estado === 'Activa';
+    if (activeTab === 'Garantía Vencida') return matchesSearch && estado === 'Garantía Vencida';
+    if (activeTab === 'Cerradas') return matchesSearch && estado === 'Cerrada';
     return matchesSearch;
+  });
+
+  const sortedObras = [...filteredObras].sort((a, b) => {
+    if (!sortColumn) return 0;
+
+    let aValue, bValue;
+
+    switch (sortColumn) {
+      case 'nombre':
+        aValue = (a.nombreObra || a.nombre_obra || '').toLowerCase();
+        bValue = (b.nombreObra || b.nombre_obra || '').toLowerCase();
+        break;
+      case 'cliente':
+        aValue = (a.nombreEmpresa || a.nombre_empresa || '').toLowerCase();
+        bValue = (b.nombreEmpresa || b.nombre_empresa || '').toLowerCase();
+        break;
+      case 'observaciones':
+        // Ordenamiento numérico para observaciones abiertas
+        aValue = a.numeroObservacionesAbiertas || 0;
+        bValue = b.numeroObservacionesAbiertas || 0;
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      case 'region':
+        aValue = (a.nombreRegion || a.nombre_region || '').toLowerCase();
+        bValue = (b.nombreRegion || b.nombre_region || '').toLowerCase();
+        break;
+      case 'comuna':
+        aValue = (a.nombreComuna || a.nombre_comuna || '').toLowerCase();
+        bValue = (b.nombreComuna || b.nombre_comuna || '').toLowerCase();
+        break;
+      case 'estado':
+        aValue = (a.estadoObra || a.estado_obra || '').toLowerCase();
+        bValue = (b.estadoObra || b.estado_obra || '').toLowerCase();
+        break;
+      default:
+        return 0;
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
   });
 
   const getEstadoBadgeClass = (estado) => {
@@ -141,38 +209,56 @@ const ListaObras = () => {
             <table className="table table-hover align-middle">
               <thead className="table-light text-muted" style={{ fontSize: '14px' }}>
                 <tr>
-                  <th>Nombre de Obra</th>
-                  <th>Cliente</th>
-                  <th>Región</th>
-                  <th>Comuna</th>
-                  <th>Estado</th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('nombre')}>
+                    Nombre de Obra {getSortIcon('nombre')}
+                  </th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('cliente')}>
+                    Cliente {getSortIcon('cliente')}
+                  </th>
+                  <th className="text-center" style={{ cursor: 'pointer' }} onClick={() => handleSort('observaciones')}>
+                    N° Obs. Abiertas {getSortIcon('observaciones')}
+                  </th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('region')}>
+                    Región {getSortIcon('region')}
+                  </th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('comuna')}>
+                    Comuna {getSortIcon('comuna')}
+                  </th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('estado')}>
+                    Estado {getSortIcon('estado')}
+                  </th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4">
+                    <td colSpan="7" className="text-center py-4">
                       <div className="spinner-border text-primary" role="status">
                         <span className="visually-hidden">Cargando...</span>
                       </div>
                       <div className="mt-2">Cargando obras...</div>
                     </td>
                   </tr>
-                ) : filteredObras.length > 0 ? (
-                  filteredObras.map((obra) => (
+                ) : sortedObras.length > 0 ? (
+                  sortedObras.map((obra) => (
                     <tr 
-                      key={obra.idObra} 
+                      key={obra.idObra || obra.id_obra} 
                       style={{ fontSize: '14px', cursor: 'pointer' }}
-                      onClick={() => handleVerDetalle(obra.idObra)}
+                      onClick={() => handleVerDetalle(obra.idObra || obra.id_obra)}
                     >
-                      <td className="fw-semibold">{obra.nombreObra}</td>
-                      <td>{obra.nombreEmpresa || '-'}</td>
-                      <td>{obra.nombreRegion || '-'}</td>
-                      <td>{obra.nombreComuna || '-'}</td>
+                      <td className="fw-semibold">{obra.nombreObra || obra.nombre_obra}</td>
+                      <td>{obra.nombreEmpresa || obra.nombre_empresa || '-'}</td>
+                      <td className="text-center">
+                        <span className={`badge ${ (obra.numeroObservacionesAbiertas || 0) > 0 ? 'bg-danger' : 'bg-secondary' }`}>
+                          {obra.numeroObservacionesAbiertas || 0}
+                        </span>
+                      </td>
+                      <td>{obra.nombreRegion || obra.nombre_region || '-'}</td>
+                      <td>{obra.nombreComuna || obra.nombre_comuna || '-'}</td>
                       <td>
-                        <span className={`badge ${getEstadoBadgeClass(obra.estadoObra)}`}>
-                          {obra.estadoObra || 'Sin estado'}
+                        <span className={`badge ${getEstadoBadgeClass(obra.estadoObra || obra.estado_obra)}`}>
+                          {obra.estadoObra || obra.estado_obra || 'Sin estado'}
                         </span>
                       </td>
                       <td>
@@ -180,7 +266,7 @@ const ListaObras = () => {
                           className="btn btn-light btn-sm text-primary"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleVerDetalle(obra.idObra);
+                            handleVerDetalle(obra.idObra || obra.id_obra);
                           }}
                         >
                           <FaEye className="me-1" />
@@ -191,7 +277,7 @@ const ListaObras = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="text-center text-muted py-3">
+                    <td colSpan="7" className="text-center text-muted py-3">
                       No se encontraron obras.
                     </td>
                   </tr>
@@ -200,13 +286,20 @@ const ListaObras = () => {
             </table>
           </div>
 
-          {!loading && filteredObras.length > 0 && (
+          {!loading && sortedObras.length > 0 && (
             <div className="mt-3 text-muted" style={{ fontSize: '14px' }}>
-              Mostrando {filteredObras.length} de {obras.length} obras
+              Mostrando {sortedObras.length} de {obras.length} obras
             </div>
           )}
         </div>
       </div>
+
+      {/* Modal de Detalle de Obra */}
+      <ObraDetalleModal
+        show={showModal}
+        onHide={handleCloseModal}
+        idObra={selectedObraId}
+      />
     </AdminLayout>
   );
 };

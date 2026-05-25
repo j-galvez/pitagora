@@ -85,6 +85,27 @@ export const clientesService = {
       throw error;
     }
   },
+
+  // Obtener cliente por ID
+  getClienteById: async (idCliente) => {
+    try {
+      const response = await fetch(`${API_URL}/clientes/${idCliente}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener el cliente');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error en getClienteById:', error);
+      throw error;
+    }
+  },
 };
 
 // Made with Bob

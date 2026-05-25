@@ -26,6 +26,9 @@ public interface ObservacionesRepository extends JpaRepository<Observaciones, In
     // Buscar observaciones por confirmación del cliente
     List<Observaciones> findByConfirmacionCliente(String confirmacionCliente);
     
+    // Buscar observaciones por múltiples tickets
+    List<Observaciones> findByIdTicketIn(List<Integer> idTickets);
+    
     // QUERIES PARA DASHBOARD
     
     // Contar observaciones abiertas (pendiente, en observación, aplica, en proceso)

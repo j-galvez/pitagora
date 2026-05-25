@@ -9,7 +9,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/regiones")
-@CrossOrigin(origins = "*")
 public class RegionesController {
 
     @Autowired
