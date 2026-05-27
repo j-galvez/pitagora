@@ -9,6 +9,7 @@ export default function CrearObservacion() {
   const { id_ticket: urlTicketId } = useParams();
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [selectedTicketId, setSelectedTicketId] = useState(urlTicketId || '');
   const [observacionesExistentes, setObservacionesExistentes] = useState([]);
   const [nuevasObservaciones, setNuevasObservaciones] = useState([]);
@@ -38,13 +39,29 @@ export default function CrearObservacion() {
     ubicacion_exacta: '',
     descripcion_problema: '',
     urgencia: 'media',
-    id_categoria: '1',
+    id_categoria: '',
     fotos: []
   });
 
   useEffect(() => {
     cargarTicketsDisponibles();
+    cargarCategorias();
   }, []);
+
+  const cargarCategorias = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/categorias');
+      if (response.ok) {
+        const data = await response.json();
+        setCategorias(data || []);
+        if (data && data.length > 0) {
+          setNewObservation(prev => ({ ...prev, id_categoria: data[0].idCategoria || data[0].id_categoria }));
+        }
+      }
+    } catch (err) {
+      console.error('Error al cargar categorías:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedTicketId) {
@@ -168,6 +185,7 @@ export default function CrearObservacion() {
           body: JSON.stringify({
             idTicket: selectedTicketId,
             idCategoria: parseInt(obs.id_categoria),
+            idUsuarioCreador: idUsuarioActual,
             falla: obs.falla,
             ubicacionExacta: obs.ubicacion_exacta,
             descripcionProblema: obs.descripcion_problema,
@@ -344,11 +362,11 @@ export default function CrearObservacion() {
                       <div className="col-md-6">
                         <label className="form-label text-secondary fw-semibold" style={{ fontSize: '12px' }}>CATEGORÍA</label>
                         <select className="form-select" value={newObservation.id_categoria} onChange={(e) => setNewObservation({...newObservation, id_categoria: e.target.value})}>
-                          <option value="1">Instalaciones Sanitarias</option>
-                          <option value="4">Instalaciones Eléctricas</option>
-                          <option value="7">Terminaciones</option>
-                          <option value="10">Estructuras</option>
-                          <option value="13">Sistemas Especiales</option>
+                          {categorias.map(cat => (
+                            <option key={cat.idCategoria || cat.id_categoria} value={cat.idCategoria || cat.id_categoria}>
+                              {cat.nombreCategoria || cat.nombre_categoria}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-6">

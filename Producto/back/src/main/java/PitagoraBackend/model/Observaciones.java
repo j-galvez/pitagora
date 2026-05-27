@@ -66,6 +66,9 @@ public class Observaciones {
     @Column(name = "intentos_recordatorio")
     private Integer intentosRecordatorio;
 
+    @Column(name = "id_usuario_creador")
+    private Integer idUsuarioCreador;
+
     @Column(name = "fecha_registro", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaRegistro;
 
