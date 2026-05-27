@@ -60,13 +60,18 @@ export default function CrearObservacion() {
     setLoadingTickets(true);
     try {
       const endpoint = isAdmin 
-        ? 'http://localhost:8080/api/tickets?estado=abierto' 
-        : `http://localhost:8080/api/tickets/usuario/${idUsuarioActual}?estado=abierto`;
+        ? 'http://localhost:8080/api/tickets' 
+        : `http://localhost:8080/api/tickets/usuario/${idUsuarioActual}`;
       
       const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-        setTickets(data || []);
+        // Filtramos para mostrar solo los que no están terminados (abierto o en proceso)
+        const ticketsActivos = (data || []).filter(t => {
+          const est = (t.estadoGeneral || t.estado_general || '').toLowerCase();
+          return est === 'abierto' || est === 'en proceso';
+        });
+        setTickets(ticketsActivos);
       } else {
         throw new Error('Error al cargar tickets');
       }
