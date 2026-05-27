@@ -13,6 +13,9 @@ import CrearUsuario from './pages/admin/CrearUsuario';
 import EditarUsuario from './pages/admin/EditarUsuario';
 import CrearCliente from './pages/admin/CrearCliente';
 import CrearObra from './pages/admin/CrearObra';
+import GestionTickets from './pages/admin/GestionTickets';
+import ListaObras from './pages/admin/ListaObras';
+import ListaClientes from './pages/admin/ListaClientes';
 
 
 function App() {
@@ -20,7 +23,11 @@ function App() {
     <Routes>
       {/* Rutas de Administrador */}
       <Route path="/admin-dashboard" element={<ProtectedRoute requiredRole="admin"><IndexAdmin /></ProtectedRoute>} />
+      <Route path="/admin/tickets" element={<ProtectedRoute requiredRole="admin"><GestionTickets /></ProtectedRoute>} />
+      <Route path="/admin/clientes" element={<ProtectedRoute requiredRole="admin"><ListaClientes /></ProtectedRoute>} />
+      <Route path="/admin/obras" element={<ProtectedRoute requiredRole="admin"><ListaObras /></ProtectedRoute>} />
       <Route path="/admin/crear-cliente" element={<ProtectedRoute requiredRole="admin"><CrearCliente /></ProtectedRoute>} />
+      <Route path="/crear-cliente" element={<ProtectedRoute requiredRole="admin"><CrearCliente /></ProtectedRoute>} />
       <Route path="/admin/crear-obra" element={<ProtectedRoute requiredRole="admin"><CrearObra /></ProtectedRoute>} />
       <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole="admin"><GestionUsuario /></ProtectedRoute>} />
       <Route path="/admin/crear-usuarios" element={<ProtectedRoute requiredRole="admin"><CrearUsuario /></ProtectedRoute>} />

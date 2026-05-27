@@ -111,6 +111,11 @@ public class UsuariosService {
         return usuario.get();
     }
 
+    // READ - Obtener usuarios por obra
+    public List<Usuarios> obtenerUsuariosPorObra(Integer idObra) {
+        return usuariosRepository.findByIdObra(idObra);
+    }
+
     // UPDATE
     public Usuarios actualizarUsuarios(Integer id, Usuarios usuariosActualizado) {
         // Verificar que el usuario exista

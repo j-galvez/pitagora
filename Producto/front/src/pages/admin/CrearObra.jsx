@@ -162,11 +162,11 @@ const CrearObra = () => {
 
   const handleVolver = () => {
     console.log('Volver al dashboard');
-    navigate('/admin-dashboard');
+    navigate('/admin/obras');
   };
 
   const handleCancel = () => {
-    navigate('/admin-dashboard');
+    navigate('/admin/obras');
   };
 
   const handleSubmit = async (e) => {
@@ -236,7 +236,7 @@ const CrearObra = () => {
       if (response.ok) {
         const obraCreada = await response.json();
         alert(`Obra creada exitosamente con ID: ${obraCreada.idObra}`);
-        navigate('/admin-dashboard');
+        navigate('/admin/obras');
       } else {
         const errorMessage = await response.text();
         setError(errorMessage || 'Error al crear la obra');

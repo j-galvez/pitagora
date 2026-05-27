@@ -26,4 +26,3 @@ export function ProtectedRoute({ children, requiredRole }) {
   // Si todo está bien, renderizar el componente hijo
   return children;
 }
-

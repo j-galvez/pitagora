@@ -34,4 +34,22 @@ export const obtenerTopFallas = async () => {
   }
 };
 
+/**
+ * Obtiene las obras asociadas a una categoría (drill-down)
+ * @param {string} nombreCategoria - Nombre de la categoría
+ * @returns {Promise<Array>} Array de objetos con idObra, nombreObra y cantidad
+ */
+export const obtenerObrasPorCategoria = async (nombreCategoria) => {
+  try {
+    const response = await fetch(`${API_URL}/obras-por-categoria?categoria=${encodeURIComponent(nombreCategoria)}`);
+    if (!response.ok) {
+      throw new Error('Error al obtener obras por categoría');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error en obtenerObrasPorCategoria:', error);
+    throw error;
+  }
+};
+
 // Made with Bob

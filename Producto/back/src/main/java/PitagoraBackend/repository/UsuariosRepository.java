@@ -11,4 +11,6 @@ public interface UsuariosRepository extends JpaRepository<Usuarios, Integer> {
     boolean existsByRun(String run);
 
     Optional<Usuarios> findByCorreo(String correo);
+
+    java.util.List<Usuarios> findByIdObra(Integer idObra);
 }

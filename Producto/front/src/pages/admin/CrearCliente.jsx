@@ -160,12 +160,12 @@ const CrearCliente = () => {
   };
 
   const handleVolver = () => {
-    console.log('Volver al dashboard de administración');
-    navigate('/admin-dashboard');
+    console.log('Volver a ventana clientes');
+    navigate('/admin/clientes');
   };
 
   const handleCancel = () => {
-    navigate('/admin-dashboard');
+    navigate('/admin/clientes');
   };
 
   const handleSubmit = async (e) => {
@@ -233,7 +233,7 @@ const CrearCliente = () => {
       if (response.ok) {
         const clienteCreado = await response.json();
         alert(`Cliente creado exitosamente con ID: ${clienteCreado.idCliente}`);
-        navigate('/admin-dashboard');
+        navigate('/admin/clientes');
       } else {
         const errorMessage = await response.text();
         setError(errorMessage || 'Error al crear el cliente');

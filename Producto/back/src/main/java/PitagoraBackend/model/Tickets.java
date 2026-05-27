@@ -30,6 +30,9 @@ public class Tickets {
     @Column(name = "id_usuario_creador", nullable = false)
     private Integer idUsuarioCreador;
 
+    @Column(name = "id_usuario", nullable = false)
+    private Integer idUsuario;
+
     @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaCreacion;
 
