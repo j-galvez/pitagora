@@ -26,6 +26,9 @@ public class EmailService {
     @Value("${app.mail.subject.bienvenida:Bienvenido a Pitagora - Credenciales de Acceso}")
     private String subjectBienvenida;
 
+    @Value("${app.mail.subject.recuperacion:Recuperación de contraseña - Pitagora}")
+    private String subjectRecuperacion;
+
     @Value("${app.site.url:http://localhost:5173}")
     private String siteUrl;
 
@@ -34,6 +37,10 @@ public class EmailService {
 
     public void enviarCorreoBienvenida(Usuarios usuario, String password) {
         reintentarEnvio(usuario, password, 1);
+    }
+
+    public void enviarCorreoRecuperacion(Usuarios usuario, String codigo) {
+        reintentarEnvioRecuperacion(usuario, codigo, 1);
     }
 
     private void reintentarEnvio(Usuarios usuario, String password, int intento) {
@@ -62,6 +69,32 @@ public class EmailService {
         }
     }
 
+    private void reintentarEnvioRecuperacion(Usuarios usuario, String codigo, int intento) {
+        try {
+            if (intento <= MAX_INTENTOS) {
+                enviarCorreoInternoRecuperacion(usuario, codigo);
+                log.info("Correo de recuperación enviado exitosamente a: {}", usuario.getCorreo());
+            }
+        } catch (MessagingException | org.springframework.mail.MailException e) {
+            if (intento < MAX_INTENTOS) {
+                long delayMs = DELAY_BASE_MS * (long) Math.pow(2, intento - 1);
+                log.warn("Intento {} de envío de recuperación a {} falló. Reintentando en {}ms",
+                    intento, usuario.getCorreo(), delayMs, e);
+
+                try {
+                    Thread.sleep(delayMs);
+                    reintentarEnvioRecuperacion(usuario, codigo, intento + 1);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Interrupción al esperar reintentos para {}", usuario.getCorreo(), ie);
+                }
+            } else {
+                log.error("Falló el envío de correo de recuperación a {} después de {} intentos",
+                    usuario.getCorreo(), MAX_INTENTOS, e);
+            }
+        }
+    }
+
     private void enviarCorreoInterno(Usuarios usuario, String password) throws MessagingException {
         MimeMessage mensaje = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
@@ -74,6 +107,68 @@ public class EmailService {
         helper.setText(htmlContent, true);
 
         mailSender.send(mensaje);
+    }
+
+    private void enviarCorreoInternoRecuperacion(Usuarios usuario, String codigo) throws MessagingException {
+        MimeMessage mensaje = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
+
+        helper.setFrom(mailFrom);
+        helper.setTo(usuario.getCorreo());
+        helper.setSubject(subjectRecuperacion);
+
+        String htmlContent = construirHtmlCorreoRecuperacion(usuario, codigo);
+        helper.setText(htmlContent, true);
+
+        mailSender.send(mensaje);
+    }
+
+    private String construirHtmlCorreoRecuperacion(Usuarios usuario, String codigo) {
+        return """
+            <!DOCTYPE html>
+            <html lang=\"es\">
+            <head>
+                <meta charset=\"UTF-8\">
+                <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 22px; border-radius: 10px; }
+                    .header { background-color: #0B3B60; color: white; padding: 20px; border-radius: 10px 10px 0 0; text-align: center; }
+                    .header h1 { margin: 0; font-size: 24px; }
+                    .content { background-color: white; padding: 24px; border-radius: 0 0 10px 10px; border: 1px solid #ddd; text-align: center; }
+                    .codigo { font-family: 'Courier New', monospace; background: #eef6ff; padding: 14px 18px; border-radius: 6px; border: 1px dashed #0B3B60; display: block; margin: 16px auto; font-size: 22px; letter-spacing: 2px; max-width: 280px; }
+                    .button { display: inline-block; padding: 12px 26px; background-color: #0B3B60; color: #fff; text-decoration: none; border-radius: 6px; margin-top: 18px; margin-left: auto; margin-right: auto; }
+                    .note { color: #555; font-size: 14px; margin-top: 20px; }
+                    .footer { color: #777; font-size: 12px; margin-top: 24px; text-align: center; }
+                </style>
+            </head>
+            <body>
+                <div class=\"container\">
+                    <div class=\"header\">
+                        <h1>Recuperación de Contraseña</h1>
+                    </div>
+                    <div class=\"content\">
+                        <p>Hola <strong>%s</strong>,</p>
+                        <p>Hemos recibido tu solicitud de recuperación de contraseña. Usa la siguiente clave de un solo uso para iniciar sesión:</p>
+                        <div class=\"codigo\">%s</div>
+                        <p>Una vez que inicies sesión con esta clave, el sistema te pedirá que crees una nueva contraseña segura.</p>
+                        <a href=\"%s/login\" class=\"button\">Ir a Login</a>
+                        <p class=\"note\">Esta clave es temporal y sólo debe utilizarse una vez. Si no solicitaste este cambio, ignora este correo.</p>
+                    </div>
+                    <div class=\"footer\">
+                        <p>Si tienes problemas para recuperar tu contraseña, contacta a soporte.</p>
+                        <p><a href=\"%s\" style=\"color: #0B3B60; text-decoration: none;\">%s</a></p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+                usuario.getNombre(),
+                codigo,
+                siteUrl,
+                siteUrl,
+                siteUrl
+            );
     }
 
     private String construirHtmlCorreo(Usuarios usuario, String password) {

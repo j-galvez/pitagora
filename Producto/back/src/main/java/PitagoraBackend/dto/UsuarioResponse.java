@@ -11,6 +11,7 @@ public class UsuarioResponse {
     private LocalDateTime fecha_creacion;
     private Integer id_obra;
     private String nombre_obra;
+    private boolean resetPasswordRequired;
 
     public UsuarioResponse() {
     }
@@ -89,4 +90,10 @@ public class UsuarioResponse {
     public void setNombre_obra(String nombre_obra) {
         this.nombre_obra = nombre_obra;
     }
-}
+    public boolean isResetPasswordRequired() {
+        return resetPasswordRequired;
+    }
+
+    public void setResetPasswordRequired(boolean resetPasswordRequired) {
+        this.resetPasswordRequired = resetPasswordRequired;
+    }}
