@@ -57,6 +57,9 @@ public class Observaciones {
     @Column(name = "comentario_admin", columnDefinition = "TEXT")
     private String comentarioAdmin;
 
+    @Column(name = "costo", columnDefinition = "BIGINT DEFAULT 0")
+    private Long costo;
+
     @Column(name = "token_aceptacion", length = 100, unique = true)
     private String tokenAceptacion;
 

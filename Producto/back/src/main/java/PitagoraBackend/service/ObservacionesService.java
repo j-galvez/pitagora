@@ -200,6 +200,10 @@ public class ObservacionesService {
             observacionExistente.setComentarioAdmin(observacionesActualizado.getComentarioAdmin());
         }
 
+        if (observacionesActualizado.getCosto() != null) {
+            observacionExistente.setCosto(observacionesActualizado.getCosto());
+        }
+
         if (observacionesActualizado.getIntentosRecordatorio() != null) {
             observacionExistente.setIntentosRecordatorio(observacionesActualizado.getIntentosRecordatorio());
         }

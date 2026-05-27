@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaSync, FaChevronDown, FaChevronUp, FaPlus, FaUser, FaBuilding, FaClock, FaEye, FaEdit } from 'react-icons/fa';
+import { FaSearch, FaSync, FaChevronDown, FaChevronUp, FaPlus, FaUser, FaBuilding, FaClock, FaEye, FaEdit, FaCheck } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
 
@@ -36,9 +36,75 @@ const GestionTickets = () => {
   const [nuevoEstado, setNuevoEstado] = useState('');
   const [comentarioAdmin, setComentarioAdmin] = useState('');
 
+  // Estado para edición inline de costos
+  const [costoEditando, setCostoEditando] = useState({}); // { idObs: "1.000" }
+
   useEffect(() => {
     inicializarDatos();
   }, []);
+
+  // Formatear número a moneda chilena (sin decimales, con separador de miles)
+  const formatMoneda = (valor) => {
+    if (valor === null || valor === undefined) return '$ 0';
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0
+    }).format(valor);
+  };
+
+  // Formatear mientras se escribe (añadir puntos)
+  const formatInputMil = (valor) => {
+    const num = valor.replace(/\D/g, '');
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  // Calcular el total de un ticket sumando sus observaciones
+  const calcularTotalTicket = (idTicket) => {
+    return todasObservaciones
+      .filter(o => (o.idTicket || o.id_ticket) === idTicket)
+      .reduce((acc, o) => acc + (o.costo || 0), 0);
+  };
+
+  const handleCostoChange = (idObs, valor) => {
+    setCostoEditando(prev => ({
+      ...prev,
+      [idObs]: formatInputMil(valor)
+    }));
+  };
+
+  const guardarCosto = async (idObs) => {
+    const valorFormateado = costoEditando[idObs];
+    if (valorFormateado === undefined) return;
+
+    const valorNumerico = parseInt(valorFormateado.replace(/\./g, '')) || 0;
+    
+    setLoadingAccion(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/observaciones/${idObs}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ costo: valorNumerico })
+      });
+      
+      if (response.ok) {
+        setTodasObservaciones(prev => prev.map(o => 
+          (o.idObservacion || o.id_observacion) === idObs ? { ...o, costo: valorNumerico } : o
+        ));
+        // Limpiar estado de edición
+        const nuevoCostoEditando = { ...costoEditando };
+        delete nuevoCostoEditando[idObs];
+        setCostoEditando(nuevoCostoEditando);
+      } else {
+        alert('Error al guardar el costo');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión');
+    } finally {
+      setLoadingAccion(false);
+    }
+  };
 
   const inicializarDatos = async () => {
     setLoading(true);
@@ -234,6 +300,7 @@ const GestionTickets = () => {
                   <th>Usuario Asignado</th>
                   <th>Fecha</th>
                   <th>Estado</th>
+                  <th className="text-end">Costo Total</th>
                   <th className="text-end">Acciones</th>
                 </tr>
               </thead>
@@ -273,6 +340,9 @@ const GestionTickets = () => {
                               {(t.estadoGeneral || t.estado_general).toUpperCase()}
                             </span>
                           </td>
+                          <td className="text-end fw-bold text-success" style={{ fontSize: '13px' }}>
+                            {formatMoneda(calcularTotalTicket(ticketId))}
+                          </td>
                           <td className="text-end">
                             <button className="btn btn-light btn-sm text-primary">
                               {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
@@ -283,7 +353,7 @@ const GestionTickets = () => {
                         {/* Fila de Detalle Expandible (Observations) */}
                         {isExpanded && (
                           <tr>
-                            <td colSpan="6" className="p-0 border-0">
+                            <td colSpan="7" className="p-0 border-0">
                               <div className="bg-light p-4 border-start border-primary border-4 shadow-inner">
                                 <div className="d-flex justify-content-between align-items-center mb-3">
                                   <h6 className="mb-0 fw-bold" style={{ fontSize: '15px' }}>
@@ -312,6 +382,7 @@ const GestionTickets = () => {
                                           <th className="ps-3 py-2">FALLA</th>
                                           <th className="py-2">UBICACIÓN</th>
                                           <th className="py-2">URGENCIA</th>
+                                          <th className="py-2 text-center">COSTO</th>
                                           <th className="py-2 pe-3 text-center">ESTADO REPARACIÓN</th>
                                         </tr>
                                       </thead>
@@ -337,6 +408,32 @@ const GestionTickets = () => {
                                               <span className={`badge ${obs.urgencia === 'alta' ? 'bg-danger' : obs.urgencia === 'media' ? 'bg-warning text-dark' : 'bg-info text-dark'}`} style={{ fontSize: '11px' }}>
                                                 {obs.urgencia.toUpperCase()}
                                               </span>
+                                            </td>
+                                            <td style={{ width: '130px' }}>
+                                              <div className="input-group input-group-sm" onClick={(e) => e.stopPropagation()}>
+                                                <span className="input-group-text bg-light" style={{ fontSize: '11px' }}>$</span>
+                                                <input 
+                                                  type="text" 
+                                                  className="form-control text-end"
+                                                  style={{ fontSize: '11px' }}
+                                                  value={
+                                                    costoEditando[obs.idObservacion || obs.id_observacion] !== undefined 
+                                                    ? costoEditando[obs.idObservacion || obs.id_observacion] 
+                                                    : (obs.costo ? formatInputMil(obs.costo.toString()) : '0')
+                                                  }
+                                                  onChange={(e) => handleCostoChange(obs.idObservacion || obs.id_observacion, e.target.value)}
+                                                />
+                                                {costoEditando[obs.idObservacion || obs.id_observacion] !== undefined && (
+                                                  <button 
+                                                    className="btn btn-success" 
+                                                    type="button"
+                                                    onClick={() => guardarCosto(obs.idObservacion || obs.id_observacion)}
+                                                    disabled={loadingAccion}
+                                                  >
+                                                    <FaCheck style={{ fontSize: '10px' }} />
+                                                  </button>
+                                                )}
+                                              </div>
                                             </td>
                                             <td className="pe-3 text-center">
                                               <div className="d-flex flex-column align-items-center gap-1">
