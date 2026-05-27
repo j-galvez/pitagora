@@ -393,11 +393,13 @@ const GestionTickets = () => {
                                           <tr
                                             key={obs.idObservacion || obs.id_observacion}
                                             className="border-bottom"
-                                            style={{ cursor: 'pointer' }}
-                                            onClick={(e) => handleVerObservacion(e, obs.idObservacion || obs.id_observacion)}
                                           >
                                             <td className="ps-3 py-3">
-                                              <div className="fw-bold text-primary d-flex align-items-center gap-2" style={{ fontSize: '14px' }}>
+                                              <div 
+                                                className="fw-bold text-primary d-flex align-items-center gap-2" 
+                                                style={{ fontSize: '14px', cursor: 'pointer', width: 'fit-content' }}
+                                                onClick={(e) => handleVerObservacion(e, obs.idObservacion || obs.id_observacion)}
+                                              >
                                                 {obs.falla}
                                                 <FaEye className="text-muted" style={{ fontSize: '11px' }} title="Ver detalle" />
                                               </div>
