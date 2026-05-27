@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaSync, FaChevronDown, FaChevronUp, FaPlus, FaUser, FaBuilding, FaClock, FaEye } from 'react-icons/fa';
+import { FaSearch, FaSync, FaChevronDown, FaChevronUp, FaPlus, FaUser, FaBuilding, FaClock, FaEye, FaEdit } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
 
@@ -25,8 +25,16 @@ const GestionTickets = () => {
   const [activeTab, setActiveTab] = useState('Todos');
   const [ticketExpandido, setTicketExpandido] = useState(null);
   const [loadingAccion, setLoadingAccion] = useState(false);
+  
+  // Estado para Modal de Detalle (Compañero)
   const [showObsModal, setShowObsModal] = useState(false);
-  const [obsSeleccionada, setObsSeleccionada] = useState(null);
+  const [obsIdSeleccionada, setObsIdSeleccionada] = useState(null);
+
+  // Estados para el Modal de Cambio de Estado (Nuevo)
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [obsParaCambio, setObsParaCambio] = useState(null);
+  const [nuevoEstado, setNuevoEstado] = useState('');
+  const [comentarioAdmin, setComentarioAdmin] = useState('');
 
   useEffect(() => {
     inicializarDatos();
@@ -48,7 +56,7 @@ const GestionTickets = () => {
   const cargarObras = async () => {
     const res = await fetch('http://localhost:8080/api/obras');
     if (res.ok) {
-      const data = await res.ok ? await res.json() : [];
+      const data = await res.json();
       const mapa = {};
       data.forEach(o => mapa[o.idObra || o.id_obra] = o.nombreObra || o.nombre_obra);
       setObras(mapa);
@@ -75,34 +83,61 @@ const GestionTickets = () => {
     if (res.ok) setTodasObservaciones(await res.json());
   };
 
-  const cambiarEstadoObs = async (idObs, nuevoEstado) => {
-    setLoadingAccion(true);
-    try {
-      const response = await fetch(`http://localhost:8080/api/observaciones/${idObs}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estadoObservacion: nuevoEstado })
-      });
-      if (response.ok) {
-        setTodasObservaciones(prev => prev.map(o => 
-          (o.idObservacion || o.id_observacion) === idObs ? { ...o, estadoObservacion: nuevoEstado } : o
-        ));
-      }
-    } catch (err) { console.error(err); }
-    setLoadingAccion(false);
-  };
-
   const handleVolver = () => navigate('/admin-dashboard');
 
+  // Funciones Modal Detalle (Compañero)
   const handleVerObservacion = (e, idObs) => {
     e.stopPropagation();
-    setObsSeleccionada(idObs);
+    setObsIdSeleccionada(idObs);
     setShowObsModal(true);
   };
 
   const handleCerrarObsModal = () => {
     setShowObsModal(false);
-    setObsSeleccionada(null);
+    setObsIdSeleccionada(null);
+  };
+
+  // Funciones Modal Cambio de Estado
+  const abrirModalEstado = (e, obs) => {
+    e.stopPropagation();
+    setObsParaCambio(obs);
+    setNuevoEstado(obs.estadoObservacion || obs.estado_observation);
+    setComentarioAdmin(obs.comentarioAdmin || obs.comentario_admin || '');
+    setShowStatusModal(true);
+  };
+
+  const guardarCambioEstado = async () => {
+    if (!obsParaCambio) return;
+    
+    setLoadingAccion(true);
+    const idObs = obsParaCambio.idObservacion || obsParaCambio.id_observacion;
+    
+    try {
+      const response = await fetch(`http://localhost:8080/api/observaciones/${idObs}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          estadoObservacion: nuevoEstado,
+          comentarioAdmin: comentarioAdmin
+        })
+      });
+      
+      if (response.ok) {
+        setTodasObservaciones(prev => prev.map(o => 
+          (o.idObservacion || o.id_observacion) === idObs 
+            ? { ...o, estadoObservacion: nuevoEstado, comentarioAdmin: comentarioAdmin } 
+            : o
+        ));
+        setShowStatusModal(false);
+      } else {
+        alert('Error al actualizar el estado');
+      }
+    } catch (err) { 
+      console.error(err);
+      alert('Error de conexión al actualizar');
+    } finally {
+      setLoadingAccion(false);
+    }
   };
 
   const filteredTickets = tickets.filter((t) => {
@@ -277,7 +312,7 @@ const GestionTickets = () => {
                                           <th className="ps-3 py-2">FALLA</th>
                                           <th className="py-2">UBICACIÓN</th>
                                           <th className="py-2">URGENCIA</th>
-                                          <th className="py-2 pe-3">ESTADO REPARACIÓN</th>
+                                          <th className="py-2 pe-3 text-center">ESTADO REPARACIÓN</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -303,26 +338,20 @@ const GestionTickets = () => {
                                                 {obs.urgencia.toUpperCase()}
                                               </span>
                                             </td>
-                                            <td className="pe-3">
-                                              <select 
-                                                className="form-select form-select-sm"
-                                                value={obs.estadoObservacion || obs.estado_observacion}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onChange={(e) => {
-                                                  e.stopPropagation();
-                                                  cambiarEstadoObs(obs.idObservacion || obs.id_observacion, e.target.value);
-                                                }}
-                                                disabled={loadingAccion}
-                                                style={{ fontSize: '13px', borderLeft: '3px solid #003860' }}
-                                              >
-                                                <option value="pendiente">Pendiente</option>
-                                                <option value="en observación">En Observación</option>
-                                                <option value="aplica">Aplica</option>
-                                                <option value="en proceso">En Proceso</option>
-                                                <option value="en espera aceptación">En Espera Aceptación</option>
-                                                <option value="terminado">Terminado</option>
-                                                <option value="no aplica">No Aplica</option>
-                                              </select>
+                                            <td className="pe-3 text-center">
+                                              <div className="d-flex flex-column align-items-center gap-1">
+                                                <span className="badge bg-light text-dark border w-100" style={{ fontSize: '11px', borderLeft: '3px solid #003860' }}>
+                                                  {(obs.estadoObservacion || obs.estado_observacion).toUpperCase()}
+                                                </span>
+                                                <button 
+                                                  className="btn btn-sm btn-primary w-100 py-1"
+                                                  onClick={(e) => abrirModalEstado(e, obs)}
+                                                  disabled={loadingAccion}
+                                                  style={{ fontSize: '11px' }}
+                                                >
+                                                  <FaEdit className="me-1" /> Cambiar estado
+                                                </button>
+                                              </div>
                                             </td>
                                           </tr>
                                         ))}
@@ -350,11 +379,86 @@ const GestionTickets = () => {
         </div>
       </div>
 
+      {/* Modal de Detalle (Compañero) */}
       <ObservacionDetalleModal
         show={showObsModal}
         onHide={handleCerrarObsModal}
-        idObservacion={obsSeleccionada}
+        idObservacion={obsIdSeleccionada}
       />
+
+      {/* Modal Cambio de Estado (Nuestro) */}
+      {showStatusModal && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header bg-dark text-white">
+                <h5 className="modal-title">Actualizar Estado de Observación</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowStatusModal(false)}></button>
+              </div>
+              <div className="modal-body p-4">
+                <div className="mb-3">
+                  <label className="form-label fw-bold text-muted small text-uppercase">Falla / Observación</label>
+                  <div className="p-2 bg-light rounded border text-primary fw-bold">
+                    {obsParaCambio?.falla}
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-bold text-muted small text-uppercase">Nuevo Estado</label>
+                  <select 
+                    className="form-select"
+                    value={nuevoEstado}
+                    onChange={(e) => setNuevoEstado(e.target.value)}
+                    style={{ borderLeft: '4px solid #003860' }}
+                  >
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en observación">En Observación</option>
+                    <option value="aplica">Aplica</option>
+                    <option value="en proceso">En Proceso</option>
+                    <option value="en espera aceptación">En Espera Aceptación</option>
+                    <option value="terminado">Terminado</option>
+                    <option value="no aplica">No Aplica</option>
+                  </select>
+                </div>
+
+                <div className="mb-0">
+                  <label className="form-label fw-bold text-muted small text-uppercase">Comentario Administrativo</label>
+                  <textarea 
+                    className="form-control"
+                    rows="4"
+                    placeholder="Describe el avance o motivo del cambio de estado..."
+                    value={comentarioAdmin}
+                    onChange={(e) => setComentarioAdmin(e.target.value)}
+                  ></textarea>
+                  <div className="form-text mt-2">
+                    Este comentario quedará registrado en la bitácora de la observación.
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer bg-light border-0">
+                <button type="button" className="btn btn-outline-secondary px-4" onClick={() => setShowStatusModal(false)}>
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary px-4" 
+                  onClick={guardarCambioEstado}
+                  disabled={loadingAccion}
+                >
+                  {loadingAccion ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar Cambios'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

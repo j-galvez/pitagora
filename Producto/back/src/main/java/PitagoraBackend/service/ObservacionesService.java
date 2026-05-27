@@ -196,6 +196,10 @@ public class ObservacionesService {
             observacionExistente.setComentarioCliente(observacionesActualizado.getComentarioCliente());
         }
 
+        if (observacionesActualizado.getComentarioAdmin() != null) {
+            observacionExistente.setComentarioAdmin(observacionesActualizado.getComentarioAdmin());
+        }
+
         if (observacionesActualizado.getIntentosRecordatorio() != null) {
             observacionExistente.setIntentosRecordatorio(observacionesActualizado.getIntentosRecordatorio());
         }
