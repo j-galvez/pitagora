@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaSync, FaChevronDown, FaChevronUp, FaPlus, FaUser, FaBuilding, FaClock } from 'react-icons/fa';
+import { FaSearch, FaSync, FaChevronDown, FaChevronUp, FaPlus, FaUser, FaBuilding, FaClock, FaEye } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
+import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
 
 const GestionTickets = () => {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ const GestionTickets = () => {
   const [activeTab, setActiveTab] = useState('Todos');
   const [ticketExpandido, setTicketExpandido] = useState(null);
   const [loadingAccion, setLoadingAccion] = useState(false);
+  const [showObsModal, setShowObsModal] = useState(false);
+  const [obsSeleccionada, setObsSeleccionada] = useState(null);
 
   useEffect(() => {
     inicializarDatos();
@@ -90,6 +93,17 @@ const GestionTickets = () => {
   };
 
   const handleVolver = () => navigate('/admin-dashboard');
+
+  const handleVerObservacion = (e, idObs) => {
+    e.stopPropagation();
+    setObsSeleccionada(idObs);
+    setShowObsModal(true);
+  };
+
+  const handleCerrarObsModal = () => {
+    setShowObsModal(false);
+    setObsSeleccionada(null);
+  };
 
   const filteredTickets = tickets.filter((t) => {
     const query = searchTerm.toLowerCase();
@@ -268,9 +282,17 @@ const GestionTickets = () => {
                                       </thead>
                                       <tbody>
                                         {obsTicket.map(obs => (
-                                          <tr key={obs.idObservacion || obs.id_observacion} className="border-bottom">
+                                          <tr
+                                            key={obs.idObservacion || obs.id_observacion}
+                                            className="border-bottom"
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={(e) => handleVerObservacion(e, obs.idObservacion || obs.id_observacion)}
+                                          >
                                             <td className="ps-3 py-3">
-                                              <div className="fw-bold text-primary" style={{ fontSize: '14px' }}>{obs.falla}</div>
+                                              <div className="fw-bold text-primary d-flex align-items-center gap-2" style={{ fontSize: '14px' }}>
+                                                {obs.falla}
+                                                <FaEye className="text-muted" style={{ fontSize: '11px' }} title="Ver detalle" />
+                                              </div>
                                               <div className="text-muted small" style={{ maxWidth: '300px' }}>{obs.descripcionProblema || obs.descripcion_problema}</div>
                                             </td>
                                             <td style={{ fontSize: '13px' }}>
@@ -285,6 +307,7 @@ const GestionTickets = () => {
                                               <select 
                                                 className="form-select form-select-sm"
                                                 value={obs.estadoObservacion || obs.estado_observacion}
+                                                onClick={(e) => e.stopPropagation()}
                                                 onChange={(e) => {
                                                   e.stopPropagation();
                                                   cambiarEstadoObs(obs.idObservacion || obs.id_observacion, e.target.value);
@@ -326,6 +349,12 @@ const GestionTickets = () => {
           </div>
         </div>
       </div>
+
+      <ObservacionDetalleModal
+        show={showObsModal}
+        onHide={handleCerrarObsModal}
+        idObservacion={obsSeleccionada}
+      />
     </AdminLayout>
   );
 };
