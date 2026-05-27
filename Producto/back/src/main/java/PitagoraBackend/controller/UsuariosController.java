@@ -3,7 +3,9 @@ package PitagoraBackend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import PitagoraBackend.dto.ForgotPasswordRequest;
 import PitagoraBackend.dto.LoginRequest;
+import PitagoraBackend.dto.ResetPasswordRequest;
 import PitagoraBackend.dto.UsuarioResponse;
 import PitagoraBackend.model.Usuarios;
 import PitagoraBackend.service.UsuariosService;
@@ -99,8 +101,31 @@ public class UsuariosController {
                 idObra,
                 nombreObra
             );
+            response.setResetPasswordRequired(
+                usuarioAutenticado.getPassword() != null && usuarioAutenticado.getPassword().startsWith("TEMP:")
+            );
 
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/recuperar-password")
+    public ResponseEntity<?> recuperarPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            usuariosService.solicitarRecuperacion(request.getCorreo());
+            return ResponseEntity.ok("Si el correo está registrado y activo, se han enviado instrucciones al correo.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            usuariosService.restablecerPassword(request.getIdUsuario(), request.getNewPassword());
+            return ResponseEntity.ok("Contraseña actualizada correctamente. Inicia sesión con tu nueva contraseña.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

@@ -16,6 +16,7 @@ import CrearObra from './pages/admin/CrearObra';
 import GestionTickets from './pages/admin/GestionTickets';
 import ListaObras from './pages/admin/ListaObras';
 import ListaClientes from './pages/admin/ListaClientes';
+import ResetPassword from './pages/ResetPassword';
 
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
       {/* Rutas públicas */}
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/formulario-test" element={<Formulario />} />
       <Route
         path="*"

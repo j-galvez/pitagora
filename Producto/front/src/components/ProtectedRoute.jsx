@@ -15,6 +15,12 @@ export function ProtectedRoute({ children, requiredRole }) {
   if (!usuario) {
     return <Navigate to="/login" replace />;
   }
+
+  // Si el usuario está inactivo, forzar cierre de sesión y redirigir al login
+  if (!usuario.estado || usuario.estado.toLowerCase() !== 'activo') {
+    localStorage.removeItem('usuario');
+    return <Navigate to="/login" replace />;
+  }
   
   // Si se requiere un rol específico y el usuario no lo tiene
   if (requiredRole && usuario.rol !== requiredRole) {

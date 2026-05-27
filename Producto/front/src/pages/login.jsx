@@ -1,14 +1,69 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
+  const [showForgotModal, setShowForgotModal] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotMessage, setForgotMessage] = useState('')
+  const [forgotError, setForgotError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
- const handleSubmit = async (e) => {
+  useEffect(() => {
+    const resetSuccessMessage = sessionStorage.getItem('resetSuccessMessage')
+    if (resetSuccessMessage) {
+      setInfo(resetSuccessMessage)
+      sessionStorage.removeItem('resetSuccessMessage')
+    }
+  }, [])
+
+  const handleForgotPasswordClick = () => {
+    setShowForgotModal(true)
+    setError('')
+    setInfo('')
+    setForgotMessage('')
+    setForgotError('')
+  }
+
+  const handleForgotSubmit = async () => {
+    setForgotError('')
+    setForgotMessage('')
+    
+    if (!forgotEmail.trim()) {
+      setForgotError('Por favor ingresa tu correo electrónico')
+      return
+    }
+    
+    setLoading(true)
+
+    try {
+      const response = await fetch('http://localhost:8080/api/usuarios/recuperar-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ correo: forgotEmail }),
+      })
+
+      const text = await response.text()
+      if (!response.ok) {
+        throw new Error(text || 'Error al enviar instrucciones de recuperación')
+      }
+
+      setForgotMessage('Si el correo está registrado y activo, se han enviado instrucciones al correo.')
+      setForgotEmail('')
+    } catch (err) {
+      setForgotError(err.message || 'Error al enviar instrucciones de recuperación')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
@@ -41,10 +96,25 @@ export default function Login() {
           typeof data === 'string'
             ? data
             : data?.message || data?.error || 'Error al iniciar sesión'
-        throw new Error(message)
+
+        const inactiveMessage = 'La cuenta está inactiva. No puedes acceder al sistema.'
+
+        if (typeof message === 'string' && message.toLowerCase().includes('inactivo')) {
+          setError(inactiveMessage)
+        } else {
+          setError(message)
+        }
+
+        setLoading(false)
+        return
       }
 
       localStorage.setItem('usuario', JSON.stringify(data))
+
+      if (data.resetPasswordRequired) {
+        navigate('/reset-password')
+        return
+      }
 
       if (data.rol === 'admin') {
         navigate('/admin-dashboard')
@@ -110,7 +180,12 @@ export default function Login() {
                         Ingresa a tu cuenta
                       </h5>
 
-                      {/* Mostrar mensaje de error si existe */}
+                      {/* Mostrar mensajes de información o error si existen */}
+                      {info && (
+                        <div className="alert alert-success" role="alert">
+                          {info}
+                        </div>
+                      )}
                       {error && (
                         <div className="alert alert-danger" role="alert">
                           {error}
@@ -176,17 +251,15 @@ export default function Login() {
                         </button>
                       </div>
 
-                      <div className="text-center">
-                        <a
-                          className="small"
-                          href="#!"
-                          style={{
-                            color: '#ED1C25',
-                            textDecoration: 'none',
-                          }}
+                      <div className="text-center mb-3">
+                        <button
+                          type="button"
+                          className="btn btn-link small"
+                          style={{ color: '#ED1C25', textDecoration: 'none' }}
+                          onClick={handleForgotPasswordClick}
                         >
                           ¿Olvidaste tu contraseña?
-                        </a>
+                        </button>
                       </div>
 
                       <div
@@ -219,6 +292,93 @@ export default function Login() {
                         </a>
                       </div>
                     </form>
+
+                    {showForgotModal && (
+                      <div
+                        className="modal fade show"
+                        style={{ display: 'block', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+                        tabIndex="-1"
+                        role="dialog"
+                        onClick={() => setShowForgotModal(false)}
+                      >
+                        <div
+                          className="modal-dialog modal-dialog-centered"
+                          role="document"
+                          style={{ maxWidth: '420px' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+                            <div className="card">
+                              <div className="card-body p-4">
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                  <h5 className="card-title mb-0" style={{ color: '#003860' }}>
+                                    Recuperar contraseña
+                                  </h5>
+                                  <button
+                                    type="button"
+                                    className="btn-close"
+                                    aria-label="Cerrar"
+                                    onClick={() => setShowForgotModal(false)}
+                                  ></button>
+                                </div>
+
+                                {forgotError && (
+                                  <div className="alert alert-danger" role="alert">
+                                    {forgotError}
+                                  </div>
+                                )}
+                                {forgotMessage && (
+                                  <div className="alert alert-success" role="alert">
+                                    {forgotMessage}
+                                  </div>
+                                )}
+
+                                <p className="text-muted mb-4" style={{ fontSize: '0.95rem' }}>
+                                  Ingresa el correo asociado a tu cuenta y recibirás un código para restablecer tu contraseña.
+                                </p>
+
+                                <div className="mb-3">
+                                  <label htmlFor="forgotEmail" className="form-label" style={{ color: '#003860' }}>
+                                    Correo registrado
+                                  </label>
+                                  <input
+                                    id="forgotEmail"
+                                    type="email"
+                                    className="form-control form-control-lg"
+                                    style={{ borderColor: '#003860' }}
+                                    value={forgotEmail}
+                                    onChange={(e) => setForgotEmail(e.target.value)}
+                                    placeholder="ejemplo@correo.com"
+                                    required
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn btn-lg btn-block w-100"
+                                  style={{ backgroundColor: '#003860', borderColor: '#003860', color: 'white' }}
+                                  disabled={loading}
+                                  onClick={handleForgotSubmit}
+                                >
+                                  {loading ? 'Enviando...' : 'Enviar instrucciones'}
+                                </button>
+
+                                <div className="text-center mt-3">
+                                  <button
+                                    type="button"
+                                    className="btn btn-link small"
+                                    style={{ color: '#91ABC6', textDecoration: 'none' }}
+                                    onClick={() => setShowForgotModal(false)}
+                                  >
+                                    Volver al login
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                   </div>
                 </div>
               </div>
