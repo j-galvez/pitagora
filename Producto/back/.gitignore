@@ -39,3 +39,6 @@ out/
 
 #archivo application.properties
 application.properties
+
+# archivo de credenciales de Google Cloud Storage
+gcp-credentials.json
