@@ -153,6 +153,7 @@ const GestionTickets = () => {
 
   // Funciones Modal Detalle (Compañero)
   const handleVerObservacion = (e, idObs) => {
+    if (window.getSelection().toString().length > 0) return; // Evitar abrir modal si se está seleccionando texto
     e.stopPropagation();
     setObsIdSeleccionada(idObs);
     setShowObsModal(true);
@@ -165,6 +166,7 @@ const GestionTickets = () => {
 
   // Funciones Modal Cambio de Estado
   const abrirModalEstado = (e, obs) => {
+    if (window.getSelection().toString().length > 0) return; // Evitar abrir modal si se está seleccionando texto
     e.stopPropagation();
     setObsParaCambio(obs);
     setNuevoEstado(obs.estadoObservacion || obs.estado_observation);
@@ -307,7 +309,7 @@ const GestionTickets = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4">
+                    <td colSpan="7" className="text-center py-4">
                       <div className="spinner-border text-primary" role="status"></div>
                       <div className="mt-2 text-muted">Cargando tickets...</div>
                     </td>
@@ -379,11 +381,11 @@ const GestionTickets = () => {
                                     <table className="table table-sm table-borderless mb-0 align-middle">
                                       <thead className="bg-dark text-white" style={{ fontSize: '12px' }}>
                                         <tr>
-                                          <th className="ps-3 py-2">FALLA</th>
-                                          <th className="py-2">UBICACIÓN</th>
-                                          <th className="py-2">URGENCIA</th>
-                                          <th className="py-2 text-center">COSTO</th>
-                                          <th className="py-2 pe-3 text-center">ESTADO REPARACIÓN</th>
+                                          <th className="ps-3 py-2" style={{ width: '35%' }}>FALLA</th>
+                                          <th className="py-2" style={{ width: '20%' }}>UBICACIÓN</th>
+                                          <th className="py-2" style={{ width: '10%' }}>URGENCIA</th>
+                                          <th className="py-2 text-center" style={{ width: '20%' }}>COSTO</th>
+                                          <th className="py-2 pe-3 text-center" style={{ width: '15%' }}>ESTADO</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -409,17 +411,17 @@ const GestionTickets = () => {
                                                 {obs.urgencia.toUpperCase()}
                                               </span>
                                             </td>
-                                            <td style={{ width: '130px' }}>
-                                              <div className="input-group input-group-sm" onClick={(e) => e.stopPropagation()}>
-                                                <span className="input-group-text bg-light" style={{ fontSize: '11px' }}>$</span>
+                                            <td style={{ width: '20%' }}>
+                                              <div className="input-group input-group-sm px-2" onClick={(e) => e.stopPropagation()}>
+                                                <span className="input-group-text bg-light" style={{ fontSize: '13px' }}>$</span>
                                                 <input 
                                                   type="text" 
-                                                  className="form-control text-end"
-                                                  style={{ fontSize: '11px' }}
+                                                  className="form-control text-end fw-bold"
+                                                  style={{ fontSize: '13px' }}
                                                   value={
                                                     costoEditando[obs.idObservacion || obs.id_observacion] !== undefined 
                                                     ? costoEditando[obs.idObservacion || obs.id_observacion] 
-                                                    : (obs.costo ? formatInputMil(obs.costo.toString()) : '0')
+                                                    : ((obs.costo && obs.costo !== 0) ? formatInputMil(obs.costo.toString()) : '')
                                                   }
                                                   onChange={(e) => handleCostoChange(obs.idObservacion || obs.id_observacion, e.target.value)}
                                                 />
@@ -429,13 +431,14 @@ const GestionTickets = () => {
                                                     type="button"
                                                     onClick={() => guardarCosto(obs.idObservacion || obs.id_observacion)}
                                                     disabled={loadingAccion}
+                                                    title="Guardar costo"
                                                   >
-                                                    <FaCheck style={{ fontSize: '10px' }} />
+                                                    <FaCheck style={{ fontSize: '12px' }} />
                                                   </button>
                                                 )}
                                               </div>
                                             </td>
-                                            <td className="pe-3 text-center">
+                                            <td className="pe-3 text-center" style={{ width: '15%' }}>
                                               <div className="d-flex flex-column align-items-center gap-1">
                                                 <span className="badge bg-light text-dark border w-100" style={{ fontSize: '11px', borderLeft: '3px solid #003860' }}>
                                                   {(obs.estadoObservacion || obs.estado_observacion).toUpperCase()}
@@ -446,7 +449,7 @@ const GestionTickets = () => {
                                                   disabled={loadingAccion}
                                                   style={{ fontSize: '11px' }}
                                                 >
-                                                  <FaEdit className="me-1" /> Cambiar estado
+                                                  <FaEdit className="me-1" /> Editar
                                                 </button>
                                               </div>
                                             </td>
@@ -465,7 +468,7 @@ const GestionTickets = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="6" className="text-center text-muted py-4">
+                    <td colSpan="7" className="text-center text-muted py-4">
                       No se encontraron tickets que coincidan con la búsqueda.
                     </td>
                   </tr>
