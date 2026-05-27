@@ -4,14 +4,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import PitagoraBackend.repository.UsuariosRepository;
 import PitagoraBackend.model.Usuarios;
+import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class UsuariosService {
 
     @Autowired
     private UsuariosRepository usuariosRepository;
+
+    @Autowired
+    private EmailService emailService;
 
     // CREATE
     public Usuarios crearUsuarios(Usuarios usuarios) {
@@ -54,8 +59,10 @@ public class UsuariosService {
         }
 
         if (usuarios.getPassword() == null || usuarios.getPassword().isEmpty()) {
-            throw new IllegalArgumentException("La contraseña es requerida");
+            usuarios.setPassword(emailService.generarContrasenaAleatoria());
         }
+
+        String passwordPlano = usuarios.getPassword();
 
         if (usuarios.getRol() == null || usuarios.getRol().isEmpty()) {
             throw new IllegalArgumentException("El rol es requerido");
@@ -94,7 +101,16 @@ public class UsuariosService {
         }
 
         // Guardar el usuario
-        return usuariosRepository.save(usuarios);
+        Usuarios usuarioGuardado = usuariosRepository.save(usuarios);
+
+        // Enviar correo de bienvenida
+        try {
+            emailService.enviarCorreoBienvenida(usuarioGuardado, passwordPlano);
+        } catch (Exception e) {
+            log.warn("Error al enviar correo de bienvenida a {}", usuarioGuardado.getCorreo(), e);
+        }
+
+        return usuarioGuardado;
     }
 
     // READ - Obtener todos los usuarios
