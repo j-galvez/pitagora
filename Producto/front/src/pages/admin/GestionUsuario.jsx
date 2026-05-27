@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { Modal, Button } from 'react-bootstrap';
 import { FaSearch, FaEdit, FaTrash, FaUserPlus, FaArrowLeft, FaEye } from 'react-icons/fa';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import AdminLayout from '../../components/AdminLayout';
@@ -20,6 +21,10 @@ const GestionUsuario = () => {
   const [activeTab, setActiveTab] = useState('Todos');
   const [showModalDetalle, setShowModalDetalle] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [usuarioAEliminar, setUsuarioAEliminar] = useState(null);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     cargarUsuarios();
@@ -45,26 +50,49 @@ const GestionUsuario = () => {
     }
   };
 
-  const eliminarUsuario = async (id_usuario) => {
-    if (!window.confirm('¿Está seguro de eliminar este usuario?')) {
+  const eliminarUsuario = (id_usuario, rol) => {
+    if (rol !== 'admin') {
+      setError('Solo se pueden eliminar usuarios con rol admin.');
+      return;
+    }
+
+    setUsuarioAEliminar(id_usuario);
+    setShowDeleteModal(true);
+    setDeleteSuccess(false);
+    setSuccessMessage('');
+    setError('');
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setUsuarioAEliminar(null);
+    setDeleteSuccess(false);
+    setSuccessMessage('');
+    setError('');
+  };
+
+  const confirmarEliminarUsuario = async () => {
+    if (!usuarioAEliminar) {
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/usuarios/${id_usuario}`, {
+      const response = await fetch(`http://localhost:8080/api/usuarios/${usuarioAEliminar}`, {
         method: 'DELETE'
       });
 
       if (response.ok) {
         await cargarUsuarios();
-        alert('Usuario eliminado exitosamente');
+        setDeleteSuccess(true);
+        setSuccessMessage('Usuario eliminado con éxito');
+        setError('');
       } else {
         const errorMessage = await response.text();
-        alert(errorMessage || 'Error al eliminar el usuario');
+        setError(errorMessage || 'Error al eliminar el usuario');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error de conexión con el servidor');
+      setError('Error de conexión con el servidor');
     }
   };
 
@@ -217,7 +245,9 @@ const GestionUsuario = () => {
                             </button>
                             <button
                               className="btn btn-light btn-sm text-danger"
-                              onClick={() => eliminarUsuario(userId)}
+                              onClick={() => eliminarUsuario(userId, u.rol)}
+                              disabled={u.rol !== 'admin'}
+                              title={u.rol !== 'admin' ? 'Solo se pueden eliminar usuarios con rol admin' : 'Eliminar usuario'}
                             >
                               <FaTrash />
                             </button>
@@ -237,6 +267,42 @@ const GestionUsuario = () => {
             </div>
           </div>
         </div>
+
+      <Modal show={showDeleteModal} onHide={handleCloseDeleteModal} centered>
+        <Modal.Header closeButton className={deleteSuccess ? 'bg-success text-white' : 'bg-danger text-white'}>
+          <Modal.Title>{deleteSuccess ? 'Usuario eliminado' : 'Confirmar eliminación'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {deleteSuccess ? (
+            <div className="alert alert-success mb-0" role="alert">
+              {successMessage}
+            </div>
+          ) : (
+            <p>¿Desea eliminar el usuario?</p>
+          )}
+          {!deleteSuccess && error && (
+            <div className="alert alert-danger mt-3" role="alert">
+              {error}
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          {deleteSuccess ? (
+            <Button variant="secondary" onClick={handleCloseDeleteModal}>
+              Cerrar
+            </Button>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={handleCloseDeleteModal}>
+                Cancelar
+              </Button>
+              <Button variant="danger" onClick={confirmarEliminarUsuario}>
+                Aceptar
+              </Button>
+            </>
+          )}
+        </Modal.Footer>
+      </Modal>
     </AdminLayout>
   );
 };
