@@ -418,7 +418,7 @@ const GestionTickets = () => {
                                                 <span className="input-group-text bg-light" style={{ fontSize: '13px' }}>$</span>
                                                 <input 
                                                   type="text" 
-                                                  className="form-control text-end fw-bold"
+                                                  className="form-control text-end fw-bold text-success"
                                                   style={{ fontSize: '13px' }}
                                                   value={
                                                     costoEditando[obs.idObservacion || obs.id_observacion] !== undefined 
