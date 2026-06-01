@@ -13,13 +13,16 @@ import {
   FaInfoCircle,
   FaComments,
   FaImages,
+  FaPaperclip,
   FaPaperPlane,
+  FaTimes as FaTimesIcon,
 } from 'react-icons/fa';
 import { observacionesService } from '../services/observacionesService';
 import { mensajesService } from '../services/mensajesService';
 import { evidenciasService } from '../services/evidenciasService';
 import ObservacionMensajesTab from './ObservacionMensajesTab';
 import ObservacionEvidenciasTab from './ObservacionEvidenciasTab';
+import ObservacionEstadoBar from './ObservacionEstadoBar';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -48,10 +51,10 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
   const [enviandoMensaje, setEnviandoMensaje] = useState(false);
 
   const [nuevoEstado, setNuevoEstado] = useState('');
-  const [comentarioAdmin, setComentarioAdmin] = useState('');
-  const [guardandoEstado, setGuardandoEstado] = useState(false);
+  const [estadoOriginal, setEstadoOriginal] = useState('');
 
   const previewUrlRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const usuarioLogueado = JSON.parse(localStorage.getItem('usuario')) || {};
   const idUsuario = usuarioLogueado.idUsuario || usuarioLogueado.id_usuario;
@@ -85,7 +88,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
     setMensajeRapido('');
     limpiarPreview();
     setNuevoEstado('');
-    setComentarioAdmin('');
+    setEstadoOriginal('');
     onHide();
   };
 
@@ -96,8 +99,9 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
     try {
       const obsData = await observacionesService.getObservacionById(idObservacion);
       setObservacion(obsData);
-      setNuevoEstado(obsData.estadoObservacion || obsData.estado_observacion || 'pendiente');
-      setComentarioAdmin(obsData.comentarioAdmin || obsData.comentario_admin || '');
+      const estado = obsData.estadoObservacion || obsData.estado_observacion || 'pendiente';
+      setNuevoEstado(estado);
+      setEstadoOriginal(estado);
 
       const idCategoria = obsData.idCategoria || obsData.id_categoria;
       if (idCategoria) {
@@ -163,16 +167,39 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
       return;
     }
 
+    // Confirmación y cambio de estado solo en pestaña Mensajes
+    const estadoActual = (observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal || '').toLowerCase();
+    const estadoNuevo = (nuevoEstado || '').toLowerCase();
+
+    if (activeTab === 'mensajes' && estadoActual && estadoNuevo && estadoActual !== estadoNuevo) {
+      const ok = window.confirm(
+        `El estado actual es \"${estadoActual}\" y el nuevo estado será \"${estadoNuevo}\". ¿Deseas continuar?`
+      );
+      if (!ok) return;
+    }
+
     setEnviandoMensaje(true);
     try {
       await mensajesService.crearMensaje(
         { idObservacion, idUsuario, mensaje: mensajeTexto || null },
         imagenFile || null
       );
+
+      if (activeTab === 'mensajes' && estadoActual && estadoNuevo && estadoActual !== estadoNuevo) {
+        const idObs = observacion?.idObservacion || observacion?.id_observacion || idObservacion;
+        const actualizada = await observacionesService.updateObservacion(idObs, {
+          estadoObservacion: nuevoEstado,
+        });
+        setObservacion(actualizada);
+        const nuevoEstadoPersistido = actualizada?.estadoObservacion || actualizada?.estado_observacion || nuevoEstado;
+        setEstadoOriginal(nuevoEstadoPersistido);
+      }
+
       setNuevoMensaje('');
       setMensajeRapido('');
       limpiarPreview();
       await Promise.all([cargarMensajes(), cargarEvidencias()]);
+      setActiveTab('mensajes');
     } catch (err) {
       console.error('Error al enviar mensaje:', err);
       alert(err.message || 'Error al enviar el mensaje');
@@ -185,26 +212,6 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
     const texto = mensajeRapido.trim();
     if (!texto) return;
     handleEnviarMensaje(texto, null);
-  };
-
-  const handleGuardarEstado = async () => {
-    if (!observacion) return;
-
-    setGuardandoEstado(true);
-    const idObs = observacion.idObservacion || observacion.id_observacion;
-
-    try {
-      const actualizada = await observacionesService.updateObservacion(idObs, {
-        estadoObservacion: nuevoEstado,
-        comentarioAdmin,
-      });
-      setObservacion(actualizada);
-    } catch (err) {
-      console.error('Error al guardar estado:', err);
-      alert('Error al actualizar el estado de la observación');
-    } finally {
-      setGuardandoEstado(false);
-    }
   };
 
   const formatFecha = (fecha) => {
@@ -429,7 +436,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
         </div>
       )}
 
-      <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+      <Modal.Body style={{ minHeight: '60vh', maxHeight: '60vh', overflowY: 'auto' }}>
         {loading ? (
           <div className="text-center py-5">
             <Spinner animation="border" variant="primary" />
@@ -444,22 +451,9 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
             {activeTab === 'general' && renderGeneralTab()}
             {activeTab === 'mensajes' && (
               <ObservacionMensajesTab
-                observacion={obs}
                 mensajes={mensajes}
                 loadingMensajes={loadingMensajes}
-                nuevoMensaje={nuevoMensaje}
-                previewImagen={previewImagen}
-                enviandoMensaje={enviandoMensaje}
-                guardandoEstado={guardandoEstado}
-                nuevoEstado={nuevoEstado}
-                comentarioAdmin={comentarioAdmin}
-                onNuevoMensajeChange={setNuevoMensaje}
-                onImagenSelect={handleImagenSelect}
-                onClearImagen={limpiarPreview}
-                onEnviarMensaje={() => handleEnviarMensaje()}
-                onEstadoChange={setNuevoEstado}
-                onComentarioChange={setComentarioAdmin}
-                onGuardarEstado={handleGuardarEstado}
+                idUsuarioActual={idUsuario}
               />
             )}
             {activeTab === 'evidencias' && (
@@ -472,39 +466,135 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
         ) : null}
       </Modal.Body>
 
-      <Modal.Footer className="d-flex flex-wrap gap-2 align-items-center">
-        <input
-          type="text"
-          className="form-control form-control-sm flex-grow-1"
-          placeholder="Escribe un mensaje rápido..."
-          value={mensajeRapido}
-          onChange={(e) => setMensajeRapido(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              handleEnviarRapido();
-            }
-          }}
-          disabled={enviandoMensaje || !obs}
-          style={{ minWidth: '180px' }}
-        />
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleEnviarRapido}
-          disabled={enviandoMensaje || !mensajeRapido.trim() || !obs}
-        >
-          {enviandoMensaje ? (
-            <Spinner animation="border" size="sm" />
-          ) : (
-            <>
-              <FaPaperPlane className="me-1" /> Enviar
-            </>
-          )}
-        </Button>
-        <Button variant="secondary" size="sm" onClick={handleClose}>
-          Cerrar
-        </Button>
+      <Modal.Footer className="d-flex flex-column gap-2 align-items-stretch">
+        {activeTab === 'mensajes' ? (
+          <>
+            <ObservacionEstadoBar
+              nuevoEstado={nuevoEstado}
+              onEstadoChange={setNuevoEstado}
+            />
+
+            {previewImagen && (
+              <div className="d-flex align-items-center gap-2">
+                <div className="position-relative d-inline-block">
+                  <img
+                    src={previewImagen}
+                    alt="Vista previa"
+                    className="rounded border"
+                    style={{ maxHeight: '60px', maxWidth: '90px', objectFit: 'cover' }}
+                  />
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="position-absolute top-0 end-0 p-0 px-1"
+                    style={{ fontSize: '10px', lineHeight: 1.5 }}
+                    onClick={limpiarPreview}
+                    title="Quitar imagen"
+                  >
+                    <FaTimesIcon />
+                  </Button>
+                </div>
+                <small className="text-muted">Imagen lista para enviar</small>
+              </div>
+            )}
+
+            <textarea
+              className="form-control form-control-sm"
+              rows={2}
+              placeholder="Escribe un mensaje..."
+              value={nuevoMensaje}
+              onChange={(e) => setNuevoMensaje(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleEnviarMensaje();
+                }
+              }}
+              disabled={enviandoMensaje || !obs}
+            />
+
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="d-none"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleImagenSelect(file);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={enviandoMensaje || !obs}
+                  title="Adjuntar imagen"
+                >
+                  <FaPaperclip className="me-1" /> Adjuntar
+                </Button>
+              </div>
+              <div className="d-flex gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleEnviarMensaje()}
+                  disabled={enviandoMensaje || (!nuevoMensaje.trim() && !imagenSeleccionada) || !obs}
+                >
+                  {enviandoMensaje ? (
+                    <Spinner animation="border" size="sm" />
+                  ) : (
+                    <>
+                      <FaPaperPlane className="me-1" /> Enviar
+                    </>
+                  )}
+                </Button>
+                <Button variant="secondary" size="sm" onClick={handleClose}>
+                  Cerrar
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="d-flex flex-wrap gap-2 align-items-center w-100">
+            <input
+              type="text"
+              className="form-control form-control-sm flex-grow-1"
+              placeholder="Escribe un mensaje rápido..."
+              value={mensajeRapido}
+              onChange={(e) => setMensajeRapido(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleEnviarRapido();
+                }
+              }}
+              disabled={enviandoMensaje || !obs}
+              style={{ minWidth: '180px' }}
+            />
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleEnviarRapido}
+              disabled={enviandoMensaje || !mensajeRapido.trim() || !obs}
+            >
+              {enviandoMensaje ? (
+                <Spinner animation="border" size="sm" />
+              ) : (
+                <>
+                  <FaPaperPlane className="me-1" /> Enviar
+                </>
+              )}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleClose}>
+              Cerrar
+            </Button>
+          </div>
+        )}
       </Modal.Footer>
     </Modal>
   );
