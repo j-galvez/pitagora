@@ -37,7 +37,7 @@ export default function NavbarUsuario({ usuario }) {
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item mb-2">
           <Link 
-            to="/tickets" 
+            to="/dashboard" 
             className={`nav-link text-white ${location.pathname === '/tickets' ? 'active' : ''}`}
             style={{ backgroundColor: location.pathname === '/tickets' ? '#003860' : 'transparent' }}
           >

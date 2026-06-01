@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Button, Spinner, Badge } from 'react-bootstrap';
 import {
   FaTimes,
@@ -9,11 +9,25 @@ import {
   FaClipboardList,
   FaTicketAlt,
   FaTag,
-  FaUserCheck
+  FaUserCheck,
+  FaInfoCircle,
+  FaComments,
+  FaImages,
+  FaPaperPlane,
 } from 'react-icons/fa';
 import { observacionesService } from '../services/observacionesService';
+import { mensajesService } from '../services/mensajesService';
+import { evidenciasService } from '../services/evidenciasService';
+import ObservacionMensajesTab from './ObservacionMensajesTab';
+import ObservacionEvidenciasTab from './ObservacionEvidenciasTab';
 
 const API_URL = 'http://localhost:8080/api';
+
+const TABS = [
+  { id: 'general', label: 'Información General', icon: FaInfoCircle },
+  { id: 'mensajes', label: 'Mensajes', icon: FaComments },
+  { id: 'evidencias', label: 'Evidencias', icon: FaImages },
+];
 
 const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
   const [observacion, setObservacion] = useState(null);
@@ -21,16 +35,57 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [activeTab, setActiveTab] = useState('general');
+  const [mensajes, setMensajes] = useState([]);
+  const [evidencias, setEvidencias] = useState([]);
+  const [loadingMensajes, setLoadingMensajes] = useState(false);
+  const [loadingEvidencias, setLoadingEvidencias] = useState(false);
+
+  const [nuevoMensaje, setNuevoMensaje] = useState('');
+  const [mensajeRapido, setMensajeRapido] = useState('');
+  const [imagenSeleccionada, setImagenSeleccionada] = useState(null);
+  const [previewImagen, setPreviewImagen] = useState(null);
+  const [enviandoMensaje, setEnviandoMensaje] = useState(false);
+
+  const [nuevoEstado, setNuevoEstado] = useState('');
+  const [comentarioAdmin, setComentarioAdmin] = useState('');
+  const [guardandoEstado, setGuardandoEstado] = useState(false);
+
+  const previewUrlRef = useRef(null);
+
+  const usuarioLogueado = JSON.parse(localStorage.getItem('usuario')) || {};
+  const idUsuario = usuarioLogueado.idUsuario || usuarioLogueado.id_usuario;
+
   useEffect(() => {
     if (show && idObservacion) {
+      setActiveTab('general');
       cargarDatos();
+      cargarMensajes();
+      cargarEvidencias();
     }
   }, [show, idObservacion]);
+
+  const limpiarPreview = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setImagenSeleccionada(null);
+    setPreviewImagen(null);
+  };
 
   const handleClose = () => {
     setObservacion(null);
     setCategoria(null);
     setError('');
+    setActiveTab('general');
+    setMensajes([]);
+    setEvidencias([]);
+    setNuevoMensaje('');
+    setMensajeRapido('');
+    limpiarPreview();
+    setNuevoEstado('');
+    setComentarioAdmin('');
     onHide();
   };
 
@@ -41,6 +96,8 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
     try {
       const obsData = await observacionesService.getObservacionById(idObservacion);
       setObservacion(obsData);
+      setNuevoEstado(obsData.estadoObservacion || obsData.estado_observacion || 'pendiente');
+      setComentarioAdmin(obsData.comentarioAdmin || obsData.comentario_admin || '');
 
       const idCategoria = obsData.idCategoria || obsData.id_categoria;
       if (idCategoria) {
@@ -62,6 +119,94 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
     }
   };
 
+  const cargarMensajes = async () => {
+    setLoadingMensajes(true);
+    try {
+      const data = await mensajesService.getMensajesPorObservacion(idObservacion);
+      setMensajes(data);
+    } catch (err) {
+      console.error('Error al cargar mensajes:', err);
+    } finally {
+      setLoadingMensajes(false);
+    }
+  };
+
+  const cargarEvidencias = async () => {
+    setLoadingEvidencias(true);
+    try {
+      const data = await evidenciasService.getEvidenciasPorObservacion(idObservacion);
+      setEvidencias(data);
+    } catch (err) {
+      console.error('Error al cargar evidencias:', err);
+    } finally {
+      setLoadingEvidencias(false);
+    }
+  };
+
+  const handleImagenSelect = (file) => {
+    limpiarPreview();
+    previewUrlRef.current = URL.createObjectURL(file);
+    setImagenSeleccionada(file);
+    setPreviewImagen(previewUrlRef.current);
+  };
+
+  const handleEnviarMensaje = async (texto, imagen) => {
+    const mensajeTexto = (texto ?? nuevoMensaje).trim();
+    const imagenFile = imagen !== undefined ? imagen : imagenSeleccionada;
+
+    if (!mensajeTexto && !imagenFile) {
+      return;
+    }
+
+    if (!idUsuario) {
+      alert('No se pudo identificar al usuario. Inicia sesión nuevamente.');
+      return;
+    }
+
+    setEnviandoMensaje(true);
+    try {
+      await mensajesService.crearMensaje(
+        { idObservacion, idUsuario, mensaje: mensajeTexto || null },
+        imagenFile || null
+      );
+      setNuevoMensaje('');
+      setMensajeRapido('');
+      limpiarPreview();
+      await Promise.all([cargarMensajes(), cargarEvidencias()]);
+    } catch (err) {
+      console.error('Error al enviar mensaje:', err);
+      alert(err.message || 'Error al enviar el mensaje');
+    } finally {
+      setEnviandoMensaje(false);
+    }
+  };
+
+  const handleEnviarRapido = () => {
+    const texto = mensajeRapido.trim();
+    if (!texto) return;
+    handleEnviarMensaje(texto, null);
+  };
+
+  const handleGuardarEstado = async () => {
+    if (!observacion) return;
+
+    setGuardandoEstado(true);
+    const idObs = observacion.idObservacion || observacion.id_observacion;
+
+    try {
+      const actualizada = await observacionesService.updateObservacion(idObs, {
+        estadoObservacion: nuevoEstado,
+        comentarioAdmin,
+      });
+      setObservacion(actualizada);
+    } catch (err) {
+      console.error('Error al guardar estado:', err);
+      alert('Error al actualizar el estado de la observación');
+    } finally {
+      setGuardandoEstado(false);
+    }
+  };
+
   const formatFecha = (fecha) => {
     if (!fecha) return '-';
     return new Date(fecha).toLocaleDateString('es-ES', {
@@ -69,7 +214,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -89,13 +234,13 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
   const getEstadoObservacionBadge = (estado) => {
     const estadoLower = estado?.toLowerCase();
     const badges = {
-      'pendiente': { bg: 'secondary', icon: <FaClock className="me-1" /> },
+      pendiente: { bg: 'secondary', icon: <FaClock className="me-1" /> },
       'en observación': { bg: 'info', icon: <FaClock className="me-1" /> },
-      'aplica': { bg: 'primary', icon: <FaCheckCircle className="me-1" /> },
+      aplica: { bg: 'primary', icon: <FaCheckCircle className="me-1" /> },
       'en proceso': { bg: 'warning', text: 'dark', icon: <FaClock className="me-1" /> },
       'en espera aceptación': { bg: 'warning', text: 'dark', icon: <FaClock className="me-1" /> },
-      'terminado': { bg: 'success', icon: <FaCheckCircle className="me-1" /> },
-      'no aplica': { bg: 'dark', icon: <FaExclamationTriangle className="me-1" /> }
+      terminado: { bg: 'success', icon: <FaCheckCircle className="me-1" /> },
+      'no aplica': { bg: 'dark', icon: <FaExclamationTriangle className="me-1" /> },
     };
     const badge = badges[estadoLower] || { bg: 'secondary', icon: null };
     return (
@@ -119,9 +264,143 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
 
   const obs = observacion;
 
+  const renderGeneralTab = () => (
+    <>
+      <div className="card mb-4 border-0 shadow-sm">
+        <div className="card-header bg-light">
+          <h5 className="mb-0">Información General</h5>
+        </div>
+        <div className="card-body">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <div className="d-flex align-items-start">
+                <FaClipboardList className="text-primary me-2 mt-1" />
+                <div>
+                  <small className="text-muted d-block">Falla</small>
+                  <strong>{obs.falla || '-'}</strong>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="d-flex align-items-start">
+                <FaTicketAlt className="text-primary me-2 mt-1" />
+                <div>
+                  <small className="text-muted d-block">Ticket Asociado</small>
+                  <strong>#{obs.idTicket || obs.id_ticket || '-'}</strong>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="d-flex align-items-start">
+                <FaMapMarkerAlt className="text-primary me-2 mt-1" />
+                <div>
+                  <small className="text-muted d-block">Ubicación Exacta</small>
+                  <strong>{obs.ubicacionExacta || obs.ubicacion_exacta || '-'}</strong>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="d-flex align-items-start">
+                <FaTag className="text-primary me-2 mt-1" />
+                <div>
+                  <small className="text-muted d-block">Categoría</small>
+                  <strong>
+                    {categoria?.nombreCategoria || categoria?.nombre_categoria ||
+                      (obs.idCategoria || obs.id_categoria
+                        ? `Cat. #${obs.idCategoria || obs.id_categoria}`
+                        : '-')}
+                  </strong>
+                  {categoria?.subcategoria && (
+                    <small className="text-muted d-block">{categoria.subcategoria}</small>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <small className="text-muted d-block">Urgencia</small>
+              {getUrgenciaBadge(obs.urgencia)}
+            </div>
+            <div className="col-md-6">
+              <small className="text-muted d-block">Estado de Reparación</small>
+              {getEstadoObservacionBadge(obs.estadoObservacion || obs.estado_observacion)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card mb-4 border-0 shadow-sm">
+        <div className="card-header bg-light">
+          <h5 className="mb-0">Descripción del Problema</h5>
+        </div>
+        <div className="card-body">
+          <p className="mb-0">
+            {obs.descripcionProblema || obs.descripcion_problema || 'Sin descripción'}
+          </p>
+        </div>
+      </div>
+
+      <div className="card mb-4 border-0 shadow-sm">
+        <div className="card-header bg-light">
+          <h5 className="mb-0">
+            <FaUserCheck className="me-2" />
+            Confirmación del Cliente
+          </h5>
+        </div>
+        <div className="card-body">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <small className="text-muted d-block">Estado de Confirmación</small>
+              {getConfirmacionBadge(obs.confirmacionCliente || obs.confirmacion_cliente)}
+            </div>
+            <div className="col-md-6">
+              <small className="text-muted d-block">Fecha de Confirmación</small>
+              <strong>{formatFecha(obs.fechaConfirmacion || obs.fecha_confirmacion)}</strong>
+            </div>
+            {(obs.comentarioCliente || obs.comentario_cliente) && (
+              <div className="col-md-12">
+                <small className="text-muted d-block">Comentario del Cliente</small>
+                <p className="mb-0 mt-1 p-3 bg-light rounded">
+                  {obs.comentarioCliente || obs.comentario_cliente}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="card border-0 shadow-sm">
+        <div className="card-header bg-light">
+          <h5 className="mb-0">Seguimiento</h5>
+        </div>
+        <div className="card-body">
+          <div className="row g-3">
+            <div className="col-md-4">
+              <small className="text-muted d-block">Fecha de Registro</small>
+              <strong>
+                <FaClock className="me-1 text-muted" />
+                {formatFecha(obs.fechaRegistro || obs.fecha_registro)}
+              </strong>
+            </div>
+            <div className="col-md-4">
+              <small className="text-muted d-block">Fecha de Término</small>
+              <strong>
+                <FaCheckCircle className="me-1 text-muted" />
+                {formatFecha(obs.fechaTermino || obs.fecha_termino)}
+              </strong>
+            </div>
+            <div className="col-md-4">
+              <small className="text-muted d-block">Intentos de Recordatorio</small>
+              <strong>{obs.intentosRecordatorio ?? obs.intentos_recordatorio ?? 0}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered>
-      <Modal.Header className="bg-primary text-white">
+      <Modal.Header className="bg-primary text-white border-0 pb-2">
         <Modal.Title>
           <FaClipboardList className="me-2" />
           Detalle de Observación
@@ -131,6 +410,24 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
           <FaTimes size={20} />
         </Button>
       </Modal.Header>
+
+      {!loading && !error && obs && (
+        <div className="px-3 pt-2 pb-0 bg-white border-bottom">
+          <div className="d-flex gap-1 flex-wrap">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                className={`btn btn-sm px-3 ${activeTab === id ? 'btn-dark' : 'btn-outline-secondary'}`}
+                onClick={() => setActiveTab(id)}
+              >
+                <Icon className="me-1" style={{ fontSize: '12px' }} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
         {loading ? (
@@ -144,139 +441,68 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
           </div>
         ) : obs ? (
           <>
-            <div className="card mb-4 border-0 shadow-sm">
-              <div className="card-header bg-light">
-                <h5 className="mb-0">Información General</h5>
-              </div>
-              <div className="card-body">
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <div className="d-flex align-items-start">
-                      <FaClipboardList className="text-primary me-2 mt-1" />
-                      <div>
-                        <small className="text-muted d-block">Falla</small>
-                        <strong>{obs.falla || '-'}</strong>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="d-flex align-items-start">
-                      <FaTicketAlt className="text-primary me-2 mt-1" />
-                      <div>
-                        <small className="text-muted d-block">Ticket Asociado</small>
-                        <strong>#{obs.idTicket || obs.id_ticket || '-'}</strong>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="d-flex align-items-start">
-                      <FaMapMarkerAlt className="text-primary me-2 mt-1" />
-                      <div>
-                        <small className="text-muted d-block">Ubicación Exacta</small>
-                        <strong>{obs.ubicacionExacta || obs.ubicacion_exacta || '-'}</strong>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="d-flex align-items-start">
-                      <FaTag className="text-primary me-2 mt-1" />
-                      <div>
-                        <small className="text-muted d-block">Categoría</small>
-                        <strong>
-                          {categoria?.nombreCategoria || categoria?.nombre_categoria ||
-                            (obs.idCategoria || obs.id_categoria ? `Cat. #${obs.idCategoria || obs.id_categoria}` : '-')}
-                        </strong>
-                        {categoria?.subcategoria && (
-                          <small className="text-muted d-block">{categoria.subcategoria}</small>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <small className="text-muted d-block">Urgencia</small>
-                    {getUrgenciaBadge(obs.urgencia)}
-                  </div>
-                  <div className="col-md-6">
-                    <small className="text-muted d-block">Estado de Reparación</small>
-                    {getEstadoObservacionBadge(obs.estadoObservacion || obs.estado_observacion)}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="card mb-4 border-0 shadow-sm">
-              <div className="card-header bg-light">
-                <h5 className="mb-0">Descripción del Problema</h5>
-              </div>
-              <div className="card-body">
-                <p className="mb-0">
-                  {obs.descripcionProblema || obs.descripcion_problema || 'Sin descripción'}
-                </p>
-              </div>
-            </div>
-
-            <div className="card mb-4 border-0 shadow-sm">
-              <div className="card-header bg-light">
-                <h5 className="mb-0">
-                  <FaUserCheck className="me-2" />
-                  Confirmación del Cliente
-                </h5>
-              </div>
-              <div className="card-body">
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <small className="text-muted d-block">Estado de Confirmación</small>
-                    {getConfirmacionBadge(obs.confirmacionCliente || obs.confirmacion_cliente)}
-                  </div>
-                  <div className="col-md-6">
-                    <small className="text-muted d-block">Fecha de Confirmación</small>
-                    <strong>{formatFecha(obs.fechaConfirmacion || obs.fecha_confirmacion)}</strong>
-                  </div>
-                  {(obs.comentarioCliente || obs.comentario_cliente) && (
-                    <div className="col-md-12">
-                      <small className="text-muted d-block">Comentario del Cliente</small>
-                      <p className="mb-0 mt-1 p-3 bg-light rounded">
-                        {obs.comentarioCliente || obs.comentario_cliente}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="card border-0 shadow-sm">
-              <div className="card-header bg-light">
-                <h5 className="mb-0">Seguimiento</h5>
-              </div>
-              <div className="card-body">
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <small className="text-muted d-block">Fecha de Registro</small>
-                    <strong>
-                      <FaClock className="me-1 text-muted" />
-                      {formatFecha(obs.fechaRegistro || obs.fecha_registro)}
-                    </strong>
-                  </div>
-                  <div className="col-md-4">
-                    <small className="text-muted d-block">Fecha de Término</small>
-                    <strong>
-                      <FaCheckCircle className="me-1 text-muted" />
-                      {formatFecha(obs.fechaTermino || obs.fecha_termino)}
-                    </strong>
-                  </div>
-                  <div className="col-md-4">
-                    <small className="text-muted d-block">Intentos de Recordatorio</small>
-                    <strong>{obs.intentosRecordatorio ?? obs.intentos_recordatorio ?? 0}</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {activeTab === 'general' && renderGeneralTab()}
+            {activeTab === 'mensajes' && (
+              <ObservacionMensajesTab
+                observacion={obs}
+                mensajes={mensajes}
+                loadingMensajes={loadingMensajes}
+                nuevoMensaje={nuevoMensaje}
+                previewImagen={previewImagen}
+                enviandoMensaje={enviandoMensaje}
+                guardandoEstado={guardandoEstado}
+                nuevoEstado={nuevoEstado}
+                comentarioAdmin={comentarioAdmin}
+                onNuevoMensajeChange={setNuevoMensaje}
+                onImagenSelect={handleImagenSelect}
+                onClearImagen={limpiarPreview}
+                onEnviarMensaje={() => handleEnviarMensaje()}
+                onEstadoChange={setNuevoEstado}
+                onComentarioChange={setComentarioAdmin}
+                onGuardarEstado={handleGuardarEstado}
+              />
+            )}
+            {activeTab === 'evidencias' && (
+              <ObservacionEvidenciasTab
+                evidencias={evidencias}
+                loadingEvidencias={loadingEvidencias}
+              />
+            )}
           </>
         ) : null}
       </Modal.Body>
 
-      <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
+      <Modal.Footer className="d-flex flex-wrap gap-2 align-items-center">
+        <input
+          type="text"
+          className="form-control form-control-sm flex-grow-1"
+          placeholder="Escribe un mensaje rápido..."
+          value={mensajeRapido}
+          onChange={(e) => setMensajeRapido(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleEnviarRapido();
+            }
+          }}
+          disabled={enviandoMensaje || !obs}
+          style={{ minWidth: '180px' }}
+        />
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={handleEnviarRapido}
+          disabled={enviandoMensaje || !mensajeRapido.trim() || !obs}
+        >
+          {enviandoMensaje ? (
+            <Spinner animation="border" size="sm" />
+          ) : (
+            <>
+              <FaPaperPlane className="me-1" /> Enviar
+            </>
+          )}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={handleClose}>
           Cerrar
         </Button>
       </Modal.Footer>
