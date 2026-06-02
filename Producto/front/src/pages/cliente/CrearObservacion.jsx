@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaCheckCircle, FaTrash, FaPlusCircle, FaCamera } from 'react-icons/fa';
+import { FaArrowLeft, FaCheckCircle, FaTrash, FaPlusCircle, FaCamera, FaImages } from 'react-icons/fa';
 import NavbarUsuario from '../../components/NavbarUsuario';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import Footer from '../../components/Footer';
+import { observacionesService } from '../../services/observacionesService';
+
+const MAX_FOTOS = 2;
 
 export default function CrearObservacion() {
   const { id_ticket: urlTicketId } = useParams();
@@ -19,6 +22,7 @@ export default function CrearObservacion() {
   const [loadingExistentes, setLoadingExistentes] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const fileInputRef = useRef(null);
 
   const usuarioLocalStorage = JSON.parse(localStorage.getItem('usuario'));
   const usuarioLogueado = usuarioLocalStorage || {};
@@ -143,14 +147,17 @@ export default function CrearObservacion() {
 
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files);
-    if (newObservation.fotos.length + files.length > 4) {
-      setError('Máximo 4 fotos por observación');
+    if (newObservation.fotos.length + files.length > MAX_FOTOS) {
+      setError(`Máximo ${MAX_FOTOS} fotos por observación`);
+      e.target.value = '';
       return;
     }
+    setError('');
     setNewObservation({
       ...newObservation,
       fotos: [...newObservation.fotos, ...files]
     });
+    e.target.value = '';
   };
 
   const handleRemovePhoto = (index) => {
@@ -178,21 +185,19 @@ export default function CrearObservacion() {
 
     try {
       for (const obs of nuevasObservaciones) {
-        // Adaptamos el envío al formato camelCase que espera el backend
-        await fetch('http://localhost:8080/api/observaciones', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            idTicket: selectedTicketId,
+        await observacionesService.createObservacionConFotos(
+          {
+            idTicket: parseInt(selectedTicketId),
             idCategoria: parseInt(obs.id_categoria),
             idUsuarioCreador: idUsuarioActual,
             falla: obs.falla,
             ubicacionExacta: obs.ubicacion_exacta,
             descripcionProblema: obs.descripcion_problema,
             urgencia: obs.urgencia,
-            estadoObservacion: 'pendiente'
-          })
-        });
+            estadoObservacion: 'pendiente',
+          },
+          obs.fotos || []
+        );
       }
 
       setSuccess('¡Nuevas observaciones guardadas correctamente!');
@@ -205,7 +210,7 @@ export default function CrearObservacion() {
       }, 3000);
     } catch (err) {
       console.error(err);
-      setError('Error al guardar las observaciones. Por favor intenta de nuevo.');
+      setError(err.message || 'Error al guardar las observaciones. Por favor intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -333,6 +338,11 @@ export default function CrearObservacion() {
                               <span className="fw-bold text-primary" style={{ fontSize: '13px' }}>Nueva #{index + 1}</span>
                               <span className="ms-2 fw-semibold" style={{ fontSize: '14px' }}>{obs.falla}</span>
                               <span className="ms-2 text-muted" style={{ fontSize: '12px' }}>| {obs.ubicacion_exacta}</span>
+                              {obs.fotos?.length > 0 && (
+                                <span className="ms-2 text-muted" style={{ fontSize: '12px' }}>
+                                  <FaImages className="me-1" />{obs.fotos.length}
+                                </span>
+                              )}
                             </div>
                             <button type="button" className="btn btn-link text-danger p-0" onClick={() => handleRemoveNuevasObservaciones(obs.id)}>
                               <FaTrash size={14} />
@@ -393,11 +403,18 @@ export default function CrearObservacion() {
                             <button type="button" className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style={{ width: '20px', height: '20px', borderRadius: '50%', marginTop: '-5px', marginRight: '-5px' }} onClick={() => handleRemovePhoto(i)}>×</button>
                           </div>
                         ))}
-                        {newObservation.fotos.length < 4 && (
+                        {newObservation.fotos.length < MAX_FOTOS && (
                           <label className="d-flex flex-column align-items-center justify-content-center border border-dashed rounded bg-white cursor-pointer hover-bg-light" style={{ width: '70px', height: '70px', transition: 'all 0.2s' }}>
                             <FaCamera className="text-secondary mb-1" />
                             <span style={{ fontSize: '10px' }} className="text-muted text-uppercase fw-bold">Subir</span>
-                            <input type="file" className="d-none" accept="image/*" onChange={handlePhotoChange} multiple />
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              className="d-none"
+                              accept="image/*"
+                              onChange={handlePhotoChange}
+                              multiple
+                            />
                           </label>
                         )}
                       </div>

@@ -2,9 +2,15 @@ package PitagoraBackend.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import PitagoraBackend.model.Evidencias;
+import PitagoraBackend.model.Observaciones;
+import PitagoraBackend.repository.EvidenciasRepository;
 import PitagoraBackend.repository.ObservacionesRepository;
 import PitagoraBackend.repository.TicketsRepository;
-import PitagoraBackend.model.Observaciones;
+
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +24,14 @@ public class ObservacionesService {
     
     @Autowired
     private TicketsRepository ticketsRepository;
+
+    @Autowired
+    private EvidenciasRepository evidenciasRepository;
+
+    @Autowired
+    private ImageStorageService imageStorageService;
+
+    private static final int MAX_FOTOS = 2;
     
     // Nota: Cuando implementes Categorias.java, agrega:
     // @Autowired
@@ -114,6 +128,30 @@ public class ObservacionesService {
         
         // Guardar la observación
         return observacionesRepository.save(observaciones);
+    }
+
+    public Observaciones crearObservacionesConFotos(Observaciones observaciones, MultipartFile[] fotos) throws IOException {
+        if (fotos != null && fotos.length > MAX_FOTOS) {
+            throw new IllegalArgumentException("Máximo " + MAX_FOTOS + " fotos por observación");
+        }
+
+        Observaciones nueva = crearObservaciones(observaciones);
+
+        if (fotos != null) {
+            for (MultipartFile foto : fotos) {
+                if (foto != null && !foto.isEmpty()) {
+                    String urlPublica = imageStorageService.subirImagen(foto);
+
+                    Evidencias evidencia = new Evidencias();
+                    evidencia.setIdObservacion(nueva.getIdObservacion());
+                    evidencia.setUrlArchivo(urlPublica);
+                    evidencia.setFechaSubida(LocalDateTime.now());
+                    evidenciasRepository.save(evidencia);
+                }
+            }
+        }
+
+        return nueva;
     }
 
     // READ - Obtener todas las observaciones

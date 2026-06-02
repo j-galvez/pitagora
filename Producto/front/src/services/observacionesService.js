@@ -1,5 +1,26 @@
 const API_URL = 'http://localhost:8080/api';
 
+const postObservacion = async (observacionData, fotosFiles = []) => {
+  const formData = new FormData();
+  formData.append(
+    'observacion',
+    new Blob([JSON.stringify(observacionData)], { type: 'application/json' })
+  );
+  fotosFiles.forEach((file) => formData.append('fotos', file));
+
+  const response = await fetch(`${API_URL}/observaciones`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Error al crear la observación');
+  }
+
+  return response.json();
+};
+
 export const observacionesService = {
   // Obtener todas las observaciones
   getAllObservaciones: async () => {
@@ -64,24 +85,22 @@ export const observacionesService = {
     }
   },
 
-  // Crear observación
+  // Crear observación (sin fotos)
   createObservacion: async (observacionData) => {
     try {
-      const response = await fetch(`${API_URL}/observaciones`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(observacionData),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al crear la observación');
-      }
-      
-      return await response.json();
+      return await postObservacion(observacionData, []);
     } catch (error) {
       console.error('Error en createObservacion:', error);
+      throw error;
+    }
+  },
+
+  // Crear observación con fotos (máx. 2)
+  createObservacionConFotos: async (observacionData, fotosFiles = []) => {
+    try {
+      return await postObservacion(observacionData, fotosFiles);
+    } catch (error) {
+      console.error('Error en createObservacionConFotos:', error);
       throw error;
     }
   },
