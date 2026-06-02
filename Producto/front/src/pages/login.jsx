@@ -149,7 +149,7 @@ export default function Login() {
                   style={{ backgroundColor: '#003860' }}
                 >
                   <img
-                    src="https://libertyfield.pe/wp-content/uploads/2022/10/adrian-cogua-zTqpgdzteyc-unsplash-scaled.jpg"
+                    src="https://storage.googleapis.com/pitagora-evidencias-bucket/adrian-cogua-zTqpgdzteyc-unsplash-scaled.jpg"
                     alt="PITAGORA Constructora"
                     className="img-fluid"
                     style={{
