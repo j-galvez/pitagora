@@ -128,9 +128,9 @@ public class UsuariosService {
         return usuario.get();
     }
 
-    // READ - Obtener usuarios por obra
+    // READ - Obtener usuarios por obra (id_obra directo y tabla obras_usuarios)
     public List<Usuarios> obtenerUsuariosPorObra(Integer idObra) {
-        return usuariosRepository.findByIdObra(idObra);
+        return usuariosRepository.findAsignadosAObra(idObra);
     }
 
     // UPDATE

@@ -26,13 +26,11 @@ const ClienteDetalleModal = ({ show, onHide, idCliente }) => {
     try {
       // Cargar datos del cliente
       const clienteData = await clientesService.getClienteById(idCliente);
-      console.log('Datos del cliente recibidos:', clienteData);
       setCliente(clienteData);
 
       // Cargar obras del cliente
       try {
         const obrasData = await obrasService.getObrasByCliente(idCliente);
-        console.log('Obras recibidas:', obrasData);
         setObras(obrasData || []);
       } catch (obrasError) {
         console.warn('No se pudieron cargar las obras:', obrasError);
@@ -124,7 +122,6 @@ const ClienteDetalleModal = ({ show, onHide, idCliente }) => {
           </div>
         ) : cliente ? (
           <>
-            {console.log('Renderizando cliente:', cliente)}
             {/* Información General del Cliente */}
             <div className="card mb-4 border-0 shadow-sm">
               <div className="card-header bg-light">
@@ -165,6 +162,17 @@ const ClienteDetalleModal = ({ show, onHide, idCliente }) => {
                       <div>
                         <small className="text-muted d-block">Teléfono</small>
                         <strong>{cliente.telefono || '-'}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-12">
+                    <div className="d-flex align-items-start">
+                      <FaMapMarkerAlt className="text-primary me-2 mt-1" />
+                      <div>
+                        <small className="text-muted d-block">Dirección</small>
+                        <strong>
+                          {cliente.direccionCalle || cliente.direccion_calle || cliente.direccion || '-'}
+                        </strong>
                       </div>
                     </div>
                   </div>
