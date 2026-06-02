@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import PitagoraBackend.dto.EvidenciaDTO;
 import PitagoraBackend.model.Evidencias;
 import PitagoraBackend.model.Mensajes;
-import PitagoraBackend.model.Usuarios;
+import PitagoraBackend.model.Observaciones;
 import PitagoraBackend.repository.EvidenciasRepository;
 import PitagoraBackend.repository.MensajesRepository;
 import PitagoraBackend.repository.ObservacionesRepository;
@@ -51,10 +51,18 @@ public class EvidenciasService {
         dto.setUrlArchivo(evidencia.getUrlArchivo());
         dto.setFechaSubida(evidencia.getFechaSubida());
 
+        Integer idUsuario = null;
         Optional<Mensajes> mensaje = mensajesRepository.findByIdEvidencia(evidencia.getIdEvidencia());
         if (mensaje.isPresent()) {
-            Optional<Usuarios> usuario = usuariosRepository.findById(mensaje.get().getIdUsuario());
-            usuario.ifPresent(u -> {
+            idUsuario = mensaje.get().getIdUsuario();
+        } else {
+            idUsuario = observacionesRepository.findById(evidencia.getIdObservacion())
+                    .map(Observaciones::getIdUsuarioCreador)
+                    .orElse(null);
+        }
+
+        if (idUsuario != null) {
+            usuariosRepository.findById(idUsuario).ifPresent(u -> {
                 dto.setNombreUsuario(u.getNombre());
                 dto.setApellidoPaterno(u.getApellidoPaterno());
             });
