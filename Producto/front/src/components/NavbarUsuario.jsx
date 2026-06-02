@@ -26,8 +26,8 @@ export default function NavbarUsuario({ usuario }) {
       <div className="mb-4 px-2">
         <div className="small text-white-50">Bienvenido/a</div>
         <div className="fw-bold fs-5">{usuario?.nombre || 'Juan Pérez'}</div>
-        <div className="small text-muted fst-italic">
-          <i className="bi bi-building me-1"></i> {usuario?.obraActual || 'Edificio Los Almendros - Depto 305'}
+        <div className="small text-white-50 fst-italic">
+          <i className="text-white-50 bi bi-building me-1 "></i> {usuario?.obraActual || 'Edificio Los Almendros - Depto 305'}
         </div>
       </div>
 
@@ -37,7 +37,7 @@ export default function NavbarUsuario({ usuario }) {
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item mb-2">
           <Link 
-            to="/tickets" 
+            to="/dashboard" 
             className={`nav-link text-white ${location.pathname === '/tickets' ? 'active' : ''}`}
             style={{ backgroundColor: location.pathname === '/tickets' ? '#003860' : 'transparent' }}
           >

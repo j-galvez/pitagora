@@ -25,7 +25,7 @@ export default function NavbarAdmin({ usuario }) {
       <div className="mb-4 px-2">
         <div className="small text-white-50">Panel de Administración</div>
         <div className="fw-bold fs-5">{usuario?.nombre || 'Administrador'}</div>
-        <div className="small text-muted">Gestión de Postventa</div>
+        <div className="small text-white-50">Gestión de Postventa</div>
       </div>
 
       <hr className="my-2 border-secondary" />
