@@ -38,4 +38,7 @@ public class Tickets {
 
     @Column(name = "estado_general", nullable = false, length = 20)
     private String estadoGeneral; // 'abierto', 'en proceso', 'terminado'
+
+    @Column(name = "costo_total", columnDefinition = "BIGINT DEFAULT 0")
+    private Long costoTotal;
 }

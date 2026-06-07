@@ -127,7 +127,12 @@ public class ObservacionesService {
         }
         
         // Guardar la observación
-        return observacionesRepository.save(observaciones);
+        Observaciones guardada = observacionesRepository.save(observaciones);
+        
+        // Actualizar el costo total del ticket
+        actualizarCostoTotalTicket(guardada.getIdTicket());
+        
+        return guardada;
     }
 
     public Observaciones crearObservacionesConFotos(Observaciones observaciones, MultipartFile[] fotos) throws IOException {
@@ -246,17 +251,24 @@ public class ObservacionesService {
             observacionExistente.setIntentosRecordatorio(observacionesActualizado.getIntentosRecordatorio());
         }
 
-        return observacionesRepository.save(observacionExistente);
+        Observaciones guardada = observacionesRepository.save(observacionExistente);
+        
+        // Actualizar el costo total del ticket
+        actualizarCostoTotalTicket(guardada.getIdTicket());
+        
+        return guardada;
     }
 
     // DELETE - Eliminar observación
     public void eliminarObservaciones(Integer id) {
-        // Verificar que la observación exista
-        if (!observacionesRepository.existsById(id)) {
-            throw new IllegalArgumentException("Observación no encontrada con ID: " + id);
-        }
+        // Obtener la observación antes de eliminarla para saber el idTicket
+        Observaciones observacion = obtenerObservacionById(id);
+        Integer idTicket = observacion.getIdTicket();
         
         observacionesRepository.deleteById(id);
+        
+        // Actualizar el costo total del ticket después de eliminar
+        actualizarCostoTotalTicket(idTicket);
     }
 
     // MÉTODOS ADICIONALES ÚTILES
@@ -301,6 +313,26 @@ public class ObservacionesService {
         
         // Obtener todas las observaciones de esos tickets
         return observacionesRepository.findByIdTicketIn(ticketIds);
+    }
+
+    /**
+     * Recalcula el costo total de un ticket sumando los costos de todas sus observaciones.
+     * @param idTicket El ID del ticket a actualizar
+     */
+    private void actualizarCostoTotalTicket(Integer idTicket) {
+        if (idTicket == null) return;
+        
+        // Sumar todos los costos de las observaciones de este ticket
+        List<Observaciones> observaciones = observacionesRepository.findByIdTicket(idTicket);
+        long costoTotal = observaciones.stream()
+            .mapToLong(o -> o.getCosto() != null ? o.getCosto() : 0L)
+            .sum();
+            
+        // Actualizar el ticket en la base de datos
+        ticketsRepository.findById(idTicket).ifPresent(ticket -> {
+            ticket.setCostoTotal(costoTotal);
+            ticketsRepository.save(ticket);
+        });
     }
 }
 
