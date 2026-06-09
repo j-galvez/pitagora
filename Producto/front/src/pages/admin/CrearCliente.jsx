@@ -216,7 +216,7 @@ const CrearCliente = () => {
         rut: formData.rut.replace(/[^0-9kK]/g, '').toUpperCase(), // Enviar RUT sin formato
         correoContacto: formData.correoContacto,
         telefono: formData.telefono,
-        direccion: formData.direccion,
+        direccionCalle: formData.direccion,
         idRegion: parseInt(formData.idRegion, 10),
         idComuna: parseInt(formData.idComuna, 10),
         estado: formData.estado

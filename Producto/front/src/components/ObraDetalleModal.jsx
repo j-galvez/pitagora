@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Spinner, Badge, Table, Accordion } from 'react-bootstrap';
-import { FaTimes, FaMapMarkerAlt, FaBuilding, FaCalendar, FaExclamationTriangle, FaCheckCircle, FaClock } from 'react-icons/fa';
+import { FaTimes, FaMapMarkerAlt, FaBuilding, FaCalendar, FaExclamationTriangle, FaCheckCircle, FaClock, FaUsers, FaUser } from 'react-icons/fa';
 import { obrasService } from '../services/obrasService';
+import { usuariosService } from '../services/usuariosService';
+import UsuarioDetalleModal from './UsuarioDetalleModal';
 
 const ObraDetalleModal = ({ show, onHide, idObra }) => {
   const [obra, setObra] = useState(null);
   const [observaciones, setObservaciones] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showUsuarioModal, setShowUsuarioModal] = useState(false);
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
 
   useEffect(() => {
     if (show && idObra) {
@@ -22,17 +27,22 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
     try {
       // Cargar datos de la obra
       const obraData = await obrasService.getObraById(idObra);
-      console.log('Datos de la obra recibidos:', obraData);
       setObra(obraData);
 
-      // Cargar observaciones de la obra
       try {
         const observacionesData = await obrasService.getObservacionesByObra(idObra);
-        console.log('Observaciones recibidas:', observacionesData);
         setObservaciones(observacionesData || []);
       } catch (obsError) {
         console.warn('No se pudieron cargar las observaciones:', obsError);
         setObservaciones([]);
+      }
+
+      try {
+        const usuariosData = await usuariosService.getUsuariosByObra(idObra);
+        setUsuarios(usuariosData || []);
+      } catch (usuariosError) {
+        console.warn('No se pudieron cargar los usuarios:', usuariosError);
+        setUsuarios([]);
       }
     } catch (error) {
       console.error('Error al cargar datos:', error);
@@ -90,6 +100,50 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
     }
   };
 
+  const handleVerUsuario = (idUsuario) => {
+    setUsuarioSeleccionado(idUsuario);
+    setShowUsuarioModal(true);
+  };
+
+  const getNombreCompleto = (u) => {
+    const nombre = u.nombre || '';
+    const apellidoP = u.apellidoPaterno || u.apellido_paterno || '';
+    const apellidoM = u.apellidoMaterno || u.apellido_materno || '';
+    return `${nombre} ${apellidoP} ${apellidoM}`.trim() || 'Sin nombre';
+  };
+
+  const getRolLabel = (rol) => {
+    switch (rol?.toLowerCase()) {
+      case 'admin':
+        return 'Administrador';
+      case 'cliente':
+        return 'Cliente';
+      case 'jefe_obra':
+        return 'Jefe de obra';
+      case 'tecnico':
+        return 'Técnico';
+      case 'usuario':
+        return 'Usuario';
+      default:
+        return rol || '-';
+    }
+  };
+
+  const getRolBadgeClass = (rol) => {
+    switch (rol?.toLowerCase()) {
+      case 'admin':
+        return 'primary';
+      case 'cliente':
+        return 'success';
+      case 'jefe_obra':
+        return 'warning';
+      case 'tecnico':
+        return 'info';
+      default:
+        return 'secondary';
+    }
+  };
+
   const observacionesAbiertas = observaciones.filter(obs => 
     obs.estadoObservacion?.toLowerCase() === 'abierta'
   );
@@ -101,6 +155,7 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
   );
 
   return (
+    <>
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Header className="bg-primary text-white">
         <Modal.Title>
@@ -124,7 +179,6 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
           </div>
         ) : obra ? (
           <>
-            {console.log('Renderizando obra:', obra)}
             {/* Información General de la Obra */}
             <div className="card mb-4 border-0 shadow-sm">
               <div className="card-header bg-light">
@@ -147,6 +201,15 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
                       <div>
                         <small className="text-muted d-block">Cliente</small>
                         <strong>{obra.nombreEmpresa || obra.nombre_empresa || '-'}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-12">
+                    <div className="d-flex align-items-start">
+                      <FaMapMarkerAlt className="text-primary me-2 mt-1" />
+                      <div>
+                        <small className="text-muted d-block">Dirección</small>
+                        <strong>{obra.direccion || obra.direccionCalle || obra.direccion_calle || '-'}</strong>
                       </div>
                     </div>
                   </div>
@@ -198,6 +261,63 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Usuarios asignados */}
+            <div className="card mb-4 border-0 shadow-sm">
+              <div className="card-header bg-light">
+                <h5 className="mb-0">
+                  <FaUsers className="me-2" />
+                  Usuarios asignados ({usuarios.length})
+                </h5>
+              </div>
+              <div className="card-body">
+                {usuarios.length > 0 ? (
+                  <div className="row g-2">
+                    {usuarios.map((u) => {
+                      const userId = u.idUsuario || u.id_usuario;
+                      return (
+                        <div className="col-md-6" key={userId}>
+                          <button
+                            type="button"
+                            className="w-100 text-start border rounded p-3 bg-white shadow-sm d-flex align-items-center gap-3"
+                            style={{ cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+                            onClick={() => handleVerUsuario(userId)}
+                            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0.25rem 0.5rem rgba(0,0,0,0.1)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = ''; }}
+                          >
+                            <div
+                              className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                              style={{ width: 40, height: 40, fontSize: '14px', fontWeight: 'bold' }}
+                            >
+                              <FaUser />
+                            </div>
+                            <div className="flex-grow-1 min-w-0">
+                              <div className="fw-semibold text-truncate">{getNombreCompleto(u)}</div>
+                              <small className="text-muted d-block text-truncate">{u.correo || '-'}</small>
+                              <div className="d-flex gap-1 mt-1 flex-wrap">
+                                <Badge bg={getRolBadgeClass(u.rol)} style={{ fontSize: '10px' }}>
+                                  {getRolLabel(u.rol)}
+                                </Badge>
+                                {u.estado && (
+                                  <Badge bg={u.estado === 'Activo' ? 'success' : 'danger'} style={{ fontSize: '10px' }}>
+                                    {u.estado}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted py-3">
+                    <FaUsers className="mb-2 opacity-50" size={28} />
+                    <p className="mb-0 small">No hay usuarios asignados a esta obra</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -291,6 +411,13 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
         </Button>
       </Modal.Footer>
     </Modal>
+
+    <UsuarioDetalleModal
+      show={showUsuarioModal}
+      onHide={() => setShowUsuarioModal(false)}
+      idUsuario={usuarioSeleccionado}
+    />
+    </>
   );
 };
 

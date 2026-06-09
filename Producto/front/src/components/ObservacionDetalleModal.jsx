@@ -472,6 +472,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
             <ObservacionEstadoBar
               nuevoEstado={nuevoEstado}
               onEstadoChange={setNuevoEstado}
+              estadoActual={observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal}
             />
 
             {previewImagen && (

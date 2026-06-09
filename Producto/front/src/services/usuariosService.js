@@ -22,6 +22,27 @@ export const usuariosService = {
     }
   },
 
+  // Obtener usuarios asignados a una obra
+  getUsuariosByObra: async (idObra) => {
+    try {
+      const response = await fetch(`${API_URL}/usuarios/obra/${idObra}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al obtener los usuarios de la obra');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error en getUsuariosByObra:', error);
+      throw error;
+    }
+  },
+
   // Obtener usuario por ID
   getUsuarioById: async (idUsuario) => {
     try {

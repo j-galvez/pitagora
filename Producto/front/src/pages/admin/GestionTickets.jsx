@@ -66,6 +66,27 @@ const GestionTickets = () => {
       .reduce((acc, o) => acc + (o.costo || 0), 0);
   };
 
+  const ESTADOS = [
+    'pendiente',
+    'en observación',
+    'aplica',
+    'en proceso',
+    'en espera aceptación',
+    'terminado',
+    'no aplica',
+  ];
+
+  const getAvailableStateOptions = (estadoActual) => {
+    const index = ESTADOS.findIndex((estado) => estado === (estadoActual || '').toLowerCase());
+    let availableEstados = index >= 0 ? ESTADOS.slice(index) : ESTADOS;
+    const aplicaIndex = ESTADOS.indexOf('aplica');
+    const noAplicaIndex = ESTADOS.indexOf('no aplica');
+    if (index >= aplicaIndex && index < noAplicaIndex) {
+      availableEstados = availableEstados.filter((estado) => estado !== 'no aplica');
+    }
+    return availableEstados;
+  };
+
   const handleCostoChange = (idObs, valor) => {
     setCostoEditando(prev => ({
       ...prev,
@@ -513,13 +534,11 @@ const GestionTickets = () => {
                     onChange={(e) => setNuevoEstado(e.target.value)}
                     style={{ borderLeft: '4px solid #003860' }}
                   >
-                    <option value="pendiente">Pendiente</option>
-                    <option value="en observación">En Observación</option>
-                    <option value="aplica">Aplica</option>
-                    <option value="en proceso">En Proceso</option>
-                    <option value="en espera aceptación">En Espera Aceptación</option>
-                    <option value="terminado">Terminado</option>
-                    <option value="no aplica">No Aplica</option>
+                    {getAvailableStateOptions(obsParaCambio?.estadoObservacion || obsParaCambio?.estado_observacion || nuevoEstado).map((estado) => (
+                      <option key={estado} value={estado}>
+                        {estado.charAt(0).toUpperCase() + estado.slice(1)}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
