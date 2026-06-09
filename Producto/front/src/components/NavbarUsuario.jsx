@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-export default function NavbarUsuario({ usuario }) {
+export default function NavbarUsuario({ usuario, hasActiveTicket = false }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -38,21 +38,23 @@ export default function NavbarUsuario({ usuario }) {
         <li className="nav-item mb-2">
           <Link 
             to="/dashboard" 
-            className={`nav-link text-white ${location.pathname === '/tickets' ? 'active' : ''}`}
-            style={{ backgroundColor: location.pathname === '/tickets' ? '#003860' : 'transparent' }}
+            className={`nav-link text-white ${location.pathname === '/dashboard' ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname === '/dashboard' ? '#003860' : 'transparent' }}
           >
             <i className="bi bi-file-text me-2"></i> Mis Solicitudes
           </Link>
         </li>
-        <li className="nav-item mb-2">
-          <Link 
-            to="/crear-ticket" 
-            className={`nav-link text-white ${location.pathname === '/crear-ticket' ? 'active' : ''}`}
-            style={{ backgroundColor: location.pathname === '/crear-ticket' ? '#003860' : 'transparent' }}
-          >
-            <i className="bi bi-plus-circle me-2"></i> Crear Nuevo Ticket
-          </Link>
-        </li>
+        {!hasActiveTicket && (
+          <li className="nav-item mb-2">
+            <Link 
+              to="/crear-ticket" 
+              className={`nav-link text-white ${location.pathname === '/crear-ticket' ? 'active' : ''}`}
+              style={{ backgroundColor: location.pathname === '/crear-ticket' ? '#003860' : 'transparent' }}
+            >
+              <i className="bi bi-plus-circle me-2"></i> Crear Nuevo Ticket
+            </Link>
+          </li>
+        )}
         <li className="nav-item mb-2">
           <Link 
             to="/crear-observacion" 
@@ -89,7 +91,10 @@ export default function NavbarUsuario({ usuario }) {
   return (
     <>
       {/* Sidebar fijo para desktop */}
-      <div className="d-none d-lg-flex flex-column vh-100 text-white p-3" style={{ width: '280px', backgroundColor: '#002840' }}>
+      <div
+        className="d-none d-lg-flex flex-column flex-shrink-0 align-self-stretch text-white p-3"
+        style={{ width: '280px', minHeight: '100vh', backgroundColor: '#002840' }}
+      >
         {menuContent}
       </div>
 

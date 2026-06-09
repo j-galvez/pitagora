@@ -1,0 +1,25 @@
+# Casos de uso   
+- [ ] Gestión y cambio de estado ticket (80% jorge).  
+- [ ] Generación reporte bitácora excel y/o PDF (gabriel).  
+- [ ] Dashboard estadísticas (80% jorge).  
+- [ ] Visualización dashboard cliente (jorge).  
+- [ ] Buscar texto mensajes (gabriel).  
+- [ ] Envio de correo automatizado por cambio estado (giss).  
+- [ ] Confirmar cierre de ticket (giss).  
+- [ ] Historial de correos enviados (usuario y admin) (giss).  
+- [ ] Actualizar información de cliente u obra (giss).  
+- [ ] Agregar costos por observación (gabriel).  
+- [ ] Perfil de usuario (jhaimar).  
+- [x] Detalle ticket y observaciones (pruebas).  
+- [x] Crear solicitud postventa (observación).  
+- [x] Login.  
+- [x] Recuperacion contraseña (pruebas).  
+- [x] Creacion de ticket.  
+- [x] Ver y filtrar usuarios registrados  
+- [x] Crear usuario  
+- [x] Actualizar info usuario  
+- [x] Filtrar ticket  
+- [x] Crear cliente  
+- [x] Crear obra  
+- [x] Ver y filtrar clientes y obras registrados  
+  

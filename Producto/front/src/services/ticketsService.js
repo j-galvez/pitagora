@@ -22,6 +22,27 @@ export const ticketsService = {
     }
   },
 
+  // Obtener tickets por usuario
+  getTicketsByUsuario: async (idUsuario) => {
+    try {
+      const response = await fetch(`${API_URL}/tickets/usuario/${idUsuario}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al obtener los tickets del usuario');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error en getTicketsByUsuario:', error);
+      throw error;
+    }
+  },
+
   // Obtener ticket por ID
   getTicketById: async (idTicket) => {
     try {
