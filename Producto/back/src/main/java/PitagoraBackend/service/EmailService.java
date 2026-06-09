@@ -306,4 +306,21 @@ public class EmailService {
 
         return contrasena.toString();
     }
+
+    // Enviar HTML genérico a cualquier destinatario
+    public void enviarCorreoHtml(String destino, String asunto, String htmlContent) throws MessagingException {
+        log.info("Enviando correo HTML a {} con asunto {}", destino, asunto);
+
+        MimeMessage mensaje = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
+
+        helper.setFrom(mailFrom);
+        helper.setTo(destino);
+        helper.setSubject(asunto);
+        helper.setText(htmlContent, true);
+
+        mailSender.send(mensaje);
+        log.info("Correo enviado correctamente a {}", destino);
+    }
+
 }
