@@ -7,6 +7,7 @@ import PitagoraBackend.model.Observaciones;
 import PitagoraBackend.dto.TopFallaDTO;
 import PitagoraBackend.dto.ObraConIncidenciasDTO;
 import PitagoraBackend.dto.ReporteObraDTO;
+import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 @Repository
@@ -73,6 +74,13 @@ public interface ObservacionesRepository extends JpaRepository<Observaciones, In
            "AND t.idObra = ob.idObra " +
            "AND o.idUsuarioCreador = u.idUsuario")
     List<ReporteObraDTO> findReporteTrazabilidad();
+
+    // BÚSQUEDA OMNIBOX
+    @Query("SELECT o FROM Observaciones o WHERE " +
+           "LOWER(o.falla) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(o.descripcionProblema) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(o.ubicacionExacta) LIKE LOWER(CONCAT('%', :query, '%'))")
+    List<Observaciones> searchObservaciones(@Param("query") String query);
 }
 
 
