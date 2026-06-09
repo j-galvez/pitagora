@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import PitagoraBackend.model.Observaciones;
 import PitagoraBackend.dto.TopFallaDTO;
 import PitagoraBackend.dto.ObraConIncidenciasDTO;
+import PitagoraBackend.dto.ReporteObraDTO;
 import java.util.List;
 
 @Repository
@@ -56,6 +57,22 @@ public interface ObservacionesRepository extends JpaRepository<Observaciones, In
            "GROUP BY ob.idObra, ob.nombreObra " +
            "ORDER BY COUNT(o) DESC")
     List<ObraConIncidenciasDTO> findObrasByCategoria(Integer idCategoria);
+
+    // REPORTE DE TRAZABILIDAD DE OBRAS
+    @Query("SELECT new PitagoraBackend.dto.ReporteObraDTO(" +
+           "ob.nombreObra, " +
+           "concat(u.nombre, ' ', u.apellidoPaterno), " +
+           "o.fechaRegistro, " +
+           "o.fechaTermino, " +
+           "o.falla, " +
+           "o.ubicacionExacta, " +
+           "o.estadoObservacion, " +
+           "o.comentarioAdmin) " +
+           "FROM Observaciones o, Tickets t, Obras ob, Usuarios u " +
+           "WHERE o.idTicket = t.idTicket " +
+           "AND t.idObra = ob.idObra " +
+           "AND o.idUsuarioCreador = u.idUsuario")
+    List<ReporteObraDTO> findReporteTrazabilidad();
 }
 
 

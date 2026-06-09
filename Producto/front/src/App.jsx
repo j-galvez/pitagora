@@ -16,6 +16,7 @@ import CrearObra from './pages/admin/CrearObra';
 import GestionTickets from './pages/admin/GestionTickets';
 import ListaObras from './pages/admin/ListaObras';
 import ListaClientes from './pages/admin/ListaClientes';
+import ReporteBitacoraObra from './pages/admin/ReporteBitacoraObra';
 import ResetPassword from './pages/ResetPassword';
 
 
@@ -24,6 +25,7 @@ function App() {
     <Routes>
       {/* Rutas de Administrador */}
       <Route path="/admin-dashboard" element={<ProtectedRoute requiredRole="admin"><IndexAdmin /></ProtectedRoute>} />
+      <Route path="/admin/reportes" element={<ProtectedRoute requiredRole="admin"><ReporteBitacoraObra /></ProtectedRoute>} />
       <Route path="/admin/tickets" element={<ProtectedRoute requiredRole="admin"><GestionTickets /></ProtectedRoute>} />
       <Route path="/admin/clientes" element={<ProtectedRoute requiredRole="admin"><ListaClientes /></ProtectedRoute>} />
       <Route path="/admin/obras" element={<ProtectedRoute requiredRole="admin"><ListaObras /></ProtectedRoute>} />

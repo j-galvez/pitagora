@@ -50,6 +50,15 @@ export default function NavbarAdmin({ usuario }) {
             <i className="bi bi-file-text me-2"></i> Tickets
           </Link>
         </li>
+        <li className="nav-item mb-2">
+          <Link 
+            to="/admin/reportes" 
+            className={`nav-link text-white ${location.pathname.includes('/reportes') ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname.includes('/reportes') ? '#003860' : 'transparent' }}
+          >
+            <i className="bi bi-journal-text me-2"></i> Reportes
+          </Link>
+        </li>
 
         {/*
         <li className="nav-item mb-2">
