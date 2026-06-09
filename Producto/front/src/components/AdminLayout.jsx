@@ -1,5 +1,6 @@
-import React from 'react';
-import { FaArrowLeft } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { FaArrowLeft, FaSearch } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import NavbarAdmin from './NavbarAdmin'; // Ajusta la ruta según tu estructura
 
 const AdminLayout = ({ 
@@ -8,16 +9,27 @@ const AdminLayout = ({
   handleVolver, 
   children 
 }) => {
+  const navigate = useNavigate();
+  const [terminoBusqueda, setTerminoBusqueda] = useState('');
+
+  const handleBuscar = (e) => {
+    e.preventDefault();
+    if (terminoBusqueda.trim().length >= 2) {
+      navigate(`/admin/buscar?q=${encodeURIComponent(terminoBusqueda.trim())}`);
+      setTerminoBusqueda(''); // Limpiar buscador tras navegar
+    }
+  };
+
   return (
-    <div className="d-flex">
-      {/* Barra lateral */}
+    <div className="d-flex vh-100 overflow-hidden">
+      {/* Barra lateral - Se mantiene fija por el vh-100 del contenedor padre */}
       <NavbarAdmin usuario={usuario} />
       
-      {/* Contenido principal */}
-      <div className="flex-grow-1" style={{ backgroundColor: '#F8F9FA', minHeight: '100vh' }}>
+      {/* Contenedor principal con scroll independiente */}
+      <div className="flex-grow-1 d-flex flex-column h-100" style={{ backgroundColor: '#F8F9FA' }}>
         
-        {/* Barra de Navegación Superior */}
-        <nav className="navbar navbar-dark" style={{ backgroundColor: '#002840' }}>
+        {/* Barra de Navegación Superior - Estática en la parte superior del flex-column */}
+        <nav className="navbar navbar-dark shadow-sm" style={{ backgroundColor: '#002840', zIndex: 1030 }}>
           <div className="container-fluid d-flex justify-content-between align-items-center py-2">
             <div className="d-flex align-items-center">
               {/* Botón Offcanvas para móviles */}
@@ -38,16 +50,55 @@ const AdminLayout = ({
               )}
 
               {/* Título dinámico de la página */}
-              <h4 className="text-white mb-0">{titulo}</h4>
+              <h4 className="text-white mb-0 d-none d-sm-block">{titulo}</h4>
+            </div>
+
+            {/* BUSCADOR OMNIBOX */}
+            <div className="flex-grow-1 mx-4" style={{ maxWidth: '600px' }}>
+              <form onSubmit={handleBuscar}>
+                <div className="input-group shadow-sm" style={{ borderRadius: '20px' }}>
+                  <span className="input-group-text bg-light border-0 py-0 px-3" style={{ borderRadius: '20px 0 0 20px' }}>
+                    <FaSearch className="text-muted small" />
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control border-0 bg-light"
+                    placeholder="Buscar mensajes, observaciones o problemas..."
+                    style={{ borderRadius: '0 20px 20px 0', fontSize: '14px', height: '40px' }}
+                    value={terminoBusqueda}
+                    onChange={(e) => setTerminoBusqueda(e.target.value)}
+                  />
+                </div>
+              </form>
+            </div>
+
+            <div className="d-flex align-items-center text-white d-none d-md-block">
+              <small className="opacity-75">Modo: {usuario?.rol}</small>
             </div>
           </div>
         </nav>
 
-        {/* Contenedor del contenido específico de cada página */}
-        <div className="p-4">
+        {/* Área de contenido con scroll propio */}
+        <div className="flex-grow-1 overflow-auto p-4 custom-scrollbar">
           {children}
         </div>
       </div>
+      
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #ccc;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #bbb;
+        }
+      `}</style>
     </div>
   );
 };
