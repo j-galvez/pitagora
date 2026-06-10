@@ -481,12 +481,11 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
       <Modal.Footer className="d-flex flex-column gap-2 align-items-stretch">
         {activeTab === 'mensajes' ? (
           <>
-            {allowEstadoChange && (
-              <ObservacionEstadoBar
-                nuevoEstado={nuevoEstado}
-                onEstadoChange={setNuevoEstado}
-              />
-            )}
+            <ObservacionEstadoBar
+              nuevoEstado={nuevoEstado}
+              onEstadoChange={setNuevoEstado}
+              estadoActual={observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal}
+            />
 
             {previewImagen && (
               <div className="d-flex align-items-center gap-2">

@@ -31,7 +31,19 @@ public class ObservacionesService {
     @Autowired
     private ImageStorageService imageStorageService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     private static final int MAX_FOTOS = 2;
+    private static final List<String> ESTADOS_ORDEN = List.of(
+        "pendiente",
+        "en observación",
+        "aplica",
+        "en proceso",
+        "en espera aceptación",
+        "terminado",
+        "no aplica"
+    );
     
     // Nota: Cuando implementes Categorias.java, agrega:
     // @Autowired
@@ -127,7 +139,21 @@ public class ObservacionesService {
         }
         
         // Guardar la observación
-        return observacionesRepository.save(observaciones);
+        Observaciones saved = observacionesRepository.save(observaciones);
+        try {
+            notificationService.notificarNuevaObservacion(saved);
+        } catch (Exception e) {
+            // no bloquear la creación si falla el envío
+            System.err.println("Error notificando nueva observacion: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return saved;
+        Observaciones guardada = observacionesRepository.save(observaciones);
+        
+        // Actualizar el costo total del ticket
+        actualizarCostoTotalTicket(guardada.getIdTicket());
+        
+        return guardada;
     }
 
     public Observaciones crearObservacionesConFotos(Observaciones observaciones, MultipartFile[] fotos) throws IOException {
@@ -172,6 +198,8 @@ public class ObservacionesService {
     public Observaciones actualizarObservaciones(Integer id, Observaciones observacionesActualizado) {
         // Verificar que la observación exista
         Observaciones observacionExistente = obtenerObservacionById(id);
+        String previoEstado = observacionExistente.getEstadoObservacion();
+        String previoComentarioAdmin = observacionExistente.getComentarioAdmin();
 
         // Actualizar campos si se proporcionan
         if (observacionesActualizado.getFalla() != null && !observacionesActualizado.getFalla().isEmpty()) {
@@ -196,19 +224,29 @@ public class ObservacionesService {
         }
 
         if (observacionesActualizado.getEstadoObservacion() != null && !observacionesActualizado.getEstadoObservacion().isEmpty()) {
-            if (!observacionesActualizado.getEstadoObservacion().equals("pendiente") && 
-                !observacionesActualizado.getEstadoObservacion().equals("en observación") && 
-                !observacionesActualizado.getEstadoObservacion().equals("aplica") && 
-                !observacionesActualizado.getEstadoObservacion().equals("en proceso") && 
-                !observacionesActualizado.getEstadoObservacion().equals("en espera aceptación") && 
-                !observacionesActualizado.getEstadoObservacion().equals("terminado") && 
-                !observacionesActualizado.getEstadoObservacion().equals("no aplica")) {
+            String nuevoEstado = observacionesActualizado.getEstadoObservacion().trim().toLowerCase();
+            if (!ESTADOS_ORDEN.contains(nuevoEstado)) {
                 throw new IllegalArgumentException("Estado de observación inválido");
             }
-            observacionExistente.setEstadoObservacion(observacionesActualizado.getEstadoObservacion());
+
+            String estadoPrevio = observacionExistente.getEstadoObservacion() == null ? "" : observacionExistente.getEstadoObservacion().trim().toLowerCase();
+            int indicePrevio = ESTADOS_ORDEN.indexOf(estadoPrevio);
+            int indiceNuevo = ESTADOS_ORDEN.indexOf(nuevoEstado);
+            int aplicaIndex = ESTADOS_ORDEN.indexOf("aplica");
+            int noAplicaIndex = ESTADOS_ORDEN.indexOf("no aplica");
+
+            if (indicePrevio >= 0 && indiceNuevo < indicePrevio) {
+                throw new IllegalArgumentException("No se puede regresar a un estado anterior una vez que se ha avanzado.");
+            }
+
+            if (indicePrevio >= aplicaIndex && indicePrevio < noAplicaIndex && nuevoEstado.equals("no aplica")) {
+                throw new IllegalArgumentException("No se puede cambiar a 'no aplica' después de que la observación haya sido marcada como 'aplica'.");
+            }
+
+            observacionExistente.setEstadoObservacion(nuevoEstado);
             
             // Si se marca como terminado, establecer fecha_termino
-            if (observacionesActualizado.getEstadoObservacion().equals("terminado") && 
+            if (nuevoEstado.equals("terminado") && 
                 observacionExistente.getFechaTermino() == null) {
                 observacionExistente.setFechaTermino(LocalDateTime.now());
             }
@@ -246,17 +284,42 @@ public class ObservacionesService {
             observacionExistente.setIntentosRecordatorio(observacionesActualizado.getIntentosRecordatorio());
         }
 
-        return observacionesRepository.save(observacionExistente);
+        Observaciones saved = observacionesRepository.save(observacionExistente);
+
+        // Notificar si hubo cambio de estado o comentario administrativo.
+        // Si el estado cambió, enviar sólo una notificación; no repetirla por el comentario.
+        try {
+            boolean estadoCambiado = observacionesActualizado.getEstadoObservacion() != null && !observacionesActualizado.getEstadoObservacion().equalsIgnoreCase(previoEstado);
+            boolean comentarioAdminCambiado = observacionesActualizado.getComentarioAdmin() != null && !observacionesActualizado.getComentarioAdmin().equals(previoComentarioAdmin);
+
+            if (estadoCambiado) {
+                notificationService.notificarCambioEstado(saved, previoEstado);
+            } else if (comentarioAdminCambiado) {
+                notificationService.notificarCambioEstado(saved, previoEstado);
+            }
+        } catch (Exception e) {
+            // ignorar fallos de notificación
+        }
+
+        return saved;
+        Observaciones guardada = observacionesRepository.save(observacionExistente);
+        
+        // Actualizar el costo total del ticket
+        actualizarCostoTotalTicket(guardada.getIdTicket());
+        
+        return guardada;
     }
 
     // DELETE - Eliminar observación
     public void eliminarObservaciones(Integer id) {
-        // Verificar que la observación exista
-        if (!observacionesRepository.existsById(id)) {
-            throw new IllegalArgumentException("Observación no encontrada con ID: " + id);
-        }
+        // Obtener la observación antes de eliminarla para saber el idTicket
+        Observaciones observacion = obtenerObservacionById(id);
+        Integer idTicket = observacion.getIdTicket();
         
         observacionesRepository.deleteById(id);
+        
+        // Actualizar el costo total del ticket después de eliminar
+        actualizarCostoTotalTicket(idTicket);
     }
 
     // MÉTODOS ADICIONALES ÚTILES
@@ -301,6 +364,26 @@ public class ObservacionesService {
         
         // Obtener todas las observaciones de esos tickets
         return observacionesRepository.findByIdTicketIn(ticketIds);
+    }
+
+    /**
+     * Recalcula el costo total de un ticket sumando los costos de todas sus observaciones.
+     * @param idTicket El ID del ticket a actualizar
+     */
+    private void actualizarCostoTotalTicket(Integer idTicket) {
+        if (idTicket == null) return;
+        
+        // Sumar todos los costos de las observaciones de este ticket
+        List<Observaciones> observaciones = observacionesRepository.findByIdTicket(idTicket);
+        long costoTotal = observaciones.stream()
+            .mapToLong(o -> o.getCosto() != null ? o.getCosto() : 0L)
+            .sum();
+            
+        // Actualizar el ticket en la base de datos
+        ticketsRepository.findById(idTicket).ifPresent(ticket -> {
+            ticket.setCostoTotal(costoTotal);
+            ticketsRepository.save(ticket);
+        });
     }
 }
 
