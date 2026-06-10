@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-export default function NavbarUsuario({ usuario }) {
+const API_URL = 'http://localhost:8080/api';
+
+const getNombreObraDesdeUsuario = (usuario) =>
+  usuario?.nombre_obra || usuario?.nombreObra || '';
+
+const getIdObraDesdeUsuario = (usuario) =>
+  usuario?.id_obra || usuario?.idObra || null;
+
+export default function NavbarUsuario({ usuario, hasActiveTicket = false }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [nombreObra, setNombreObra] = useState(() => getNombreObraDesdeUsuario(usuario));
+
+  useEffect(() => {
+    const desdeSesion = getNombreObraDesdeUsuario(usuario);
+    if (desdeSesion) {
+      setNombreObra(desdeSesion);
+      return;
+    }
+
+    const idObra = getIdObraDesdeUsuario(usuario);
+    if (!idObra) {
+      setNombreObra('');
+      return;
+    }
+
+    fetch(`${API_URL}/obras/${idObra}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => setNombreObra(data.nombreObra || data.nombre_obra || ''))
+      .catch(() => setNombreObra(''));
+  }, [usuario]);
 
   const handleLogout = () => {
     localStorage.removeItem('usuario');
@@ -27,7 +55,7 @@ export default function NavbarUsuario({ usuario }) {
         <div className="small text-white-50">Bienvenido/a</div>
         <div className="fw-bold fs-5">{usuario?.nombre || 'Juan Pérez'}</div>
         <div className="small text-white-50 fst-italic">
-          <i className="text-white-50 bi bi-building me-1 "></i> {usuario?.obraActual || 'Edificio Los Almendros - Depto 305'}
+          <i className="text-white-50 bi bi-building me-1 "></i> {nombreObra || 'Sin obra asignada'}
         </div>
       </div>
 
@@ -38,21 +66,23 @@ export default function NavbarUsuario({ usuario }) {
         <li className="nav-item mb-2">
           <Link 
             to="/dashboard" 
-            className={`nav-link text-white ${location.pathname === '/tickets' ? 'active' : ''}`}
-            style={{ backgroundColor: location.pathname === '/tickets' ? '#003860' : 'transparent' }}
+            className={`nav-link text-white ${location.pathname === '/dashboard' ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname === '/dashboard' ? '#003860' : 'transparent' }}
           >
             <i className="bi bi-file-text me-2"></i> Mis Solicitudes
           </Link>
         </li>
-        <li className="nav-item mb-2">
-          <Link 
-            to="/crear-ticket" 
-            className={`nav-link text-white ${location.pathname === '/crear-ticket' ? 'active' : ''}`}
-            style={{ backgroundColor: location.pathname === '/crear-ticket' ? '#003860' : 'transparent' }}
-          >
-            <i className="bi bi-plus-circle me-2"></i> Crear Nuevo Ticket
-          </Link>
-        </li>
+        {!hasActiveTicket && (
+          <li className="nav-item mb-2">
+            <Link 
+              to="/crear-ticket" 
+              className={`nav-link text-white ${location.pathname === '/crear-ticket' ? 'active' : ''}`}
+              style={{ backgroundColor: location.pathname === '/crear-ticket' ? '#003860' : 'transparent' }}
+            >
+              <i className="bi bi-plus-circle me-2"></i> Crear Nuevo Ticket
+            </Link>
+          </li>
+        )}
         <li className="nav-item mb-2">
           <Link 
             to="/crear-observacion" 
@@ -89,7 +119,10 @@ export default function NavbarUsuario({ usuario }) {
   return (
     <>
       {/* Sidebar fijo para desktop */}
-      <div className="d-none d-lg-flex flex-column vh-100 text-white p-3" style={{ width: '280px', backgroundColor: '#002840' }}>
+      <div
+        className="d-none d-lg-flex flex-column flex-shrink-0 text-white p-3"
+        style={{ width: '280px', height: '100vh', backgroundColor: '#002840' }}
+      >
         {menuContent}
       </div>
 

@@ -32,7 +32,7 @@ const TABS = [
   { id: 'evidencias', label: 'Evidencias', icon: FaImages },
 ];
 
-const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
+const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChange = true }) => {
   const [observacion, setObservacion] = useState(null);
   const [categoria, setCategoria] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -171,7 +171,13 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
     const estadoActual = (observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal || '').toLowerCase();
     const estadoNuevo = (nuevoEstado || '').toLowerCase();
 
-    if (activeTab === 'mensajes' && estadoActual && estadoNuevo && estadoActual !== estadoNuevo) {
+    if (
+      allowEstadoChange &&
+      activeTab === 'mensajes' &&
+      estadoActual &&
+      estadoNuevo &&
+      estadoActual !== estadoNuevo
+    ) {
       const ok = window.confirm(
         `El estado actual es \"${estadoActual}\" y el nuevo estado será \"${estadoNuevo}\". ¿Deseas continuar?`
       );
@@ -185,7 +191,13 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
         imagenFile || null
       );
 
-      if (activeTab === 'mensajes' && estadoActual && estadoNuevo && estadoActual !== estadoNuevo) {
+      if (
+        allowEstadoChange &&
+        activeTab === 'mensajes' &&
+        estadoActual &&
+        estadoNuevo &&
+        estadoActual !== estadoNuevo
+      ) {
         const idObs = observacion?.idObservacion || observacion?.id_observacion || idObservacion;
         const actualizada = await observacionesService.updateObservacion(idObs, {
           estadoObservacion: nuevoEstado,
