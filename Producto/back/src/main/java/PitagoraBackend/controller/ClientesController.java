@@ -3,13 +3,14 @@ package PitagoraBackend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import PitagoraBackend.dto.ClienteDTO;
+import PitagoraBackend.dto.ClienteDetalleDTO;
 import PitagoraBackend.model.Clientes;
 import PitagoraBackend.service.ClientesService;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/clientes")
-@CrossOrigin(origins = "*")
 public class ClientesController {
 
     @Autowired
@@ -17,8 +18,9 @@ public class ClientesController {
 
     // GET - Listar todos los clientes
     @GetMapping
-    public List<Clientes> listar() {
-        return clientesService.obtenerClientes();
+    public ResponseEntity<List<ClienteDTO>> listar() {
+        List<ClienteDTO> clientes = clientesService.obtenerClientesConObservaciones();
+        return ResponseEntity.ok(clientes);
     }
 
     // POST - Crear nuevo cliente
@@ -32,11 +34,12 @@ public class ClientesController {
         }
     }
 
-    // GET - Obtener cliente por ID
+    // GET - Obtener cliente por ID con detalles (región, comuna, dirección)
     @GetMapping("/{id}")
     public ResponseEntity<?> obtenerPorId(@PathVariable Integer id) {
         try {
-            return ResponseEntity.ok(clientesService.obtenerClienteById(id));
+            ClienteDetalleDTO cliente = clientesService.obtenerClienteConDetallesById(id);
+            return ResponseEntity.ok(cliente);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

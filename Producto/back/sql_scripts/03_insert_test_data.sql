@@ -1,46 +1,46 @@
--- Script de Inserción de Datos de Prueba
+-- Script de Inserción de Datos de Prueba - Versión Actualizada
 -- Sistema de Postventa Constructora Pitágora
--- Ejecutar DESPUÉS de 02_create_tables_improved.sql
+-- Ejecutar DESPUÉS de 03_seed_comunas_chile.sql
 
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ============================================================================
 -- 1. INSERTAR CLIENTES (Empresas)
 -- ============================================================================
-INSERT INTO clientes (nombre_empresa, rut, correo_contacto, telefono, direccion, estado) VALUES
-('Pontificia Universidad Católica', '8098974110', 'contacto@uc.cl', '+56225525000', 'Av. Libertador Bernardo O\'Higgins 340, Santiago', 'Activo'),
-('Komatsu Chile S.A.', '7610001054', 'compras@komatsu.cl', '+56225812000', 'Av. Presidente Kennedy 5757, Las Condes', 'Activo'),
-('Comercio S.A.', '9876543210', 'ventas@comercio.cl', '+56229981000', 'Avenida Providencia 1200, Providencia', 'Activo'),
-('Constructora BIM Ingeniería', '1234567890', 'info@bim.cl', '+56227451234', 'Calle Los Laureles 450, Vitacura', 'Activo');
+INSERT INTO clientes (nombre_empresa, rut, correo_contacto, telefono, direccion_calle, id_region, id_comuna, estado) VALUES
+('Pontificia Universidad Católica', '80.989.741-1', 'contacto@uc.cl', '+56225525000', 'Av. Libertador Bernardo O\'Higgins 340', 13, 13101, 'Activo'),
+('Komatsu Chile S.A.', '76.100.010-5', 'compras@komatsu.cl', '+56225812000', 'Av. Presidente Kennedy 5757', 13, 13114, 'Activo'),
+('Comercio S.A.', '98.765.432-1', 'ventas@comercio.cl', '+56229981000', 'Avenida Providencia 1200', 13, 13123, 'Activo'),
+('Constructora BIM Ingeniería', '12.345.678-9', 'info@bim.cl', '+56227451234', 'Calle Los Laureles 450', 13, 13132, 'Activo');
 
 -- ============================================================================
 -- 2. INSERTAR USUARIOS (Sistema Multi-perfil)
 -- ============================================================================
-INSERT INTO usuarios (nombre, correo, password, rol, id_obra, telefono, estado) VALUES
+INSERT INTO usuarios (run, nombre, apellido_paterno, apellido_materno, correo, password, rol, id_obra, telefono, direccion_calle, id_region, id_comuna, estado) VALUES
 -- Admin
-('Francisco Castillo', 'francisco.castillo@pitagora.cl', 'hashed_password_123', 'admin', NULL, '+56912345678', 'Activo'),
+('12.345.678-k', 'Francisco', 'Castillo', 'Araya', 'francisco.castillo@pitagora.cl', 'hashed_password_123', 'admin', NULL, '+56912345678', 'Av. Siempre Viva 123', 13, 13101, 'Activo'),
 
 -- Jefes de Obra
-('Juan Pérez', 'juan.perez@pitagora.cl', 'hashed_password_456', 'jefe_obra', NULL, '+56923456789', 'Activo'),
-('María García', 'maria.garcia@pitagora.cl', 'hashed_password_789', 'jefe_obra', NULL, '+56934567890', 'Activo'),
+('13.456.789-0', 'Juan', 'Pérez', 'González', 'juan.perez@pitagora.cl', 'hashed_password_456', 'jefe_obra', NULL, '+56923456789', 'Calle Falsa 456', 13, 13114, 'Activo'),
+('14.567.890-1', 'María', 'García', 'López', 'maria.garcia@pitagora.cl', 'hashed_password_789', 'jefe_obra', NULL, '+56934567890', 'Pasaje Los Alerces 789', 13, 13123, 'Activo'),
 
 -- Técnicos
-('Carlos López', 'carlos.lopez@pitagora.cl', 'hashed_password_012', 'tecnico', NULL, '+56945678901', 'Activo'),
-('Ana Martínez', 'ana.martinez@pitagora.cl', 'hashed_password_345', 'tecnico', NULL, '+56956789012', 'Activo'),
+('15.678.901-2', 'Carlos', 'López', 'Soto', 'carlos.lopez@pitagora.cl', 'hashed_password_012', 'tecnico', NULL, '+56945678901', 'Avenida Central 012', 13, 13132, 'Activo'),
+('16.789.012-3', 'Ana', 'Martínez', 'Rojas', 'ana.martinez@pitagora.cl', 'hashed_password_345', 'tecnico', NULL, '+56956789012', 'Calle Los Pinos 345', 13, 13101, 'Activo'),
 
 -- Clientes (Usuarios de empresas contratantes)
-('Roberto Silva', 'roberto.silva@uc.cl', 'hashed_password_678', 'cliente', NULL, '+56967890123', 'Activo'),
-('Patricia Jiménez', 'patricia.jimenez@komatsu.cl', 'hashed_password_901', 'cliente', NULL, '+56978901234', 'Activo');
+('17.890.123-4', 'Roberto', 'Silva', 'Castro', 'roberto.silva@uc.cl', 'hashed_password_678', 'cliente', NULL, '+56967890123', 'Calle Los Olivos 678', 13, 13119, 'Activo'),
+('18.901.234-5', 'Patricia', 'Jiménez', 'Muñoz', 'patricia.jimenez@komatsu.cl', 'hashed_password_901', 'cliente', NULL, '+56978901234', 'Avenida Las Condes 901', 13, 13114, 'Activo');
 
 -- ============================================================================
 -- 3. INSERTAR OBRAS (Proyectos/Unidades)
 -- ============================================================================
-INSERT INTO obras (id_cliente, nombre_obra, descripcion_obra, direccion, planos_presupuestos, fecha_entrega, garantia_expira, estado_obra) VALUES
-(1, 'Biblioteca Central UC - Piso 3', 'Remodelación de espacios de estudio, áreas comunes y baños', 'Av. Libertador Bernardo O\'Higgins 340, Santiago', 'https://storage.google.com/pitagora/uc-biblioteca-p3-planos.pdf', '2025-06-30', '2028-06-30', 'Activa'),
-(1, 'Laboratorio de Computación - Edificio W', 'Instalación de sistemas de climatización y red de datos', 'Campus San Joaquín, Av. Vicuña Mackenna 4860, Santiago', 'https://storage.google.com/pitagora/uc-lab-comp-planos.pdf', '2025-07-15', '2028-07-15', 'Activa'),
-(2, 'Oficinas Komatsu - Las Condes', 'Construcción de 5 pisos de oficinas con estacionamiento subterráneo', 'Av. Presidente Kennedy 5757, Las Condes', 'https://storage.google.com/pitagora/komatsu-oficinas-planos.pdf', '2025-08-30', '2028-08-30', 'Activa'),
-(3, 'Local Comercial Centro - Providencia', 'Remodelación integral de local comercial de retail', 'Avenida Providencia 1200, Providencia', 'https://storage.google.com/pitagora/comercio-local-planos.pdf', '2025-05-20', '2028-05-20', 'Activa'),
-(4, 'Vivienda Unifamiliar Vitacura', 'Casa de 3 pisos con piscina y quincho', 'Calle Los Laureles 450, Vitacura', 'https://storage.google.com/pitagora/bim-vivienda-planos.pdf', '2025-09-10', '2028-09-10', 'Activa');
+INSERT INTO obras (id_cliente, nombre_obra, descripcion_obra, direccion_calle, id_region, id_comuna, planos_presupuestos, fecha_entrega, garantia_expira, estado_obra) VALUES
+(1, 'Biblioteca Central UC - Piso 3', 'Remodelación de espacios de estudio, áreas comunes y baños', 'Av. Libertador Bernardo O\'Higgins 340', 13, 13101, 'https://storage.google.com/pitagora/uc-biblioteca-p3-planos.pdf', '2025-06-30', '2028-06-30', 'Activa'),
+(1, 'Laboratorio de Computación - Edificio W', 'Instalación de sistemas de climatización y red de datos', 'Campus San Joaquín, Av. Vicuña Mackenna 4860', 13, 13119, 'https://storage.google.com/pitagora/uc-lab-comp-planos.pdf', '2025-07-15', '2028-07-15', 'Activa'),
+(2, 'Oficinas Komatsu - Las Condes', 'Construcción de 5 pisos de oficinas con estacionamiento subterráneo', 'Av. Presidente Kennedy 5757', 13, 13114, 'https://storage.google.com/pitagora/komatsu-oficinas-planos.pdf', '2025-08-30', '2028-08-30', 'Activa'),
+(3, 'Local Comercial Centro - Providencia', 'Remodelación integral de local comercial de retail', 'Avenida Providencia 1200', 13, 13123, 'https://storage.google.com/pitagora/comercio-local-planos.pdf', '2025-05-20', '2028-05-20', 'Activa'),
+(4, 'Vivienda Unifamiliar Vitacura', 'Casa de 3 pisos con piscina y quincho', 'Calle Los Laureles 450', 13, 13132, 'https://storage.google.com/pitagora/bim-vivienda-planos.pdf', '2025-09-10', '2028-09-10', 'Activa');
 
 -- ============================================================================
 -- 4. INSERTAR ASIGNACIÓN USUARIOS A OBRAS (Relación N:M)
@@ -92,12 +92,9 @@ INSERT INTO categorias (nombre_categoria, subcategoria, descripcion) VALUES
 -- ============================================================================
 -- 6. INSERTAR TICKETS (Contenedor Agrupador)
 -- ============================================================================
-INSERT INTO tickets (id_obra, id_usuario_creador, estado_general) VALUES
-(1, 1, 'abierto'),      -- Ticket 1: UC Biblioteca
-(2, 1, 'en proceso'),   -- Ticket 2: UC Lab Computación
-(3, 2, 'abierto'),      -- Ticket 3: Komatsu Oficinas
-(4, 3, 'abierto'),      -- Ticket 4: Comercio Local
-(5, 2, 'terminado');    -- Ticket 5: BIM Vivienda
+INSERT INTO tickets (id_obra, id_usuario_creador, id_usuario, estado_general) VALUES
+(1, 1, 6, 'abierto'),      -- Ticket 1: UC Biblioteca (Para Roberto Silva)
+(3, 2, 7, 'abierto');      -- Ticket 2: Komatsu Oficinas (Para Patricia Jiménez)
 
 -- ============================================================================
 -- 7. INSERTAR OBSERVACIONES (Unidad Atómica de Trabajo)
@@ -106,27 +103,14 @@ INSERT INTO observaciones (
     id_ticket, id_categoria, falla, ubicacion_exacta, descripcion_problema, 
     urgencia, estado_observacion, confirmacion_cliente, token_aceptacion
 ) VALUES
--- Ticket 1: UC Biblioteca (abierto)
+-- Ticket 1: UC Biblioteca (abierto) - Roberto Silva
 (1, 2, 'Fuga en grifo del baño', 'Baño N°3, Piso 3', 'Grifo de lavamanos gotea constantemente, desperdiciando agua', 'media', 'pendiente', 'pendiente', 'TOKEN_UC_LIB_001'),
 (1, 7, 'Cerámica rota en piso', 'Área de lectura, esquina sureste', 'Dos azulejos rotos en el piso de cerámica color gris', 'baja', 'en observación', 'aceptado', 'TOKEN_UC_LIB_002'),
 (1, 9, 'Puerta de oficina pegada', 'Oficina del bibliotecario', 'La puerta de madera se pega al abrir y cerrar', 'baja', 'en proceso', 'pendiente', 'TOKEN_UC_LIB_003'),
 
--- Ticket 2: UC Lab Computación (en proceso)
-(2, 4, 'Luminarias defectuosas', 'Sala de computadores (rack norte)', '3 luminarias LED parpadean intermitentemente', 'alta', 'en proceso', 'aceptado', 'TOKEN_UC_LAB_001'),
-(2, 6, 'Circuito sobrecargado', 'Sala de servidores', 'El circuito salta cada vez que se conectan todos los equipos', 'alta', 'en proceso', 'pendiente', 'TOKEN_UC_LAB_002'),
-(2, 15, 'Cableado desordenado', 'Detrás del escritorio central', 'El cableado de red no está correctamente organizado', 'baja', 'en observación', 'pendiente', 'TOKEN_UC_LAB_003'),
-
--- Ticket 3: Komatsu Oficinas (abierto)
-(3, 1, 'Fuga en tubería de agua', 'Sótano, zona de estacionamiento', 'Goteo en tubería principal de agua potable', 'alta', 'aplica', 'aceptado', 'TOKEN_KOM_OF_001'),
-(3, 11, 'Piso desnivelado', 'Piso 2, oficina gerencial', 'El piso tiene desnivel de aproximadamente 2cm en la esquina', 'media', 'pendiente', 'rechazado', 'TOKEN_KOM_OF_002'),
-
--- Ticket 4: Comercio Local (abierto)
-(4, 8, 'Pintura descascarada', 'Fachada exterior, muro norte', 'La pintura se está descascarando en gran área', 'media', 'pendiente', 'pendiente', 'TOKEN_COM_LOC_001'),
-(4, 9, 'Ventana rota', 'Vitrina de exhibición lado izquierdo', 'Cristal roto en la ventana principal de exhibición', 'alta', 'en proceso', 'aceptado', 'TOKEN_COM_LOC_002'),
-
--- Ticket 5: BIM Vivienda (terminado)
-(5, 10, 'Grieta en muro', 'Sala principal, muro oeste', 'Grieta vertical de aproximadamente 1cm de ancho', 'media', 'terminado', 'aceptado', 'TOKEN_BIM_VIV_001'),
-(5, 13, 'Aire acondicionado no enfría', 'Dormitorio principal', 'El aire acondicionado encendido pero no baja la temperatura', 'alta', 'terminado', 'aceptado', 'TOKEN_BIM_VIV_002');
+-- Ticket 2: Komatsu Oficinas (abierto) - Patricia Jiménez
+(2, 1, 'Fuga en tubería de agua', 'Sótano, zona de estacionamiento', 'Goteo en tubería principal de agua potable', 'alta', 'aplica', 'aceptado', 'TOKEN_KOM_OF_001'),
+(2, 11, 'Piso desnivelado', 'Piso 2, oficina gerencial', 'El piso tiene desnivel de aproximadamente 2cm en la esquina', 'media', 'pendiente', 'rechazado', 'TOKEN_KOM_OF_002');
 
 -- ============================================================================
 -- 8. INSERTAR EVIDENCIAS (Fotos/Videos)
@@ -201,19 +185,3 @@ INSERT INTO historial_bitacora (id_observacion, id_usuario, accion, detalles, ju
 (10, 1, 'Envío de confirmación', 'Email enviado al cliente para confirmación final', NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
-
--- ============================================================================
--- NOTAS SOBRE LOS DATOS:
--- ============================================================================
--- 1. Se insertaron 4 clientes con datos realistas (UC, Komatsu, Comercio, BIM)
--- 2. Se insertaron 7 usuarios con roles variados (admin, jefes, técnicos, clientes)
--- 3. Se insertaron 5 obras asociadas a los clientes
--- 4. Se insertaron 15 categorías de fallas con subcategorías específicas
--- 5. Se insertaron 5 tickets con diferentes estados (abierto, en proceso, terminado)
--- 6. Se insertaron 8 observaciones variadas con estados distintos
--- 7. Se insertaron evidencias (fotos/videos) para algunas observaciones
--- 8. Se insertaron mensajes para demostrar la comunicación
--- 9. Se insertaron registros de historial_bitacora con acciones inmutables
--- 
--- IMPORTANTE: Los passwords están hasheados (en producción usar bcrypt/argon2)
--- ============================================================================

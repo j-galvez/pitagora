@@ -33,15 +33,31 @@ public class TicketsService {
         if (tickets.getIdUsuarioCreador() == null) {
             throw new IllegalArgumentException("El ID del usuario creador es requerido");
         }
+
+        // Validación 3: id_usuario (dueño) es requerido
+        if (tickets.getIdUsuario() == null) {
+            throw new IllegalArgumentException("El ID del usuario (dueño/cliente) es requerido");
+        }
         
-        // Validación 3: Verificar que la obra existe
+        // Validación 4: Verificar que la obra existe
         if (!obrasRepository.existsById(tickets.getIdObra())) {
             throw new IllegalArgumentException("La obra no existe con ID: " + tickets.getIdObra());
         }
         
-        // Validación 4: Verificar que el usuario creador existe
+        // Validación 5: Verificar que el usuario creador existe
         if (!usuariosRepository.existsById(tickets.getIdUsuarioCreador())) {
             throw new IllegalArgumentException("El usuario creador no existe con ID: " + tickets.getIdUsuarioCreador());
+        }
+
+        // Validación 6: Verificar que el usuario dueño existe
+        if (!usuariosRepository.existsById(tickets.getIdUsuario())) {
+            throw new IllegalArgumentException("El usuario dueño no existe con ID: " + tickets.getIdUsuario());
+        }
+
+        // REGLA DE NEGOCIO: Solo un ticket abierto por usuario
+        List<Tickets> ticketsAbiertos = ticketsRepository.findTicketsAbiertosPorUsuario(tickets.getIdUsuario());
+        if (!ticketsAbiertos.isEmpty()) {
+            throw new IllegalArgumentException("El usuario ya tiene un ticket abierto o en proceso. Debe cerrar el actual antes de abrir uno nuevo.");
         }
         
         // Establecer valores por defecto
@@ -123,29 +139,18 @@ public class TicketsService {
 
     // Obtener tickets por obra
     public List<Tickets> obtenerTicketsPorObra(Integer idObra) {
-        // Necesitarás agregar este método en TicketsRepository:
-        // List<Tickets> findByIdObra(Integer idObra);
+        // Implementar findByIdObra en TicketsRepository si es necesario
         // return ticketsRepository.findByIdObra(idObra);
-        throw new UnsupportedOperationException("Implementar método findByIdObra en TicketsRepository");
+        throw new UnsupportedOperationException("Implementar método findByIdObra en TicketsRepository si es necesario");
     }
 
-    // Obtener tickets por usuario creador
+    // Obtener tickets por usuario
     public List<Tickets> obtenerTicketsPorUsuario(Integer idUsuario) {
-        // Necesitarás agregar este método en TicketsRepository:
-        // List<Tickets> findByIdUsuarioCreador(Integer idUsuarioCreador);
-        // return ticketsRepository.findByIdUsuarioCreador(idUsuario);
-        throw new UnsupportedOperationException("Implementar método findByIdUsuarioCreador en TicketsRepository");
+        return ticketsRepository.findByIdUsuario(idUsuario);
     }
 
     // Obtener tickets por estado
     public List<Tickets> obtenerTicketsPorEstado(String estado) {
-        // Validar estado
-        if (!estado.equals("abierto") && !estado.equals("en proceso") && !estado.equals("terminado")) {
-            throw new IllegalArgumentException("Estado inválido");
-        }
-        // Necesitarás agregar este método en TicketsRepository:
-        // List<Tickets> findByEstadoGeneral(String estadoGeneral);
-        // return ticketsRepository.findByEstadoGeneral(estado);
-        throw new UnsupportedOperationException("Implementar método findByEstadoGeneral en TicketsRepository");
+        return ticketsRepository.findByEstadoGeneral(estado);
     }
 }

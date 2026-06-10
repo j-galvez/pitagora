@@ -3,19 +3,24 @@ package PitagoraBackend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import PitagoraBackend.dto.ForgotPasswordRequest;
 import PitagoraBackend.dto.LoginRequest;
+import PitagoraBackend.dto.ResetPasswordRequest;
 import PitagoraBackend.dto.UsuarioResponse;
 import PitagoraBackend.model.Usuarios;
 import PitagoraBackend.service.UsuariosService;
+import PitagoraBackend.service.ObrasService;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
-@CrossOrigin(origins = "*")
 public class UsuariosController {
 
     @Autowired
     private UsuariosService usuariosService;
+
+    @Autowired
+    private ObrasService obrasService;
 
     @GetMapping
     public List<Usuarios> listar() {
@@ -40,6 +45,11 @@ public class UsuariosController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/obra/{id_obra}")
+    public List<Usuarios> listarPorObra(@PathVariable("id_obra") Integer id_obra) {
+        return usuariosService.obtenerUsuariosPorObra(id_obra);
     }
 
     @PutMapping("/{id_usuario}")
@@ -71,16 +81,51 @@ public class UsuariosController {
                 loginRequest.getPassword()
             );
 
+            Integer idObra = usuarioAutenticado.getIdObra();
+            String nombreObra = null;
+            if (idObra != null) {
+                try {
+                    nombreObra = obrasService.obtenerObraById(idObra).getNombreObra();
+                } catch (Exception e) {
+                    nombreObra = "Obra ID: " + idObra;
+                }
+            }
+
             UsuarioResponse response = new UsuarioResponse(
                 usuarioAutenticado.getIdUsuario(),
                 usuarioAutenticado.getNombre(),
                 usuarioAutenticado.getCorreo(),
                 usuarioAutenticado.getRol(),
                 usuarioAutenticado.getEstado(),
-                usuarioAutenticado.getFechaCreacion()
+                usuarioAutenticado.getFechaCreacion(),
+                idObra,
+                nombreObra
+            );
+            response.setResetPasswordRequired(
+                usuarioAutenticado.getPassword() != null && usuarioAutenticado.getPassword().startsWith("TEMP:")
             );
 
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/recuperar-password")
+    public ResponseEntity<?> recuperarPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            usuariosService.solicitarRecuperacion(request.getCorreo());
+            return ResponseEntity.ok("Si el correo está registrado y activo, se han enviado instrucciones al correo.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            usuariosService.restablecerPassword(request.getIdUsuario(), request.getNewPassword());
+            return ResponseEntity.ok("Contraseña actualizada correctamente. Inicia sesión con tu nueva contraseña.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

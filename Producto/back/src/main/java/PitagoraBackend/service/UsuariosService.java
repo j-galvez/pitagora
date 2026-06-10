@@ -4,14 +4,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import PitagoraBackend.repository.UsuariosRepository;
 import PitagoraBackend.model.Usuarios;
+import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 @Service
+@Slf4j
 public class UsuariosService {
 
     @Autowired
     private UsuariosRepository usuariosRepository;
+
+    @Autowired
+    private EmailService emailService;
 
     // CREATE
     public Usuarios crearUsuarios(Usuarios usuarios) {
@@ -54,8 +60,10 @@ public class UsuariosService {
         }
 
         if (usuarios.getPassword() == null || usuarios.getPassword().isEmpty()) {
-            throw new IllegalArgumentException("La contraseña es requerida");
+            usuarios.setPassword(emailService.generarContrasenaAleatoria());
         }
+
+        String passwordPlano = usuarios.getPassword();
 
         if (usuarios.getRol() == null || usuarios.getRol().isEmpty()) {
             throw new IllegalArgumentException("El rol es requerido");
@@ -94,7 +102,16 @@ public class UsuariosService {
         }
 
         // Guardar el usuario
-        return usuariosRepository.save(usuarios);
+        Usuarios usuarioGuardado = usuariosRepository.save(usuarios);
+
+        // Enviar correo de bienvenida
+        try {
+            emailService.enviarCorreoBienvenida(usuarioGuardado, passwordPlano);
+        } catch (Exception e) {
+            log.warn("Error al enviar correo de bienvenida a {}", usuarioGuardado.getCorreo(), e);
+        }
+
+        return usuarioGuardado;
     }
 
     // READ - Obtener todos los usuarios
@@ -109,6 +126,11 @@ public class UsuariosService {
             throw new IllegalArgumentException("Usuario no encontrado con ID: " + id);
         }
         return usuario.get();
+    }
+
+    // READ - Obtener usuarios por obra (id_obra directo y tabla obras_usuarios)
+    public List<Usuarios> obtenerUsuariosPorObra(Integer idObra) {
+        return usuariosRepository.findAsignadosAObra(idObra);
     }
 
     // UPDATE
@@ -194,6 +216,44 @@ public class UsuariosService {
         usuariosRepository.deleteById(id);
     }
 
+    // Recuperación de contraseña
+    public void solicitarRecuperacion(String correo) {
+        Optional<Usuarios> optionalUsuario = usuariosRepository.findByCorreo(correo);
+        if (optionalUsuario.isPresent()) {
+            Usuarios usuario = optionalUsuario.get();
+            if (usuario.getEstado() != null && usuario.getEstado().equalsIgnoreCase("Activo")) {
+                String codigoTemporal = generarCodigoRecuperacion();
+                usuario.setPassword("TEMP:" + codigoTemporal);
+                usuariosRepository.save(usuario);
+
+                try {
+                    emailService.enviarCorreoRecuperacion(usuario, codigoTemporal);
+                } catch (Exception e) {
+                    log.warn("Error al enviar correo de recuperación a {}", usuario.getCorreo(), e);
+                }
+            }
+        }
+    }
+
+    public void restablecerPassword(Integer idUsuario, String nuevaPassword) {
+        Optional<Usuarios> optionalUsuario = usuariosRepository.findById(idUsuario);
+        if (!optionalUsuario.isPresent()) {
+            throw new IllegalArgumentException("Usuario no encontrado con ID: " + idUsuario);
+        }
+
+        if (nuevaPassword == null || nuevaPassword.trim().length() < 6) {
+            throw new IllegalArgumentException("La nueva contraseña debe tener al menos 6 caracteres");
+        }
+
+        Usuarios usuario = optionalUsuario.get();
+        if (usuario.getEstado() == null || !usuario.getEstado().equalsIgnoreCase("Activo")) {
+            throw new IllegalArgumentException("Usuario inactivo. No puede cambiar la contraseña.");
+        }
+
+        usuario.setPassword(nuevaPassword.trim());
+        usuariosRepository.save(usuario);
+    }
+
     // Nuevo método para autenticar usuario
     public Usuarios validarCredenciales(String correo, String password) {
         Usuarios usuario = usuariosRepository.findByCorreo(correo)
@@ -201,11 +261,26 @@ public class UsuariosService {
 
         // Ojo: Si en el futuro usas encriptación (como BCrypt), debes comparar el hash aquí.
         // Por ahora comparamos texto plano:
-        if (!usuario.getPassword().equals(password)) {
+        if (usuario.getPassword() != null && usuario.getPassword().startsWith("TEMP:")) {
+            String codigoTemporal = usuario.getPassword().substring(5);
+            if (!codigoTemporal.equals(password)) {
+                throw new IllegalArgumentException("Correo o contraseña incorrectos");
+            }
+        } else if (!usuario.getPassword().equals(password)) {
             throw new IllegalArgumentException("Correo o contraseña incorrectos");
         }
 
+        if (usuario.getEstado() == null || !usuario.getEstado().equalsIgnoreCase("Activo")) {
+            throw new IllegalArgumentException("Usuario inactivo. No puede acceder a la aplicación.");
+        }
+
         return usuario;
+    }
+
+    private String generarCodigoRecuperacion() {
+        Random random = new Random();
+        int valor = 100000 + random.nextInt(900000);
+        return String.valueOf(valor);
     }
 
     private boolean validarCorreo(String correo) {

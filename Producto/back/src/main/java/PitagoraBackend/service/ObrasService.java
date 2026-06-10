@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import PitagoraBackend.repository.ObrasRepository;
 import PitagoraBackend.model.Obras;
 import java.time.LocalDateTime;
+import PitagoraBackend.dto.ObraDTO;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,7 +68,26 @@ public class ObrasService {
         return obrasRepository.findAll();
     }
 
-    // READ - Obtener obra por ID
+    // NUEVO MÉTODO: Devuelve el DTO armado con los nombres reales
+    public List<ObraDTO> obtenerObrasConDetalles() {
+        return obrasRepository.findAllObrasConDetalles();
+    }
+
+    // NUEVO MÉTODO: Obtener una obra por ID con todos los detalles (DTO)
+    public ObraDTO obtenerObraConDetallesById(Integer id) {
+        ObraDTO obra = obrasRepository.findObraConDetallesById(id);
+        if (obra == null) {
+            throw new IllegalArgumentException("Obra no encontrada con ID: " + id);
+        }
+        return obra;
+    }
+
+    // NUEVO MÉTODO: Obtener obras de un cliente específico
+    public List<ObraDTO> obtenerObrasPorCliente(Integer idCliente) {
+        return obrasRepository.findObrasByCliente(idCliente);
+    }
+
+    // READ - Obtener obra por ID (entidad básica)
     public Obras obtenerObraById(Integer id) {
         Optional<Obras> obra = obrasRepository.findById(id);
         if (!obra.isPresent()) {
@@ -141,14 +161,6 @@ public class ObrasService {
     }
 
     // MÉTODOS ADICIONALES ÚTILES
-
-    // Obtener obras por cliente
-    public List<Obras> obtenerObrasPorCliente(Integer idCliente) {
-        // Necesitarás agregar este método en ObrasRepository:
-        // List<Obras> findByIdCliente(Integer idCliente);
-        // return obrasRepository.findByIdCliente(idCliente);
-        throw new UnsupportedOperationException("Implementar método findByIdCliente en ObrasRepository");
-    }
 
     // Obtener obras por estado
     public List<Obras> obtenerObrasPorEstado(String estado) {

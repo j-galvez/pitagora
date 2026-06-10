@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaUserPlus, FaSyncAlt } from 'react-icons/fa';
+import { FaUserPlus } from 'react-icons/fa';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import AdminLayout from '../../components/AdminLayout';
 
@@ -19,7 +19,7 @@ const CrearUsuario = () => {
     apellidoMaterno: '',
     correo: '',
     telefono: '',
-    password: 'oEPwxvJFVfP&',
+    password: '', // Generada automáticamente por el backend
     rol: 'usuario',
     idObra: '',
     calle: '',
@@ -193,17 +193,8 @@ const CrearUsuario = () => {
     }
   };
 
-  const generarContrasena = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&%';
-    let result = '';
-    for (let i = 0; i < 10; i += 1) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setFormData({ ...formData, password: result });
-  };
-
   const handleVolver = () => {
-    navigate('/admin-dashboard');
+    navigate('/admin/usuarios');
   };
 
   const handleCancel = () => {
@@ -276,7 +267,7 @@ const CrearUsuario = () => {
     }
 
     const usuarioPayload = {
-      run: formData.run.replace(/[^0-9kK]/g, '').toUpperCase(),
+      run: formData.run, // Enviamos el RUN con formato ya que el backend lo espera así
       nombre: formData.nombre,
       apellidoPaterno: formData.apellidoPaterno,
       apellidoMaterno: formData.apellidoMaterno,
@@ -301,11 +292,23 @@ const CrearUsuario = () => {
       });
 
       if (response.ok) {
-        alert('Usuario creado exitosamente');
+        alert(`Usuario creado exitosamente. Correo de bienvenida enviado a: ${formData.correo}`);
         navigate('/admin/usuarios');
       } else {
         const errorMessage = await response.text();
-        setError(errorMessage || 'Error al crear el usuario');
+        console.error('Error detallado del servidor:', errorMessage);
+        
+        let parsedError = errorMessage;
+        try {
+          const errorJson = JSON.parse(errorMessage);
+          parsedError = errorJson.message || errorJson.error || errorMessage;
+        } catch (e) {} // Si no es JSON, se queda con el texto original
+
+        if (parsedError.includes("Duplicate entry") || parsedError.includes("ConstraintViolation")) {
+          setError("Error: El RUN o el Correo ingresado ya se encuentran registrados en el sistema.");
+        } else {
+          setError(`Error del servidor: ${parsedError || 'No se pudo crear el usuario'}`);
+        }
       }
     } catch (fetchError) {
       console.error('Error creando usuario:', fetchError);
@@ -432,21 +435,10 @@ const CrearUsuario = () => {
             </div>
 
             <div className="mb-3">
-              <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Contraseña (Generada automáticamente)</label>
-              <div className="input-group">
-                <input
-                  type="text"
-                  className="form-control bg-light"
-                  value={formData.password}
-                  readOnly
-                />
-                <button className="btn btn-outline-secondary" type="button" onClick={generarContrasena}>
-                  <FaSyncAlt />
-                </button>
+              <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Contraseña</label>
+              <div className="alert alert-info" role="alert">
+                <small>La contraseña será generada automáticamente por el sistema y enviada al correo del usuario.</small>
               </div>
-              <small className="text-muted fst-italic d-block mt-1" style={{ fontSize: '12px' }}>
-                Esta contraseña se puede regenerar antes de la creación.
-              </small>
             </div>
 
             <div className="row g-3 mb-3">

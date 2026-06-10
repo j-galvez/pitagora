@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaTicketAlt, FaClipboardList, FaExclamationTriangle, FaChartBar } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import KPICard from '../../components/dashboard/KPICard';
 import TopFallasChart from '../../components/dashboard/TopFallasChart';
+import PieChartExpandable from '../../components/dashboard/PieChartExpandable';
 import { obtenerEstadisticas, obtenerTopFallas } from '../../services/dashboardService';
 
 export default function IndexAdmin() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalTickets: 0,
     ticketsAbiertos: 0,
@@ -104,14 +107,25 @@ export default function IndexAdmin() {
               </div>
             </div>
 
-            {/* Gráfico de Top Fallas */}
-            <div className="row g-4">
-              <div className="col-12 col-lg-8">
+            {/* Gráfico de Top Fallas y Gráfico de Torta */}
+            <div className="row g-4 mb-4">
+              <div className="col-12 col-lg-6">
                 <TopFallasChart datos={topFallas} />
               </div>
               
-              {/* Panel de acciones rápidas */}
-              <div className="col-12 col-lg-4">
+              {/* Gráfico de Torta Expandible */}
+              <div className="col-12 col-lg-6">
+                <PieChartExpandable
+                  titulo="Distribución de Categorías"
+                  datos={topFallas}
+                  onNavigate={navigate}
+                />
+              </div>
+            </div>
+
+            {/* Panel de acciones rápidas y resumen */}
+            <div className="row g-4">
+              <div className="col-12 col-lg-6">
                 <div className="card border-0 shadow-sm">
                   <div className="card-body">
                     <h5 className="card-title mb-4">Acciones Rápidas</h5>
@@ -140,27 +154,54 @@ export default function IndexAdmin() {
                   </div>
                 </div>
 
-                {/* Resumen rápido */}
-                <div className="card border-0 shadow-sm mt-4">
+              </div>
+
+              {/* Resumen rápido */}
+              <div className="col-12 col-lg-6">
+                <div className="card border-0 shadow-sm">
                   <div className="card-body">
-                    <h5 className="card-title mb-3">Resumen</h5>
+                    <h5 className="card-title mb-3">Resumen General</h5>
                     <ul className="list-unstyled mb-0">
-                      <li className="d-flex justify-content-between align-items-center mb-2">
+                      <li className="d-flex justify-content-between align-items-center mb-3">
                         <span className="text-muted small">Tasa de Tickets Abiertos</span>
                         <span className="badge bg-info">
-                          {stats.totalTickets > 0 
+                          {stats.totalTickets > 0
                             ? `${Math.round((stats.ticketsAbiertos / stats.totalTickets) * 100)}%`
                             : '0%'
                           }
                         </span>
                       </li>
-                      <li className="d-flex justify-content-between align-items-center">
+                      <li className="d-flex justify-content-between align-items-center mb-3">
                         <span className="text-muted small">Observaciones Críticas</span>
                         <span className="badge bg-danger">
                           {stats.observacionesAltaUrgencia}
                         </span>
                       </li>
+                      <li className="d-flex justify-content-between align-items-center">
+                        <span className="text-muted small">Categorías Activas</span>
+                        <span className="badge bg-success">
+                          {topFallas.length}
+                        </span>
+                      </li>
                     </ul>
+                  </div>
+                </div>
+
+                {/* Información adicional */}
+                <div className="card border-0 shadow-sm mt-4">
+                  <div className="card-body">
+                    <h5 className="card-title mb-3">
+                      <i className="bi bi-info-circle me-2"></i>
+                      Información
+                    </h5>
+                    <p className="small text-muted mb-2">
+                      <i className="bi bi-pie-chart me-2"></i>
+                      Haz click en el gráfico de torta para ver detalles de cada categoría
+                    </p>
+                    <p className="small text-muted mb-0">
+                      <i className="bi bi-bar-chart me-2"></i>
+                      Las barras muestran las 5 fallas más reportadas
+                    </p>
                   </div>
                 </div>
               </div>

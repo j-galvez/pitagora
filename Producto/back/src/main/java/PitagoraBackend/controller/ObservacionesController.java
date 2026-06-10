@@ -3,26 +3,39 @@ package PitagoraBackend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import PitagoraBackend.model.Observaciones;
+import lombok.extern.slf4j.Slf4j;
 import PitagoraBackend.service.ObservacionesService;
+
 import java.util.List;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/observaciones")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*") // Asegura el acceso desde React (localhost:5173)
 public class ObservacionesController {
     
     @Autowired
     private ObservacionesService observacionesService;
+    @Autowired
+    private PitagoraBackend.service.NotificationService notificationService;
 
-    // CREATE - Crear observación
-    @PostMapping
-    public ResponseEntity<?> crear(@RequestBody Observaciones observacion) {
+    // CREATE - Crear observación con soporte multipart/form-data
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<?> crear(
+            @RequestPart("observacion") String observacionJson,
+            @RequestPart(value = "fotos", required = false) MultipartFile[] fotos) {
         try {
-            Observaciones nueva = observacionesService.crearObservaciones(observacion);
+            ObjectMapper objectMapper = new ObjectMapper();
+            Observaciones observacion = objectMapper.readValue(observacionJson, Observaciones.class);
+            Observaciones nueva = observacionesService.crearObservacionesConFotos(observacion, fotos);
             return ResponseEntity.ok(nueva);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error al procesar la observación y las imágenes: " + e.getMessage());
         }
     }
 
@@ -63,8 +76,6 @@ public class ObservacionesController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
-    // ENDPOINTS ADICIONALES
 
     // Obtener observaciones por ticket
     @GetMapping("/ticket/{id_ticket}")
@@ -118,6 +129,63 @@ public class ObservacionesController {
             return ResponseEntity.ok(observaciones);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Aceptación desde enlace en correo
+    @GetMapping("/{id_observacion}/aceptar")
+    public ResponseEntity<?> aceptarDesdeCorreo(@PathVariable("id_observacion") Integer id_observacion, @RequestParam("token") String token) {
+        try {
+            Observaciones obs = observacionesService.obtenerObservacionById(id_observacion);
+            log.info("Aceptación desde correo recibida para id={} tokenParam={} tokenStored={}", id_observacion, token, obs.getTokenAceptacion());
+            if (obs.getTokenAceptacion() == null || !obs.getTokenAceptacion().equals(token)) {
+                log.warn("Token inválido para aceptación id={} tokenParam={}", id_observacion, token);
+                return ResponseEntity.badRequest().body("Token inválido");
+            }
+
+            Observaciones update = new Observaciones();
+            update.setEstadoObservacion("terminado");
+            update.setConfirmacionCliente("aceptado");
+            update.setTokenAceptacion(null);
+
+            Observaciones actualizada = observacionesService.actualizarObservaciones(id_observacion, update);
+            log.info("Observación {} aceptada y actualizada: estado={}, confirmacion={}", id_observacion, actualizada.getEstadoObservacion(), actualizada.getConfirmacionCliente());
+            return ResponseEntity.ok("Gracias. La observación ha sido cerrada y aceptada.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error procesando la aceptación: " + e.getMessage());
+        }
+    }
+
+    // Rechazo desde enlace en correo
+    @GetMapping("/{id_observacion}/rechazar")
+    public ResponseEntity<?> rechazarDesdeCorreo(@PathVariable("id_observacion") Integer id_observacion, @RequestParam("token") String token) {
+        try {
+            Observaciones obs = observacionesService.obtenerObservacionById(id_observacion);
+            log.info("Rechazo desde correo recibida para id={} tokenParam={} tokenStored={}", id_observacion, token, obs.getTokenAceptacion());
+            if (obs.getTokenAceptacion() == null || !obs.getTokenAceptacion().equals(token)) {
+                log.warn("Token inválido para rechazo id={} tokenParam={}", id_observacion, token);
+                return ResponseEntity.badRequest().body("Token inválido");
+            }
+
+            Observaciones update = new Observaciones();
+            update.setConfirmacionCliente("rechazado");
+            update.setTokenAceptacion(null);
+
+            Observaciones actualizada = observacionesService.actualizarObservaciones(id_observacion, update);
+            log.info("Observación {} marcada como rechazada por cliente: confirmacion={}", id_observacion, actualizada.getConfirmacionCliente());
+            // Notify admins specifically about the rejection so they can act
+            try {
+                notificationService.notificarRechazoAceptacion(actualizada);
+            } catch (Exception e) {
+                // continue, but log via response
+            }
+            return ResponseEntity.ok("Hemos notificado al administrador para que coordine la solución.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error procesando el rechazo: " + e.getMessage());
         }
     }
 }

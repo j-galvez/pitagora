@@ -30,9 +30,15 @@ public class Tickets {
     @Column(name = "id_usuario_creador", nullable = false)
     private Integer idUsuarioCreador;
 
+    @Column(name = "id_usuario", nullable = false)
+    private Integer idUsuario;
+
     @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaCreacion;
 
     @Column(name = "estado_general", nullable = false, length = 20)
     private String estadoGeneral; // 'abierto', 'en proceso', 'terminado'
+
+    @Column(name = "costo_total", columnDefinition = "BIGINT DEFAULT 0")
+    private Long costoTotal;
 }

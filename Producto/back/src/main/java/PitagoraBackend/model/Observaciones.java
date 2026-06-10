@@ -54,11 +54,20 @@ public class Observaciones {
     @Column(name = "comentario_cliente", columnDefinition = "TEXT")
     private String comentarioCliente;
 
+    @Column(name = "comentario_admin", columnDefinition = "TEXT")
+    private String comentarioAdmin;
+
+    @Column(name = "costo", columnDefinition = "BIGINT DEFAULT 0")
+    private Long costo;
+
     @Column(name = "token_aceptacion", length = 100, unique = true)
     private String tokenAceptacion;
 
     @Column(name = "intentos_recordatorio")
     private Integer intentosRecordatorio;
+
+    @Column(name = "id_usuario_creador")
+    private Integer idUsuarioCreador;
 
     @Column(name = "fecha_registro", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaRegistro;
