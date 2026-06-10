@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+
+const API_URL = 'http://localhost:8080/api';
+
+const getNombreObraDesdeUsuario = (usuario) =>
+  usuario?.nombre_obra || usuario?.nombreObra || '';
+
+const getIdObraDesdeUsuario = (usuario) =>
+  usuario?.id_obra || usuario?.idObra || null;
 
 export default function NavbarUsuario({ usuario, hasActiveTicket = false }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [nombreObra, setNombreObra] = useState(() => getNombreObraDesdeUsuario(usuario));
+
+  useEffect(() => {
+    const desdeSesion = getNombreObraDesdeUsuario(usuario);
+    if (desdeSesion) {
+      setNombreObra(desdeSesion);
+      return;
+    }
+
+    const idObra = getIdObraDesdeUsuario(usuario);
+    if (!idObra) {
+      setNombreObra('');
+      return;
+    }
+
+    fetch(`${API_URL}/obras/${idObra}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => setNombreObra(data.nombreObra || data.nombre_obra || ''))
+      .catch(() => setNombreObra(''));
+  }, [usuario]);
 
   const handleLogout = () => {
     localStorage.removeItem('usuario');
@@ -27,7 +55,7 @@ export default function NavbarUsuario({ usuario, hasActiveTicket = false }) {
         <div className="small text-white-50">Bienvenido/a</div>
         <div className="fw-bold fs-5">{usuario?.nombre || 'Juan Pérez'}</div>
         <div className="small text-white-50 fst-italic">
-          <i className="text-white-50 bi bi-building me-1 "></i> {usuario?.obraActual || 'Edificio Los Almendros - Depto 305'}
+          <i className="text-white-50 bi bi-building me-1 "></i> {nombreObra || 'Sin obra asignada'}
         </div>
       </div>
 
@@ -92,8 +120,8 @@ export default function NavbarUsuario({ usuario, hasActiveTicket = false }) {
     <>
       {/* Sidebar fijo para desktop */}
       <div
-        className="d-none d-lg-flex flex-column flex-shrink-0 align-self-stretch text-white p-3"
-        style={{ width: '280px', minHeight: '100vh', backgroundColor: '#002840' }}
+        className="d-none d-lg-flex flex-column flex-shrink-0 text-white p-3"
+        style={{ width: '280px', height: '100vh', backgroundColor: '#002840' }}
       >
         {menuContent}
       </div>
