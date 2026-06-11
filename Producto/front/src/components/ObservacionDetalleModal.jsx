@@ -126,10 +126,25 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
   const cargarMensajes = async () => {
     setLoadingMensajes(true);
     try {
-      const data = await mensajesService.getMensajesPorObservacion(idObservacion);
-      setMensajes(data);
+      // Intentar obtener el hilo de comunicación (mensajes + notificaciones)
+      const response = await fetch(`${API_URL}/observaciones/${idObservacion}/hilo-comunicacion`);
+      if (response.ok) {
+        const data = await response.json();
+        setMensajes(data);
+      } else {
+        // Fallback: obtener solo mensajes manuales
+        const data = await mensajesService.getMensajesPorObservacion(idObservacion);
+        setMensajes(data);
+      }
     } catch (err) {
-      console.error('Error al cargar mensajes:', err);
+      console.error('Error al cargar hilo de comunicación:', err);
+      try {
+        // Fallback a mensajes simples si el hilo falla
+        const data = await mensajesService.getMensajesPorObservacion(idObservacion);
+        setMensajes(data);
+      } catch (fallbackErr) {
+        console.error('Error en fallback:', fallbackErr);
+      }
     } finally {
       setLoadingMensajes(false);
     }

@@ -147,13 +147,11 @@ public class ObservacionesService {
             System.err.println("Error notificando nueva observacion: " + e.getMessage());
             e.printStackTrace();
         }
-        return saved;
-        Observaciones guardada = observacionesRepository.save(observaciones);
         
         // Actualizar el costo total del ticket
-        actualizarCostoTotalTicket(guardada.getIdTicket());
+        actualizarCostoTotalTicket(saved.getIdTicket());
         
-        return guardada;
+        return saved;
     }
 
     public Observaciones crearObservacionesConFotos(Observaciones observaciones, MultipartFile[] fotos) throws IOException {
@@ -301,13 +299,10 @@ public class ObservacionesService {
             // ignorar fallos de notificación
         }
 
-        return saved;
-        Observaciones guardada = observacionesRepository.save(observacionExistente);
-        
         // Actualizar el costo total del ticket
-        actualizarCostoTotalTicket(guardada.getIdTicket());
+        actualizarCostoTotalTicket(saved.getIdTicket());
         
-        return guardada;
+        return saved;
     }
 
     // DELETE - Eliminar observación

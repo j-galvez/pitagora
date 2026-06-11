@@ -9,10 +9,13 @@ import jakarta.mail.MessagingException;
 import PitagoraBackend.model.Evidencias;
 import PitagoraBackend.model.Mensajes;
 import PitagoraBackend.model.Observaciones;
+import PitagoraBackend.model.NotificacionesEnviadas;
 import PitagoraBackend.model.Usuarios;
 import PitagoraBackend.repository.EvidenciasRepository;
 import PitagoraBackend.repository.MensajesRepository;
+import PitagoraBackend.repository.NotificacionesEnviadasRepository;
 import PitagoraBackend.repository.ObservacionesRepository;
+import PitagoraBackend.repository.TicketsRepository;
 import PitagoraBackend.repository.UsuariosRepository;
 
 import java.time.format.DateTimeFormatter;
@@ -33,10 +36,19 @@ public class NotificationService {
     private ObservacionesRepository observacionesRepository;
 
     @Autowired
+    private TicketsRepository ticketsRepository;
+
+    @Autowired
     private MensajesRepository mensajesRepository;
 
     @Autowired
     private EvidenciasRepository evidenciasRepository;
+
+    @Autowired
+    private NotificacionesEnviadasRepository notificacionesEnviadasRepository;
+
+    @Autowired
+    private InboundEmailService inboundEmailService;
 
     @Value("${app.site.url:http://localhost:5173}")
     private String siteUrl;
@@ -46,10 +58,21 @@ public class NotificationService {
     private String buildSubject(Observaciones obs) {
         Integer ticketId = obs.getIdTicket();
         Integer obsId = obs.getIdObservacion();
+        
+        // Obtener idObra desde el ticket
+        Integer idObra = null;
         if (ticketId != null) {
-            return String.format("ticket de postventa número %d, observacion %d", ticketId, obsId);
+            idObra = ticketsRepository.findById(ticketId)
+                .map(t -> t.getIdObra())
+                .orElse(null);
         }
-        return String.format("observacion %d", obsId);
+
+        // Formato estándar: [PITAGORA-OBR-{idObra}-TKT-{idTicket}-OBS-{idObservacion}]
+        if (idObra != null && ticketId != null) {
+            return String.format("[PITAGORA-OBR-%d-TKT-%d-OBS-%d] ticket de postventa número %d, observación %d", 
+                idObra, ticketId, obsId, ticketId, obsId);
+        }
+        return String.format("observación %d", obsId);
     }
 
     private String buildHtml(Observaciones obs, String title, String bodyHtml) {
@@ -120,6 +143,7 @@ public class NotificationService {
                 try {
                     log.info("Enviando correo de nueva observación al creador {}", u.getCorreo());
                     emailService.enviarCorreoHtml(u.getCorreo(), subject, buildHtml(obs, title, body));
+                    guardarNotificacionEnviada(obs.getIdObservacion(), u.getCorreo(), subject, "nueva_observacion");
                 } catch (Exception e) {
                     log.error("Error enviando correo de nueva observación al creador {}: {}", u.getCorreo(), e.getMessage(), e);
                 }
@@ -138,6 +162,7 @@ public class NotificationService {
                 log.info("Enviando correo de nueva observación al administrador {}", admin.getCorreo());
                 String adminName = admin.getNombre() != null && !admin.getNombre().isEmpty() ? admin.getNombre() : "administrador";
                 emailService.enviarCorreoHtml(admin.getCorreo(), subject, buildHtml(obs, title, body, adminName));
+                guardarNotificacionEnviada(obs.getIdObservacion(), admin.getCorreo(), subject, "nueva_observacion");
             } catch (Exception e) {
                 log.error("Error enviando correo de nueva observación al administrador {}: {}", admin.getCorreo(), e.getMessage(), e);
             }
@@ -168,6 +193,7 @@ public class NotificationService {
             usuariosRepository.findById(obs.getIdUsuarioCreador()).ifPresent(u -> {
                 try {
                     emailService.enviarCorreoHtml(u.getCorreo(), subject, buildHtml(obs, title, finalUserBody));
+                    guardarNotificacionEnviada(obs.getIdObservacion(), u.getCorreo(), subject, "cambio_estado");
                 } catch (Exception e) {
                     log.error("Error enviando correo de cambio de estado al creador {}: {}", u.getCorreo(), e.getMessage(), e);
                 }
@@ -192,6 +218,7 @@ public class NotificationService {
                 log.info("Enviando correo de cambio de estado al administrador {}", admin.getCorreo());
                 String adminName = admin.getNombre() != null && !admin.getNombre().isEmpty() ? admin.getNombre() : "administrador";
                 emailService.enviarCorreoHtml(admin.getCorreo(), subject, buildHtml(obs, title, adminBody, adminName));
+                guardarNotificacionEnviada(obs.getIdObservacion(), admin.getCorreo(), subject, "cambio_estado");
             } catch (Exception e) {
                 log.error("Error enviando correo de cambio de estado al administrador {}: {}", admin.getCorreo(), e.getMessage(), e);
             }
@@ -231,6 +258,7 @@ public class NotificationService {
                 try {
                     log.info("Enviando correo de nuevo mensaje en observación al creador {}", u.getCorreo());
                     emailService.enviarCorreoHtml(u.getCorreo(), subject, buildHtml(obs, title, body));
+                    guardarNotificacionEnviada(obs.getIdObservacion(), u.getCorreo(), subject, "nuevo_mensaje");
                 } catch (Exception e) {
                     log.error("Error enviando correo de nuevo mensaje al creador {}: {}", u.getCorreo(), e.getMessage(), e);
                 }
@@ -247,6 +275,7 @@ public class NotificationService {
                 log.info("Enviando correo de nuevo mensaje en observación al administrador {}", admin.getCorreo());
                 String adminName = admin.getNombre() != null && !admin.getNombre().isEmpty() ? admin.getNombre() : "administrador";
                 emailService.enviarCorreoHtml(admin.getCorreo(), subject, buildHtml(obs, title, body, adminName));
+                guardarNotificacionEnviada(obs.getIdObservacion(), admin.getCorreo(), subject, "nuevo_mensaje");
             } catch (Exception e) {
                 log.error("Error enviando correo de nuevo mensaje al administrador {}: {}", admin.getCorreo(), e.getMessage(), e);
             }
@@ -276,6 +305,7 @@ public class NotificationService {
                 log.info("Enviando correo de rechazo de aceptación al administrador {}", admin.getCorreo());
                 String adminName = admin.getNombre() != null && !admin.getNombre().isEmpty() ? admin.getNombre() : "administrador";
                 emailService.enviarCorreoHtml(admin.getCorreo(), subject, buildHtml(obs, title, body, adminName));
+                guardarNotificacionEnviada(obs.getIdObservacion(), admin.getCorreo(), subject, "rechazo_aceptacion");
             } catch (Exception e) {
                 log.error("Error enviando correo de rechazo de aceptación al administrador {}: {}", admin.getCorreo(), e.getMessage(), e);
             }
@@ -299,6 +329,7 @@ public class NotificationService {
                 try {
                     log.info("Enviando correo de recordatorio al creador {}", u.getCorreo());
                     emailService.enviarCorreoHtml(u.getCorreo(), subject, buildHtml(obs, title, body));
+                    guardarNotificacionEnviada(obs.getIdObservacion(), u.getCorreo(), subject, "recordatorio");
                 } catch (Exception e) {
                     log.error("Error enviando correo de recordatorio al creador {}: {}", u.getCorreo(), e.getMessage(), e);
                 }
@@ -306,6 +337,17 @@ public class NotificationService {
         }
 
         // No enviar recordatorio de aceptación a administradores; solo al creador
+    }
+
+    // Método auxiliar para guardar las notificaciones enviadas
+    private void guardarNotificacionEnviada(Integer idObservacion, String destinatario, String asunto, String tipoNotificacion) {
+        try {
+            NotificacionesEnviadas notif = new NotificacionesEnviadas(idObservacion, destinatario, asunto, "", tipoNotificacion);
+            notificacionesEnviadasRepository.save(notif);
+            log.debug("Notificación guardada: obs={}, destinatario={}, tipo={}", idObservacion, destinatario, tipoNotificacion);
+        } catch (Exception e) {
+            log.warn("Error guardando registro de notificación: {}", e.getMessage());
+        }
     }
 
 }
