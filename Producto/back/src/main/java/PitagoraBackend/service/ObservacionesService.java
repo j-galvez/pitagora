@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import PitagoraBackend.model.Evidencias;
 import PitagoraBackend.model.Observaciones;
+import PitagoraBackend.repository.CostosObservacionRepository;
 import PitagoraBackend.repository.EvidenciasRepository;
 import PitagoraBackend.repository.ObservacionesRepository;
 import PitagoraBackend.repository.TicketsRepository;
@@ -32,6 +33,7 @@ public class ObservacionesService {
     private ImageStorageService imageStorageService;
 
     @Autowired
+    private CostosObservacionRepository costosObservacionRepository;
     private NotificationService notificationService;
 
     private static final int MAX_FOTOS = 2;
@@ -182,7 +184,9 @@ public class ObservacionesService {
 
     // READ - Obtener todas las observaciones
     public List<Observaciones> obtenerObservaciones() {
-        return observacionesRepository.findAll();
+        List<Observaciones> observaciones = observacionesRepository.findAll();
+        observaciones.forEach(this::enriquecerCostoDesdeLineItems);
+        return observaciones;
     }
 
     // READ - Obtener observación por ID
@@ -191,7 +195,13 @@ public class ObservacionesService {
         if (!observacion.isPresent()) {
             throw new IllegalArgumentException("Observación no encontrada con ID: " + id);
         }
+        enriquecerCostoDesdeLineItems(observacion.get());
         return observacion.get();
+    }
+
+    private void enriquecerCostoDesdeLineItems(Observaciones observacion) {
+        Long total = costosObservacionRepository.sumMontoByIdObservacion(observacion.getIdObservacion());
+        observacion.setCosto(total != null ? total : 0L);
     }
 
     // UPDATE - Actualizar observación
@@ -326,7 +336,9 @@ public class ObservacionesService {
 
     // Obtener observaciones por ticket
     public List<Observaciones> obtenerObservacionesPorTicket(Integer idTicket) {
-        return observacionesRepository.findByIdTicket(idTicket);
+        List<Observaciones> observaciones = observacionesRepository.findByIdTicket(idTicket);
+        observaciones.forEach(this::enriquecerCostoDesdeLineItems);
+        return observaciones;
     }
 
     // Obtener observaciones por categoría
