@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaCheckCircle, FaTrash, FaPlusCircle, FaCamera, FaImages } from 'react-icons/fa';
+import { FaArrowLeft, FaCheckCircle, FaTrash, FaPlusCircle, FaCamera, FaImages, FaEye } from 'react-icons/fa';
 import NavbarUsuario from '../../components/NavbarUsuario';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import Footer from '../../components/Footer';
+import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
 import { observacionesService } from '../../services/observacionesService';
 
 const MAX_FOTOS = 2;
@@ -22,6 +23,8 @@ export default function CrearObservacion() {
   const [loadingExistentes, setLoadingExistentes] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [observacionSeleccionada, setObservacionSeleccionada] = useState(null);
+  const [showDetalleModal, setShowDetalleModal] = useState(false);
   const fileInputRef = useRef(null);
 
   const usuarioLocalStorage = JSON.parse(localStorage.getItem('usuario'));
@@ -296,24 +299,40 @@ export default function CrearObservacion() {
                   </div>
                 ) : observacionesExistentes.length > 0 ? (
                   <div className="row g-3">
-                    {observacionesExistentes.map((obs, index) => (
-                      <div className="col-12" key={obs.idObservacion || obs.id_observacion}>
-                        <div className="card border-0 shadow-none bg-white border-start border-4 border-success">
-                          <div className="card-body py-2">
-                            <div className="d-flex justify-content-between align-items-center">
-                              <div>
-                                <span className="fw-bold text-success" style={{ fontSize: '13px' }}>#{index + 1}</span>
-                                <span className="ms-2 fw-semibold" style={{ fontSize: '14px' }}>{obs.falla}</span>
-                                <span className="ms-2 text-muted" style={{ fontSize: '12px' }}>| {obs.ubicacionExacta || obs.ubicacion_exacta}</span>
+                    {observacionesExistentes.map((obs, index) => {
+                      const idObs = obs.idObservacion || obs.id_observacion;
+                      return (
+                        <div className="col-12" key={idObs}>
+                          <div className="card border-0 shadow-none bg-white border-start border-4 border-success">
+                            <div className="card-body py-2">
+                              <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                                <div>
+                                  <span className="fw-bold text-success" style={{ fontSize: '13px' }}>#{index + 1}</span>
+                                  <span className="ms-2 fw-semibold" style={{ fontSize: '14px' }}>{obs.falla}</span>
+                                  <span className="ms-2 text-muted" style={{ fontSize: '12px' }}>| {obs.ubicacionExacta || obs.ubicacion_exacta}</span>
+                                </div>
+                                <div className="d-flex align-items-center gap-2">
+                                  <span className="badge bg-light text-dark border" style={{ fontSize: '10px' }}>
+                                    {obs.estadoObservacion || obs.estado_observacion}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-primary"
+                                    onClick={() => {
+                                      setObservacionSeleccionada(idObs);
+                                      setShowDetalleModal(true);
+                                    }}
+                                  >
+                                    <FaEye className="me-1" />
+                                    Ver detalle
+                                  </button>
+                                </div>
                               </div>
-                              <span className="badge bg-light text-dark border" style={{ fontSize: '10px' }}>
-                                {obs.estadoObservacion || obs.estado_observacion}
-                              </span>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="alert alert-light border text-center py-3" style={{ fontSize: '13px' }}>
@@ -464,6 +483,16 @@ export default function CrearObservacion() {
         <Footer />
       </div>
       
+      <ObservacionDetalleModal
+        show={showDetalleModal}
+        onHide={() => {
+          setShowDetalleModal(false);
+          setObservacionSeleccionada(null);
+        }}
+        idObservacion={observacionSeleccionada}
+        allowEstadoChange={isAdmin}
+      />
+
       <style dangerouslySetInnerHTML={{ __html: `
         .border-dashed { border-style: dashed !important; }
         .object-fit-cover { object-fit: cover; }
