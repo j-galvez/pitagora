@@ -34,6 +34,8 @@ public class ObservacionesService {
 
     @Autowired
     private CostosObservacionRepository costosObservacionRepository;
+
+    @Autowired
     private NotificationService notificationService;
 
     private static final int MAX_FOTOS = 2;
@@ -149,13 +151,8 @@ public class ObservacionesService {
             System.err.println("Error notificando nueva observacion: " + e.getMessage());
             e.printStackTrace();
         }
+        actualizarCostoTotalTicket(saved.getIdTicket());
         return saved;
-        Observaciones guardada = observacionesRepository.save(observaciones);
-        
-        // Actualizar el costo total del ticket
-        actualizarCostoTotalTicket(guardada.getIdTicket());
-        
-        return guardada;
     }
 
     public Observaciones crearObservacionesConFotos(Observaciones observaciones, MultipartFile[] fotos) throws IOException {
@@ -311,13 +308,8 @@ public class ObservacionesService {
             // ignorar fallos de notificación
         }
 
+        actualizarCostoTotalTicket(saved.getIdTicket());
         return saved;
-        Observaciones guardada = observacionesRepository.save(observacionExistente);
-        
-        // Actualizar el costo total del ticket
-        actualizarCostoTotalTicket(guardada.getIdTicket());
-        
-        return guardada;
     }
 
     // DELETE - Eliminar observación
