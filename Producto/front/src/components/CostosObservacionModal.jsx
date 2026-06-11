@@ -55,12 +55,26 @@ const CostosObservacionModal = ({ show, onHide, observacion, onCostosActualizado
   }, [idObservacion]);
 
   useEffect(() => {
-    if (show && idObservacion) {
-      cargarCostos();
+    if (!show) {
+      setCostos([]);
+      setTotal(0);
+      setNuevoMonto('');
+      setNuevaDescripcion('');
+      setEditandoId(null);
+      setEditMonto('');
+      setEditDescripcion('');
+      setError('');
+      setLoading(false);
+      setLoadingAccion(false);
+      return;
+    }
+
+    if (idObservacion) {
       setNuevoMonto('');
       setNuevaDescripcion('');
       setEditandoId(null);
       setError('');
+      cargarCostos();
     }
   }, [show, idObservacion, cargarCostos]);
 
@@ -167,8 +181,13 @@ const CostosObservacionModal = ({ show, onHide, observacion, onCostosActualizado
   if (!show) return null;
 
   return (
-    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
-      <div className="modal-dialog modal-dialog-centered modal-lg">
+    <div
+      className="modal fade show d-block"
+      tabIndex="-1"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}
+      onClick={onHide}
+    >
+      <div className="modal-dialog modal-dialog-centered modal-lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-content border-0 shadow">
           <div className="modal-header bg-dark text-white">
             <h5 className="modal-title">Gestión de Costos</h5>

@@ -83,11 +83,15 @@ const GestionTickets = () => {
     return availableEstados;
   };
 
-  const handleCostoChange = (idObs, valor) => {
-    setCostoEditando(prev => ({
-      ...prev,
-      [idObs]: formatInputMil(valor)
-    }));
+  const abrirModalCostos = (e, obs) => {
+    e.stopPropagation();
+    setObsParaCostos(obs);
+    setShowCostosModal(true);
+  };
+
+  const cerrarModalCostos = () => {
+    setShowCostosModal(false);
+    setObsParaCostos(null);
   };
 
   const handleCostosActualizados = (idObs, nuevoTotal) => {
@@ -471,7 +475,7 @@ const GestionTickets = () => {
       {/* Modal de Costos */}
       <CostosObservacionModal
         show={showCostosModal}
-        onHide={() => { setShowCostosModal(false); setObsParaCostos(null); }}
+        onHide={cerrarModalCostos}
         observacion={obsParaCostos}
         onCostosActualizados={handleCostosActualizados}
       />
