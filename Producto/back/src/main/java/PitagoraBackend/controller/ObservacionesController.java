@@ -6,8 +6,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import PitagoraBackend.model.Observaciones;
+import PitagoraBackend.dto.HiloComunicacionDTO;
 import lombok.extern.slf4j.Slf4j;
 import PitagoraBackend.service.ObservacionesService;
+import PitagoraBackend.service.HiloComunicacionService;
 
 import java.util.List;
 
@@ -21,6 +23,8 @@ public class ObservacionesController {
     private ObservacionesService observacionesService;
     @Autowired
     private PitagoraBackend.service.NotificationService notificationService;
+    @Autowired
+    private HiloComunicacionService hiloComunicacionService;
 
     // CREATE - Crear observación con soporte multipart/form-data
     @PostMapping(consumes = {"multipart/form-data"})
@@ -186,6 +190,17 @@ public class ObservacionesController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error procesando el rechazo: " + e.getMessage());
+        }
+    }
+
+    // GET - Obtener hilo de comunicación (mensajes + notificaciones)
+    @GetMapping("/{id_observacion}/hilo-comunicacion")
+    public ResponseEntity<?> obtenerHiloComunicacion(@PathVariable("id_observacion") Integer id_observacion) {
+        try {
+            List<HiloComunicacionDTO> hilo = hiloComunicacionService.obtenerHiloComunicacion(id_observacion);
+            return ResponseEntity.ok(hilo);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error obteniendo hilo de comunicación: " + e.getMessage());
         }
     }
 }

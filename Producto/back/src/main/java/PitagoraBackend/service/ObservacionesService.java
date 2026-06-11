@@ -151,7 +151,10 @@ public class ObservacionesService {
             System.err.println("Error notificando nueva observacion: " + e.getMessage());
             e.printStackTrace();
         }
+        
+        // Actualizar el costo total del ticket
         actualizarCostoTotalTicket(saved.getIdTicket());
+        
         return saved;
     }
 
@@ -308,7 +311,9 @@ public class ObservacionesService {
             // ignorar fallos de notificación
         }
 
+        // Actualizar el costo total del ticket
         actualizarCostoTotalTicket(saved.getIdTicket());
+        
         return saved;
     }
 
