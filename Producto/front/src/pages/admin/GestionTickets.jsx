@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaSync, FaChevronDown, FaChevronUp, FaPlus, FaUser, FaBuilding, FaClock, FaEye, FaEdit, FaCheck } from 'react-icons/fa';
+import { FaSearch, FaSync, FaChevronDown, FaChevronUp, FaPlus, FaUser, FaBuilding, FaClock, FaEye, FaEdit } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
+import CostosObservacionModal from '../../components/CostosObservacionModal';
 
 const GestionTickets = () => {
   const navigate = useNavigate();
@@ -36,8 +37,9 @@ const GestionTickets = () => {
   const [nuevoEstado, setNuevoEstado] = useState('');
   const [comentarioAdmin, setComentarioAdmin] = useState('');
 
-  // Estado para edición inline de costos
-  const [costoEditando, setCostoEditando] = useState({}); // { idObs: "1.000" }
+  // Estados para Modal de Costos
+  const [showCostosModal, setShowCostosModal] = useState(false);
+  const [obsParaCostos, setObsParaCostos] = useState(null);
 
   useEffect(() => {
     inicializarDatos();
@@ -53,12 +55,6 @@ const GestionTickets = () => {
     }).format(valor);
   };
 
-  // Formatear mientras se escribe (añadir puntos)
-  const formatInputMil = (valor) => {
-    const num = valor.replace(/\D/g, '');
-    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  };
-
   // Calcular el total de un ticket sumando sus observaciones
   const calcularTotalTicket = (idTicket) => {
     return todasObservaciones
@@ -66,44 +62,17 @@ const GestionTickets = () => {
       .reduce((acc, o) => acc + (o.costo || 0), 0);
   };
 
-  const handleCostoChange = (idObs, valor) => {
-    setCostoEditando(prev => ({
-      ...prev,
-      [idObs]: formatInputMil(valor)
-    }));
+  const abrirModalCostos = (e, obs) => {
+    if (window.getSelection().toString().length > 0) return;
+    e.stopPropagation();
+    setObsParaCostos(obs);
+    setShowCostosModal(true);
   };
 
-  const guardarCosto = async (idObs) => {
-    const valorFormateado = costoEditando[idObs];
-    if (valorFormateado === undefined) return;
-
-    const valorNumerico = parseInt(valorFormateado.replace(/\./g, '')) || 0;
-    
-    setLoadingAccion(true);
-    try {
-      const response = await fetch(`http://localhost:8080/api/observaciones/${idObs}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ costo: valorNumerico })
-      });
-      
-      if (response.ok) {
-        setTodasObservaciones(prev => prev.map(o => 
-          (o.idObservacion || o.id_observacion) === idObs ? { ...o, costo: valorNumerico } : o
-        ));
-        // Limpiar estado de edición
-        const nuevoCostoEditando = { ...costoEditando };
-        delete nuevoCostoEditando[idObs];
-        setCostoEditando(nuevoCostoEditando);
-      } else {
-        alert('Error al guardar el costo');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error de conexión');
-    } finally {
-      setLoadingAccion(false);
-    }
+  const handleCostosActualizados = (idObs, nuevoTotal) => {
+    setTodasObservaciones(prev => prev.map(o =>
+      (o.idObservacion || o.id_observacion) === idObs ? { ...o, costo: nuevoTotal } : o
+    ));
   };
 
   const inicializarDatos = async () => {
@@ -413,31 +382,21 @@ const GestionTickets = () => {
                                                 {obs.urgencia.toUpperCase()}
                                               </span>
                                             </td>
-                                            <td style={{ width: '20%' }}>
-                                              <div className="input-group input-group-sm px-2" onClick={(e) => e.stopPropagation()}>
-                                                <span className="input-group-text bg-light" style={{ fontSize: '13px' }}>$</span>
-                                                <input 
-                                                  type="text" 
-                                                  className="form-control text-end fw-bold text-success"
-                                                  style={{ fontSize: '13px' }}
-                                                  value={
-                                                    costoEditando[obs.idObservacion || obs.id_observacion] !== undefined 
-                                                    ? costoEditando[obs.idObservacion || obs.id_observacion] 
-                                                    : ((obs.costo && obs.costo !== 0) ? formatInputMil(obs.costo.toString()) : '')
-                                                  }
-                                                  onChange={(e) => handleCostoChange(obs.idObservacion || obs.id_observacion, e.target.value)}
-                                                />
-                                                {costoEditando[obs.idObservacion || obs.id_observacion] !== undefined && (
-                                                  <button 
-                                                    className="btn btn-success" 
-                                                    type="button"
-                                                    onClick={() => guardarCosto(obs.idObservacion || obs.id_observacion)}
-                                                    disabled={loadingAccion}
-                                                    title="Guardar costo"
-                                                  >
-                                                    <FaCheck style={{ fontSize: '12px' }} />
-                                                  </button>
-                                                )}
+                                            <td className="text-center" style={{ width: '20%' }}>
+                                              <div
+                                                className="d-flex align-items-center justify-content-center gap-2 px-2"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <span className="fw-bold text-success" style={{ fontSize: '13px' }}>
+                                                  {formatMoneda(obs.costo || 0)}
+                                                </span>
+                                                <button
+                                                  className="btn btn-sm btn-outline-success py-0 px-2"
+                                                  onClick={(e) => abrirModalCostos(e, obs)}
+                                                  title="Gestionar costos"
+                                                >
+                                                  <FaPlus style={{ fontSize: '11px' }} />
+                                                </button>
                                               </div>
                                             </td>
                                             <td className="pe-3 text-center" style={{ width: '15%' }}>
@@ -486,6 +445,14 @@ const GestionTickets = () => {
         show={showObsModal}
         onHide={handleCerrarObsModal}
         idObservacion={obsIdSeleccionada}
+      />
+
+      {/* Modal de Costos */}
+      <CostosObservacionModal
+        show={showCostosModal}
+        onHide={() => { setShowCostosModal(false); setObsParaCostos(null); }}
+        observacion={obsParaCostos}
+        onCostosActualizados={handleCostosActualizados}
       />
 
       {/* Modal Cambio de Estado (Nuestro) */}
