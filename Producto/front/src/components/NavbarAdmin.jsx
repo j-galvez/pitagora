@@ -34,6 +34,16 @@ export default function NavbarAdmin({ usuario }) {
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item mb-2">
           <Link 
+            to="/perfil-admin" 
+            className={`nav-link text-white ${location.pathname === '/perfil-admin' ? 'active' : ''}`}
+            style={{ backgroundColor: location.pathname === '/perfil-admin' ? '#003860' : 'transparent' }} 
+          >
+            <i className="bi bi-person-circle me-2"></i> Mi Perfil
+          </Link>
+        </li>
+        
+        <li className="nav-item mb-2">
+          <Link 
             to="/admin-dashboard" 
             className={`nav-link text-white ${location.pathname === '/admin-dashboard' ? 'active' : ''}`}
             style={{ backgroundColor: location.pathname === '/admin-dashboard' ? '#003860' : 'transparent' }}

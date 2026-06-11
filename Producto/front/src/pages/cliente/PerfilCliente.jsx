@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import NavbarCliente from '../../components/NavbarCliente'; // Asegúrate de que la ruta a su Navbar sea correcta
-import UsuarioForm from '../../components/UsuarioForm'; // Reutilizamos el formulario idéntico de la imagen
-import ClienteLayout from '../../components/ClienteLayout'; // O el layout que usen para envolver la vista del cliente
-
+import NavbarUsuario from '../../components/NavbarUsuario'; 
+import UsuarioForm from '../../components/UsuarioForm';
 const PerfilCliente = () => {
   const navigate = useNavigate();
 
@@ -163,36 +161,36 @@ const PerfilCliente = () => {
   }
 
   return (
-    // Envolvemos con el Layout o Navbar correspondiente del cliente para mantener el menú lateral morado
-    <div className="d-flex w-100">
-      <div className="flex-grow-1" style={{ padding: '20px' }}>
-        <div className="container mt-4">
-          <div className="row">
-            <div className="col-12">
-              <h2 className="mb-1" style={{ color: '#4c1d95', fontWeight: 'bold' }}>Mi Perfil</h2>
-              <p className="text-muted mb-4">Modifica tus datos de contacto y revisa tu información personal</p>
-              
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  {error}
-                </div>
-              )}
-            </div>
+  <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#F8F9FA' }}>
+    <NavbarUsuario usuario={usuarioLogueado} />
+
+    <div className="d-flex flex-column flex-grow-1" style={{ height: '100vh', minWidth: 0, overflowY: 'auto' }}>
+      <div className="container mt-4 p-4">
+        <div className="row">
+          <div className="col-12">
+            <h2 className="mb-1" style={{ color: '#003860', fontWeight: 'bold' }}>Mi Perfil</h2>
+            <p className="text-muted mb-4">Modifica tus datos de contacto y revisa tu información personal</p>
+
+            {error && (
+              <div className="alert alert-danger" role="alert">
+                {error}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Reutilizamos el componente exacto de la foto. Él se encargará de renderizar los candados e iconos de lápiz */}
         <UsuarioForm
           usuario={usuario}
           formData={formData}
           loading={loading}
           error={error}
-          onFieldSave={handleFieldSave} // Le pasamos la función para guardar campo por campo
+          onFieldSave={handleFieldSave}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
         />
       </div>
     </div>
+  </div>
   );
 };
 

@@ -63,6 +63,17 @@ export default function NavbarUsuario({ usuario, hasActiveTicket = false }) {
 
       {/* Opciones de Navegación */}
       <ul className="nav nav-pills flex-column mb-auto">
+         <li className="nav-item">
+       <Link 
+         to="/perfil" 
+         className={`nav-link text-white ${location.pathname === '/perfil' ? 'active' : ''}`}
+         style={{ backgroundColor: location.pathname === '/perfil' ? '#003860' : 'transparent' }}
+       >
+         <i className="bi bi-person-circle me-2"></i> Mi Perfil
+       </Link>
+     </li>
+   
+
         <li className="nav-item mb-2">
           <Link 
             to="/dashboard" 
@@ -101,6 +112,8 @@ export default function NavbarUsuario({ usuario, hasActiveTicket = false }) {
             <i className="bi bi-chat-dots me-2"></i> Mis Mensajes
           </Link>
         </li>
+      
+     
       </ul>
 
       <hr className="border-secondary" />
