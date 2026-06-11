@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReporteObraDTO {
     private String obra;
+    private String cliente;
     private String responsable;
     private LocalDateTime fechaRegistro;
     private LocalDateTime fechaResolucion;

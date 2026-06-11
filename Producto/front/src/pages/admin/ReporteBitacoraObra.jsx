@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaFileExcel, FaFilePdf, FaArrowLeft, FaFilter } from 'react-icons/fa';
+import { FaSearch, FaFileExcel, FaFilePdf, FaArrowLeft, FaFilter, FaTimes } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import { obtenerReporteTrazabilidad } from '../../services/reportesService';
+import { obrasService } from '../../services/obrasService';
+import { clientesService } from '../../services/clientesService';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -19,9 +21,18 @@ const ReporteBitacoraObra = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Estados para filtros
+  const [obras, setObras] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [filtroObra, setFiltroObra] = useState('');
+  const [filtroCliente, setFiltroCliente] = useState('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
   useEffect(() => {
     cargarDatos();
+    cargarFiltros();
   }, []);
 
   const cargarDatos = async () => {
@@ -35,6 +46,19 @@ const ReporteBitacoraObra = () => {
       setError('No se pudo cargar la información del reporte.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cargarFiltros = async () => {
+    try {
+      const [obrasData, clientesData] = await Promise.all([
+        obrasService.getAllObras(),
+        clientesService.getAllClientes()
+      ]);
+      setObras(obrasData);
+      setClientes(clientesData);
+    } catch (err) {
+      console.error('Error al cargar filtros:', err);
     }
   };
 
@@ -53,21 +77,51 @@ const ReporteBitacoraObra = () => {
     });
   };
 
+  const limparFiltros = () => {
+    setSearchTerm('');
+    setFiltroObra('');
+    setFiltroCliente('');
+    setFechaDesde('');
+    setFechaHasta('');
+  };
+
   const filteredDatos = datos.filter((item) => {
     const lowerSearch = searchTerm.toLowerCase();
-    return (
+    const matchSearch = (
       item.obra?.toLowerCase().includes(lowerSearch) ||
+      item.cliente?.toLowerCase().includes(lowerSearch) ||
       item.responsable?.toLowerCase().includes(lowerSearch) ||
       item.fallaDetectada?.toLowerCase().includes(lowerSearch) ||
       item.ubicacionExacta?.toLowerCase().includes(lowerSearch) ||
       item.estadoActual?.toLowerCase().includes(lowerSearch)
     );
+
+    const matchObra = filtroObra === '' || item.obra === filtroObra;
+    const matchCliente = filtroCliente === '' || item.cliente === filtroCliente;
+    
+    let matchFecha = true;
+    if (fechaDesde || fechaHasta) {
+      const fechaReg = new Date(item.fechaRegistro);
+      if (fechaDesde) {
+        const d = new Date(fechaDesde);
+        d.setHours(0, 0, 0, 0);
+        if (fechaReg < d) matchFecha = false;
+      }
+      if (fechaHasta) {
+        const h = new Date(fechaHasta);
+        h.setHours(23, 59, 59, 999);
+        if (fechaReg > h) matchFecha = false;
+      }
+    }
+
+    return matchSearch && matchObra && matchCliente && matchFecha;
   });
 
   // EXPORTAR A EXCEL
   const exportarExcel = () => {
     const dataToExport = filteredDatos.map(item => ({
       'Obra / Proyecto': item.obra,
+      'Cliente': item.cliente,
       'Responsable': item.responsable,
       'Fecha Reporte': formatFecha(item.fechaRegistro),
       'Fecha Resolución': formatFecha(item.fechaResolucion),
@@ -78,17 +132,9 @@ const ReporteBitacoraObra = () => {
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    
-    // Configurar anchos de columna para Excel
     const wscols = [
-      { wch: 30 }, // Obra
-      { wch: 25 }, // Responsable
-      { wch: 20 }, // Fecha Registro
-      { wch: 20 }, // Fecha Resolución
-      { wch: 30 }, // Falla
-      { wch: 30 }, // Ubicación
-      { wch: 15 }, // Estado
-      { wch: 50 }, // Solución
+      { wch: 25 }, { wch: 25 }, { wch: 20 }, { wch: 18 }, { wch: 18 },
+      { wch: 25 }, { wch: 25 }, { wch: 12 }, { wch: 40 },
     ];
     worksheet['!cols'] = wscols;
 
@@ -106,80 +152,46 @@ const ReporteBitacoraObra = () => {
         format: 'a4'
       });
       
-      // Título con estilo
-      doc.setFontSize(20);
-      doc.setTextColor(0, 56, 96); // Azul corporativo Pitágoras (#003860)
+      doc.setFontSize(18);
+      doc.setTextColor(40);
       doc.text('BITÁCORA DE TRAZABILIDAD DE OBRAS', 14, 20);
       
-      // Subtítulo e información de generación
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text('Sistema de Gestión Postventa - Pitágoras', 14, 28);
-      doc.text(`Generado por: ${usuarioLogueado.nombre}`, 14, 34);
-      doc.text(`Fecha de exportación: ${new Date().toLocaleString()}`, 14, 40);
+      doc.text(`Generado por: ${usuarioLogueado.nombre} | Fecha: ${new Date().toLocaleString()}`, 14, 34);
 
-      const tableColumn = [
-        'Obra', 'Responsable', 'Registro', 'Término', 'Falla Detectada', 'Ubicación', 'Estado', 'Solución'
-      ];
-      
+      if (filtroObra || filtroCliente || fechaDesde || fechaHasta) {
+        let f = 'Filtros aplicados: ';
+        if (filtroCliente) f += `Cliente: ${filtroCliente} `;
+        if (filtroObra) f += `Obra: ${filtroObra} `;
+        if (fechaDesde) f += `Desde: ${fechaDesde} `;
+        if (fechaHasta) f += `Hasta: ${fechaHasta}`;
+        doc.text(f, 14, 40);
+      }
+
+      const tableColumn = ['Obra', 'Cliente', 'Responsable', 'Registro', 'Término', 'Falla', 'Ubicación', 'Estado'];
       const tableRows = filteredDatos.map(item => [
-        item.obra,
-        item.responsable,
-        formatFecha(item.fechaRegistro),
-        formatFecha(item.fechaResolucion),
-        item.fallaDetectada,
-        item.ubicacionExacta,
-        item.estadoActual.toUpperCase(),
-        item.solucionAplicada || 'Sin comentarios'
+        item.obra, item.cliente, item.responsable,
+        formatFecha(item.fechaRegistro).split(',')[0],
+        formatFecha(item.fechaResolucion).split(',')[0],
+        item.fallaDetectada, item.ubicacionExacta, item.estadoActual.toUpperCase()
       ]);
 
-      // Generar tabla con estilo estructurado
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 45,
-        theme: 'striped', // Estilo de filas alternas
-        styles: { 
-          fontSize: 8, 
-          cellPadding: 3,
-          valign: 'middle',
-          overflow: 'linebreak'
-        },
-        headStyles: { 
-          fillColor: [0, 56, 96], // Azul oscuro
-          textColor: 255, 
-          fontSize: 9,
-          fontStyle: 'bold',
-          halign: 'center'
-        },
-        columnStyles: {
-          0: { cellWidth: 35 }, // Obra
-          1: { cellWidth: 30 }, // Responsable
-          2: { cellWidth: 22 }, // Registro
-          3: { cellWidth: 22 }, // Término
-          4: { cellWidth: 40 }, // Falla
-          5: { cellWidth: 40 }, // Ubicación
-          6: { cellWidth: 20, halign: 'center' }, // Estado
-          7: { cellWidth: 'auto' } // Solución (ocupa el resto)
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 245]
-        },
-        margin: { top: 45, left: 14, right: 14 },
-        didDrawPage: (data) => {
-          // Pie de página con número de página
-          const str = 'Página ' + doc.internal.getNumberOfPages();
-          doc.setFontSize(10);
-          const pageSize = doc.internal.pageSize;
-          const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
-          doc.text(str, data.settings.margin.left, pageHeight - 10);
-        }
+        theme: 'striped',
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [50, 50, 50], textColor: 255 },
+        margin: { top: 45, left: 14, right: 14 }
       });
 
       doc.save(`Reporte_Trazabilidad_${new Date().getTime()}.pdf`);
     } catch (err) {
       console.error('Error al generar PDF:', err);
-      alert('Hubo un error al generar el PDF. Por favor, intenta de nuevo.');
+      alert('Hubo un error al generar el PDF.');
     }
   };
 
@@ -193,69 +205,94 @@ const ReporteBitacoraObra = () => {
         <div className="card shadow-sm border-0 rounded-3 p-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
-              <h5 className="mb-1">Reporte de Trazabilidad de Obras</h5>
+              <h5 className="mb-0">Reporte de Trazabilidad de Obras</h5>
               <p className="text-muted mb-0 small">Consolidado de fallas, responsables y estados por proyecto.</p>
             </div>
             <div className="d-flex gap-2">
-              <button className="btn btn-outline-success d-flex align-items-center" onClick={exportarExcel} disabled={filteredDatos.length === 0}>
+              <button className="btn btn-outline-success btn-sm d-flex align-items-center" onClick={exportarExcel} disabled={filteredDatos.length === 0}>
                 <FaFileExcel className="me-2" /> Excel
               </button>
-              <button className="btn btn-outline-danger d-flex align-items-center" onClick={exportarPDF} disabled={filteredDatos.length === 0}>
+              <button className="btn btn-outline-danger btn-sm d-flex align-items-center" onClick={exportarPDF} disabled={filteredDatos.length === 0}>
                 <FaFilePdf className="me-2" /> PDF
               </button>
             </div>
           </div>
 
-          <div className="row mb-4">
-            <div className="col-md-6">
-              <div className="input-group">
-                <span className="input-group-text bg-white border-end-0 text-muted">
-                  <FaSearch />
-                </span>
-                <input
-                  type="text"
-                  className="form-control border-start-0 ps-0"
-                  placeholder="Filtrar por obra, responsable, falla o ubicación..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+          {/* SECCIÓN DE FILTROS SIMPLIFICADA */}
+          <div className="row g-3 mb-4 p-3 bg-light rounded-3 border-0">
+            <div className="col-md-3">
+              <label className="form-label small text-muted">Cliente</label>
+              <select className="form-select form-select-sm" value={filtroCliente} onChange={(e) => setFiltroCliente(e.target.value)}>
+                <option value="">Todos los clientes</option>
+                {clientes.map(c => (
+                  <option key={c.idCliente || c.id_cliente} value={c.nombreEmpresa || c.nombre_empresa}>
+                    {c.nombreEmpresa || c.nombre_empresa}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-3">
+              <label className="form-label small text-muted">Obra / Proyecto</label>
+              <select className="form-select form-select-sm" value={filtroObra} onChange={(e) => setFiltroObra(e.target.value)}>
+                <option value="">Todas las obras</option>
+                {obras.map(o => (
+                  <option key={o.idObra || o.id_obra} value={o.nombreObra || o.nombre_obra}>
+                    {o.nombreObra || o.nombre_obra}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-2">
+              <label className="form-label small text-muted">Desde</label>
+              <input type="date" className="form-control form-control-sm" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label small text-muted">Hasta</label>
+              <input type="date" className="form-control form-control-sm" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+            </div>
+            <div className="col-md-2 d-flex align-items-end">
+              <div className="input-group input-group-sm">
+                <span className="input-group-text bg-white border-end-0 text-muted"><FaSearch /></span>
+                <input type="text" className="form-control border-start-0 ps-0" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
             </div>
+            {(filtroObra || filtroCliente || fechaDesde || fechaHasta || searchTerm) && (
+              <div className="col-12 mt-2">
+                <button className="btn btn-link btn-sm text-danger p-0" onClick={limparFiltros}>
+                  <FaTimes className="me-1" /> Limpiar filtros
+                </button>
+              </div>
+            )}
           </div>
 
-          {error && (
-            <div className="alert alert-danger mb-4" role="alert">
-              {error}
-            </div>
-          )}
-
           <div className="table-responsive">
-            <table className="table table-hover align-middle" style={{ fontSize: '13px' }}>
-              <thead className="table-light">
+            <table className="table table-hover align-middle">
+              <thead className="table-light text-muted" style={{ fontSize: '14px' }}>
                 <tr>
                   <th>Obra</th>
+                  <th>Cliente</th>
                   <th>Responsable</th>
                   <th>Fecha Registro</th>
                   <th>Fecha Resolución</th>
-                  <th>Falla Detectada</th>
+                  <th>Falla</th>
                   <th>Ubicación</th>
                   <th>Estado</th>
                   <th>Solución</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody style={{ fontSize: '14px' }}>
                 {loading ? (
                   <tr>
-                    <td colSpan="8" className="text-center py-5">
+                    <td colSpan="9" className="text-center py-4">
                       <div className="spinner-border text-primary spinner-border-sm" role="status"></div>
-                      <span className="ms-2">Cargando reporte...</span>
                     </td>
                   </tr>
                 ) : filteredDatos.length > 0 ? (
                   filteredDatos.map((item, index) => (
                     <tr key={index}>
-                      <td className="fw-bold">{item.obra}</td>
-                      <td>{item.responsable}</td>
+                      <td className="fw-semibold">{item.obra}</td>
+                      <td>{item.cliente || '-'}</td>
+                      <td>{item.responsable || '-'}</td>
                       <td>{formatFecha(item.fechaRegistro)}</td>
                       <td>{formatFecha(item.fechaResolucion)}</td>
                       <td>{item.fallaDetectada}</td>
@@ -263,7 +300,8 @@ const ReporteBitacoraObra = () => {
                       <td>
                         <span className={`badge ${
                           item.estadoActual === 'terminado' ? 'bg-success' : 
-                          item.estadoActual === 'en proceso' ? 'bg-primary' : 'bg-warning text-dark'
+                          item.estadoActual === 'en proceso' ? 'bg-primary' : 
+                          item.estadoActual === 'no aplica' ? 'bg-secondary' : 'bg-warning text-dark'
                         }`}>
                           {item.estadoActual}
                         </span>
@@ -275,19 +313,14 @@ const ReporteBitacoraObra = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="text-center text-muted py-4">
-                      No se encontraron datos para los criterios seleccionados.
+                    <td colSpan="9" className="text-center text-muted py-4">
+                      No se encontraron datos.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-          {!loading && filteredDatos.length > 0 && (
-            <div className="mt-3 text-muted small">
-              Mostrando {filteredDatos.length} registros encontrados.
-            </div>
-          )}
         </div>
       </div>
     </AdminLayout>
