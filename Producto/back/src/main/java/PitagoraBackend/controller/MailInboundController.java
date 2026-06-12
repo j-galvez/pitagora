@@ -4,17 +4,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import PitagoraBackend.model.Mensajes;
-import PitagoraBackend.repository.MensajesRepository;
-import PitagoraBackend.repository.UsuariosRepository;
-import PitagoraBackend.service.NotificationService;
+import PitagoraBackend.model.CorreosEntrantes;
+import PitagoraBackend.service.InboundEmailService;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 @RestController
 @RequestMapping("/api/mail")
@@ -22,15 +18,9 @@ import java.util.regex.PatternSyntaxException;
 public class MailInboundController {
 
     @Autowired
-    private UsuariosRepository usuariosRepository;
+    private InboundEmailService inboundEmailService;
 
-    @Autowired
-    private MensajesRepository mensajesRepository;
-
-    @Autowired
-    private NotificationService notificationService;
-
-    private static final Pattern OBS_REGEX = Pattern.compile("observacion[^0-9]*(\\d+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,6}");
 
     private String extractFirstString(Map<String, Object> payload, String... keys) {
         for (String k : keys) {
@@ -51,7 +41,6 @@ public class MailInboundController {
         if (value instanceof Map<?, ?>) {
             @SuppressWarnings("unchecked")
             Map<String, Object> nested = (Map<String, Object>) value;
-            // Search nested body/text/plain/html keys recursively
             String result = extractFirstString(nested, "body", "text", "plain", "html", "content", "body-plain", "message", "msg");
             if (result != null) return result;
             return nested.toString();
@@ -73,16 +62,13 @@ public class MailInboundController {
 
     private String extractEmail(String raw) {
         if (raw == null) return null;
-        // buscar patrón email en el texto
-        Pattern emailPat = Pattern.compile("[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,6}");
-        Matcher mm = emailPat.matcher(raw);
+        Matcher mm = EMAIL_PATTERN.matcher(raw);
         if (mm.find()) return mm.group(0).toLowerCase();
-        return null;
+        return raw.trim().toLowerCase();
     }
 
     @PostMapping("/inbound")
     public ResponseEntity<?> inbound(@RequestBody Map<String, Object> payload) {
-        // soportar distintos formatos de webhook: "from", "sender", "from_email"
         String from = extractFirstString(payload, "from", "sender", "from_email", "mail_from");
         String subject = extractFirstString(payload, "subject", "title");
         String body = extractFirstString(payload, "body", "text", "plain", "html", "content", "body-plain");
@@ -91,33 +77,13 @@ public class MailInboundController {
             return ResponseEntity.badRequest().body("Faltan campos from/subject/body (verificar keys del webhook)");
         }
 
-        Matcher m = OBS_REGEX.matcher(subject);
-        if (!m.find()) {
-            return ResponseEntity.badRequest().body("Asunto no contiene referencia a observacion");
-        }
-
-        Integer idObs = Integer.parseInt(m.group(1));
-
-        // extraer email si "from" contiene nombre y correo
         String email = extractEmail(from);
-        if (email == null) email = from;
+        CorreosEntrantes saved = inboundEmailService.procesarCorreoEntrante(email, subject, body);
 
-        Optional<PitagoraBackend.model.Usuarios> userOpt = usuariosRepository.findByCorreo(email);
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body("Remitente no registrado en la plataforma: " + email);
+        if (saved == null) {
+            return ResponseEntity.badRequest().body("No se pudo procesar el correo (asunto inválido, ticket/obra no encontrados o remitente no registrado)");
         }
 
-        Integer idUsuario = userOpt.get().getIdUsuario();
-
-        Mensajes mobj = new Mensajes();
-        mobj.setIdObservacion(idObs);
-        mobj.setIdUsuario(idUsuario);
-        mobj.setMensaje(body);
-
-        Mensajes saved = mensajesRepository.save(mobj);
-
-        try { notificationService.notificarMensajeCreado(saved); } catch (Exception e) {}
-
-        return ResponseEntity.ok("Mensaje ingresado");
+        return ResponseEntity.ok("Correo ingresado: " + saved.getIdCorreoEntrante());
     }
 }

@@ -6,17 +6,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
+import PitagoraBackend.model.CorreosEntrantes;
 import PitagoraBackend.model.Evidencias;
 import PitagoraBackend.model.Mensajes;
+import PitagoraBackend.model.Obras;
 import PitagoraBackend.model.Observaciones;
 import PitagoraBackend.model.NotificacionesEnviadas;
 import PitagoraBackend.model.Usuarios;
 import PitagoraBackend.repository.EvidenciasRepository;
 import PitagoraBackend.repository.MensajesRepository;
 import PitagoraBackend.repository.NotificacionesEnviadasRepository;
+import PitagoraBackend.repository.ObrasRepository;
 import PitagoraBackend.repository.ObservacionesRepository;
 import PitagoraBackend.repository.TicketsRepository;
 import PitagoraBackend.repository.UsuariosRepository;
+import PitagoraBackend.util.EmailSubjectParser;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -39,6 +43,9 @@ public class NotificationService {
     private TicketsRepository ticketsRepository;
 
     @Autowired
+    private ObrasRepository obrasRepository;
+
+    @Autowired
     private MensajesRepository mensajesRepository;
 
     @Autowired
@@ -47,9 +54,6 @@ public class NotificationService {
     @Autowired
     private NotificacionesEnviadasRepository notificacionesEnviadasRepository;
 
-    @Autowired
-    private InboundEmailService inboundEmailService;
-
     @Value("${app.site.url:http://localhost:5173}")
     private String siteUrl;
     @Value("${app.backend.url:http://localhost:8080}")
@@ -57,22 +61,16 @@ public class NotificationService {
 
     private String buildSubject(Observaciones obs) {
         Integer ticketId = obs.getIdTicket();
-        Integer obsId = obs.getIdObservacion();
-        
-        // Obtener idObra desde el ticket
-        Integer idObra = null;
-        if (ticketId != null) {
-            idObra = ticketsRepository.findById(ticketId)
-                .map(t -> t.getIdObra())
-                .orElse(null);
+        if (ticketId == null) {
+            return String.format("observación %d", obs.getIdObservacion());
         }
 
-        // Formato estándar: [PITAGORA-OBR-{idObra}-TKT-{idTicket}-OBS-{idObservacion}]
-        if (idObra != null && ticketId != null) {
-            return String.format("[PITAGORA-OBR-%d-TKT-%d-OBS-%d] ticket de postventa número %d, observación %d", 
-                idObra, ticketId, obsId, ticketId, obsId);
-        }
-        return String.format("observación %d", obsId);
+        String nombreObra = ticketsRepository.findById(ticketId)
+                .flatMap(t -> obrasRepository.findById(t.getIdObra()))
+                .map(Obras::getNombreObra)
+                .orElse("Obra");
+
+        return EmailSubjectParser.generarAsuntoEstandar(ticketId, nombreObra);
     }
 
     private String buildHtml(Observaciones obs, String title, String bodyHtml) {
@@ -226,33 +224,58 @@ public class NotificationService {
     }
 
     public void notificarMensajeCreado(Mensajes mensaje) {
-        // Obtener observación
+        if (mensaje.getIdObservacion() == null) return;
+        notificarMensajeConObservacion(mensaje);
+    }
+
+    public void notificarCorreoEntrante(CorreosEntrantes correo) {
+        Integer ticketId = correo.getIdTicket();
+        Optional<PitagoraBackend.model.Tickets> ticketOpt = ticketsRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) return;
+
+        PitagoraBackend.model.Tickets ticket = ticketOpt.get();
+        String nombreObra = obrasRepository.findById(ticket.getIdObra())
+                .map(Obras::getNombreObra).orElse("Obra");
+        String subject = EmailSubjectParser.generarAsuntoEstandar(ticketId, nombreObra);
+        String title = "Nuevo mensaje por correo en el ticket";
+        String body = String.format(
+                "<p>Se ha recibido un mensaje por correo en el ticket <strong>%d</strong>:</p>%s",
+                ticketId,
+                correo.getCuerpo() != null && !correo.getCuerpo().isBlank()
+                        ? String.format("<blockquote>%s</blockquote>", correo.getCuerpo()) : ""
+        );
+
+        Integer idCreadorTicket = ticket.getIdUsuarioCreador();
+        if (idCreadorTicket != null && !idCreadorTicket.equals(correo.getIdUsuario())) {
+            usuariosRepository.findById(idCreadorTicket).ifPresent(u -> {
+                try {
+                    emailService.enviarCorreoHtml(u.getCorreo(), subject, buildHtmlSimple(title, body, u.getNombre()));
+                } catch (Exception e) {
+                    log.error("Error enviando correo entrante al creador {}: {}", u.getCorreo(), e.getMessage(), e);
+                }
+            });
+        }
+
+        List<Usuarios> admins = usuariosRepository.findAll().stream().filter(this::esAdmin).toList();
+        for (Usuarios admin : admins) {
+            try {
+                String adminName = admin.getNombre() != null && !admin.getNombre().isEmpty() ? admin.getNombre() : "administrador";
+                emailService.enviarCorreoHtml(admin.getCorreo(), subject, buildHtmlSimple(title, body, adminName));
+            } catch (Exception e) {
+                log.error("Error enviando correo entrante al administrador {}: {}", admin.getCorreo(), e.getMessage(), e);
+            }
+        }
+    }
+
+    private void notificarMensajeConObservacion(Mensajes mensaje) {
         Optional<Observaciones> opt = observacionesRepository.findById(mensaje.getIdObservacion());
         if (opt.isEmpty()) return;
         Observaciones obs = opt.get();
 
         String subject = buildSubject(obs);
         String title = "Nuevo mensaje en la observación";
-        StringBuilder bodyBuilder = new StringBuilder();
-        bodyBuilder.append(String.format("<p>Se ha añadido un mensaje en la observación <strong>%d</strong>:</p>", obs.getIdObservacion()));
-        if (mensaje.getMensaje() != null && !mensaje.getMensaje().isBlank()) {
-            bodyBuilder.append(String.format("<blockquote>%s</blockquote>", mensaje.getMensaje()));
-        }
+        String body = buildMensajeBodyHtml(mensaje, obs.getIdObservacion());
 
-        if (mensaje.getIdEvidencia() != null) {
-            Optional<Evidencias> evidenciaOpt = evidenciasRepository.findById(mensaje.getIdEvidencia());
-            evidenciaOpt.ifPresent(e -> {
-                String urlArchivo = e.getUrlArchivo();
-                if (urlArchivo != null && !urlArchivo.isBlank()) {
-                    bodyBuilder.append(String.format("<p><strong>Imagen adjunta:</strong></p><p><a href=\"%s\">Ver imagen</a></p>", urlArchivo));
-                    bodyBuilder.append(String.format("<p><img src=\"%s\" alt=\"Imagen adjunta\" style=\"max-width:100%%;height:auto;margin-top:10px;\"/></p>", urlArchivo));
-                }
-            });
-        }
-
-        String body = bodyBuilder.toString();
-
-        // enviar al creador (si el autor no es el creador)
         if (obs.getIdUsuarioCreador() != null && !obs.getIdUsuarioCreador().equals(mensaje.getIdUsuario())) {
             usuariosRepository.findById(obs.getIdUsuarioCreador()).ifPresentOrElse(u -> {
                 try {
@@ -265,14 +288,9 @@ public class NotificationService {
             }, () -> log.warn("No se encontró usuario creador con id {} para notificar mensaje", obs.getIdUsuarioCreador()));
         }
 
-        // enviar a administradores
         List<Usuarios> admins = usuariosRepository.findAll().stream().filter(this::esAdmin).toList();
-        if (admins.isEmpty()) {
-            log.warn("No se encontró ningún administrador para notificar mensaje en observación {}", obs.getIdObservacion());
-        }
         for (Usuarios admin : admins) {
             try {
-                log.info("Enviando correo de nuevo mensaje en observación al administrador {}", admin.getCorreo());
                 String adminName = admin.getNombre() != null && !admin.getNombre().isEmpty() ? admin.getNombre() : "administrador";
                 emailService.enviarCorreoHtml(admin.getCorreo(), subject, buildHtml(obs, title, body, adminName));
                 guardarNotificacionEnviada(obs.getIdObservacion(), admin.getCorreo(), subject, "nuevo_mensaje");
@@ -280,6 +298,42 @@ public class NotificationService {
                 log.error("Error enviando correo de nuevo mensaje al administrador {}: {}", admin.getCorreo(), e.getMessage(), e);
             }
         }
+    }
+
+    private String buildMensajeBodyHtml(Mensajes mensaje, Integer idObservacion) {
+        StringBuilder bodyBuilder = new StringBuilder();
+        bodyBuilder.append(String.format("<p>Se ha añadido un mensaje en la observación <strong>%d</strong>:</p>", idObservacion));
+        if (mensaje.getMensaje() != null && !mensaje.getMensaje().isBlank()) {
+            bodyBuilder.append(String.format("<blockquote>%s</blockquote>", mensaje.getMensaje()));
+        }
+        if (mensaje.getIdEvidencia() != null) {
+            Optional<Evidencias> evidenciaOpt = evidenciasRepository.findById(mensaje.getIdEvidencia());
+            evidenciaOpt.ifPresent(e -> {
+                String urlArchivo = e.getUrlArchivo();
+                if (urlArchivo != null && !urlArchivo.isBlank()) {
+                    bodyBuilder.append(String.format("<p><strong>Imagen adjunta:</strong></p><p><a href=\"%s\">Ver imagen</a></p>", urlArchivo));
+                    bodyBuilder.append(String.format("<p><img src=\"%s\" alt=\"Imagen adjunta\" style=\"max-width:100%%;height:auto;margin-top:10px;\"/></p>", urlArchivo));
+                }
+            });
+        }
+        return bodyBuilder.toString();
+    }
+
+    private String buildHtmlSimple(String title, String bodyHtml, String nombre) {
+        return """
+                <!DOCTYPE html>
+                <html lang="es">
+                <head><meta charset="UTF-8"></head>
+                <body style="font-family:Segoe UI,sans-serif;color:#333;">
+                  <div style="max-width:600px;margin:0 auto;padding:20px;">
+                    <h2 style="color:#0B3B60;">%s</h2>
+                    <p>Hola <strong>%s</strong>,</p>
+                    %s
+                    <p style="color:#777;font-size:12px;margin-top:16px;">Postventa Pitagora</p>
+                  </div>
+                </body>
+                </html>
+                """.formatted(title, nombre != null && !nombre.isEmpty() ? nombre : "usuario", bodyHtml);
     }
 
     public void notificarRechazoAceptacion(Observaciones obs) {
