@@ -152,8 +152,9 @@ public class ObservacionesService {
             e.printStackTrace();
         }
         
-        // Actualizar el costo total del ticket
+        // Actualizar el costo total y estado del ticket
         actualizarCostoTotalTicket(saved.getIdTicket());
+        actualizarEstadoGeneralTicket(saved.getIdTicket());
         
         return saved;
     }
@@ -311,8 +312,9 @@ public class ObservacionesService {
             // ignorar fallos de notificación
         }
 
-        // Actualizar el costo total del ticket
+        // Actualizar el costo total y estado del ticket
         actualizarCostoTotalTicket(saved.getIdTicket());
+        actualizarEstadoGeneralTicket(saved.getIdTicket());
         
         return saved;
     }
@@ -325,8 +327,9 @@ public class ObservacionesService {
         
         observacionesRepository.deleteById(id);
         
-        // Actualizar el costo total del ticket después de eliminar
+        // Actualizar el costo total y estado del ticket después de eliminar
         actualizarCostoTotalTicket(idTicket);
+        actualizarEstadoGeneralTicket(idTicket);
     }
 
     // MÉTODOS ADICIONALES ÚTILES
@@ -391,6 +394,37 @@ public class ObservacionesService {
         // Actualizar el ticket en la base de datos
         ticketsRepository.findById(idTicket).ifPresent(ticket -> {
             ticket.setCostoTotal(costoTotal);
+            ticketsRepository.save(ticket);
+        });
+    }
+
+    /**
+     * Recalcula el estado general de un ticket basado en sus observaciones.
+     * Reglas:
+     * - Sin observaciones: 'abierto'
+     * - Todas terminadas o no aplica: 'terminado'
+     * - Al menos una en otro estado: 'en proceso'
+     * @param idTicket El ID del ticket a actualizar
+     */
+    private void actualizarEstadoGeneralTicket(Integer idTicket) {
+        if (idTicket == null) return;
+
+        List<Observaciones> observaciones = observacionesRepository.findByIdTicket(idTicket);
+        
+        ticketsRepository.findById(idTicket).ifPresent(ticket -> {
+            if (observaciones.isEmpty()) {
+                ticket.setEstadoGeneral("abierto");
+            } else {
+                boolean todasCerradas = observaciones.stream()
+                    .allMatch(o -> "terminado".equalsIgnoreCase(o.getEstadoObservacion()) || 
+                                 "no aplica".equalsIgnoreCase(o.getEstadoObservacion()));
+                
+                if (todasCerradas) {
+                    ticket.setEstadoGeneral("terminado");
+                } else {
+                    ticket.setEstadoGeneral("en proceso");
+                }
+            }
             ticketsRepository.save(ticket);
         });
     }
