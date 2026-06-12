@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaEye, FaPlus, FaArrowLeft, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaSearch, FaEye, FaPlus, FaArrowLeft, FaSort, FaSortUp, FaSortDown, FaEdit } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import ObraDetalleModal from '../../components/ObraDetalleModal';
 import { obrasService } from '../../services/obrasService';
@@ -51,6 +51,11 @@ const ListaObras = () => {
   const handleVerDetalle = (idObra) => {
     setSelectedObraId(idObra);
     setShowModal(true);
+  };
+
+  const handleEditClick = (obra) => {
+    const obraId = obra.id_obra || obra.idObra;
+    navigate(`/admin/obras/${obraId}`);
   };
 
   const handleCloseModal = () => {
@@ -262,6 +267,12 @@ const ListaObras = () => {
                         </span>
                       </td>
                       <td>
+                        <button
+                           className="btn btn-light btn-sm text-primary me-2"
+                           onClick={() => handleEditClick(obra)}
+                           >
+                          <FaEdit />
+                        </button>
                         <button
                           className="btn btn-light btn-sm text-primary"
                           onClick={(e) => {

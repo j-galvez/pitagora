@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaEye, FaPlus, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaSearch, FaEye, FaPlus, FaSort, FaSortUp, FaSortDown, FaEdit } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import ClienteDetalleModal from '../../components/ClienteDetalleModal';
 import { clientesService } from '../../services/clientesService';
@@ -48,6 +48,11 @@ const ListaClientes = () => {
   const handleVerDetalle = (idCliente) => {
     setClienteSeleccionado(idCliente);
     setShowModalDetalle(true);
+  };
+
+  const handleEditClick = (cliente) => {
+    const clienteId = cliente.id_cliente || cliente.idCliente;
+    navigate(`/admin/clientes/${clienteId}`);
   };
 
   const handleCrearCliente = () => {
@@ -223,6 +228,12 @@ const ListaClientes = () => {
                       {/* El backend devuelve 'telefono', no 'telefonoContacto' */}
                       <td>{cliente.telefono || '-'}</td>
                       <td>
+                        <button
+                           className="btn btn-light btn-sm text-primary me-2"
+                           onClick={() => handleEditClick(cliente)}
+                           >
+                          <FaEdit />
+                        </button>
                         <button
                           className="btn btn-light btn-sm text-primary"
                           onClick={(e) => {
