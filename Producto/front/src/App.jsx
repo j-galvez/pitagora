@@ -19,6 +19,8 @@ import GestionTickets from './pages/admin/GestionTickets';
 import ListaObras from './pages/admin/ListaObras';
 import ListaClientes from './pages/admin/ListaClientes';
 import ResetPassword from './pages/ResetPassword';
+import MisMensajes from './pages/MisMensajes';
+import DetalleCorreosGrupo from './pages/DetalleCorreosGrupo';
 
 
 function App() {
@@ -45,6 +47,8 @@ function App() {
       <Route path="/crear-ticket" element={<ProtectedRoute><CrearTicket /></ProtectedRoute>} />
       <Route path="/crear-observacion" element={<ProtectedRoute><CrearObservacion /></ProtectedRoute>} />
       <Route path="/crear-observacion/:id_ticket" element={<ProtectedRoute><CrearObservacion /></ProtectedRoute>} />
+      <Route path="/mensajes" element={<ProtectedRoute><MisMensajes /></ProtectedRoute>} />
+      <Route path="/mensajes/detalle" element={<ProtectedRoute><DetalleCorreosGrupo /></ProtectedRoute>} />
 
       {/* Rutas públicas */}
       <Route path="/" element={<Login />} />
