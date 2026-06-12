@@ -71,14 +71,8 @@ const AdminLayout = ({
                 </div>
               </form>
             </div>
-
-            <div className="d-flex align-items-center text-white d-none d-md-block">
-              <small className="opacity-75">Modo: {usuario?.rol}</small>
-            </div>
           </div>
         </nav>
-
-        {/* Área de contenido con scroll propio */}
         <div className="flex-grow-1 overflow-auto p-4 custom-scrollbar">
           {children}
         </div>
