@@ -23,6 +23,8 @@ import ResultadosBusqueda from './pages/admin/ResultadosBusqueda';
 import ResetPassword from './pages/ResetPassword';
 import MisMensajes from './pages/MisMensajes';
 import DetalleCorreosGrupo from './pages/DetalleCorreosGrupo';
+import EditarCliente from './pages/admin/EditarCliente';
+import EditarObra from './pages/admin/EditarObra';
 
 
 function App() {
@@ -37,7 +39,9 @@ function App() {
       <Route path="/admin/obras" element={<ProtectedRoute requiredRole="admin"><ListaObras /></ProtectedRoute>} />
       <Route path="/admin/crear-cliente" element={<ProtectedRoute requiredRole="admin"><CrearCliente /></ProtectedRoute>} />
       <Route path="/crear-cliente" element={<ProtectedRoute requiredRole="admin"><CrearCliente /></ProtectedRoute>} />
+      <Route path="/admin/clientes/:id_cliente" element={<ProtectedRoute requiredRole="admin"><EditarCliente /></ProtectedRoute>} />
       <Route path="/admin/crear-obra" element={<ProtectedRoute requiredRole="admin"><CrearObra /></ProtectedRoute>} />
+      <Route path="/admin/obras/:id_obra" element={<ProtectedRoute requiredRole="admin"><EditarObra /></ProtectedRoute>} />
       <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole="admin"><GestionUsuario /></ProtectedRoute>} />
       <Route path="/admin/crear-usuarios" element={<ProtectedRoute requiredRole="admin"><CrearUsuario /></ProtectedRoute>} />
       <Route path="/admin/usuarios/:id_usuario" element={<ProtectedRoute requiredRole="admin"><EditarUsuario /></ProtectedRoute>} />
