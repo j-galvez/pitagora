@@ -26,7 +26,8 @@ public class ReporteService {
             p.getFallaDetectada(),
             p.getUbicacionExacta(),
             p.getEstadoActual(),
-            p.getSolucionAplicada()
+            p.getSolucionAplicada(),
+            p.getCosto()
         )).collect(Collectors.toList());
     }
 }

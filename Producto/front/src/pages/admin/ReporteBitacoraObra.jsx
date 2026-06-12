@@ -77,6 +77,13 @@ const ReporteBitacoraObra = () => {
     });
   };
 
+  const formatCurrency = (valor) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+    }).format(valor || 0);
+  };
+
   const limparFiltros = () => {
     setSearchTerm('');
     setFiltroObra('');
@@ -128,13 +135,13 @@ const ReporteBitacoraObra = () => {
       'Falla Detectada': item.fallaDetectada,
       'Ubicación': item.ubicacionExacta,
       'Estado': item.estadoActual,
-      'Solución / Comentarios': item.solucionAplicada || 'Sin comentarios'
+      'Costo Estimado': item.costo || 0
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const wscols = [
       { wch: 25 }, { wch: 25 }, { wch: 20 }, { wch: 18 }, { wch: 18 },
-      { wch: 25 }, { wch: 25 }, { wch: 12 }, { wch: 40 },
+      { wch: 25 }, { wch: 25 }, { wch: 12 }, { wch: 20 },
     ];
     worksheet['!cols'] = wscols;
 
@@ -170,12 +177,13 @@ const ReporteBitacoraObra = () => {
         doc.text(f, 14, 40);
       }
 
-      const tableColumn = ['Obra', 'Cliente', 'Responsable', 'Registro', 'Término', 'Falla', 'Ubicación', 'Estado'];
+      const tableColumn = ['Obra', 'Cliente', 'Responsable', 'Registro', 'Término', 'Falla', 'Ubicación', 'Estado', 'Costo'];
       const tableRows = filteredDatos.map(item => [
         item.obra, item.cliente, item.responsable,
         formatFecha(item.fechaRegistro).split(',')[0],
         formatFecha(item.fechaResolucion).split(',')[0],
-        item.fallaDetectada, item.ubicacionExacta, item.estadoActual.toUpperCase()
+        item.fallaDetectada, item.ubicacionExacta, item.estadoActual.toUpperCase(),
+        formatCurrency(item.costo)
       ]);
 
       autoTable(doc, {
@@ -277,7 +285,7 @@ const ReporteBitacoraObra = () => {
                   <th>Falla</th>
                   <th>Ubicación</th>
                   <th>Estado</th>
-                  <th>Solución</th>
+                  <th className="text-end">Costo</th>
                 </tr>
               </thead>
               <tbody style={{ fontSize: '14px' }}>
@@ -306,8 +314,8 @@ const ReporteBitacoraObra = () => {
                           {item.estadoActual}
                         </span>
                       </td>
-                      <td className="text-truncate" style={{ maxWidth: '150px' }} title={item.solucionAplicada}>
-                        {item.solucionAplicada || '-'}
+                      <td className="text-end fw-bold text-success" style={{ fontSize: '13px' }}>
+                        {item.costo !== undefined && item.costo !== null ? formatCurrency(item.costo) : formatCurrency(0)}
                       </td>
                     </tr>
                   ))

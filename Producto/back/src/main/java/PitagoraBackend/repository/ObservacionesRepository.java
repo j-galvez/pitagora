@@ -70,7 +70,8 @@ public interface ObservacionesRepository extends JpaRepository<Observaciones, In
            "o.falla AS fallaDetectada, " +
            "o.ubicacion_exacta AS ubicacionExacta, " +
            "o.estado_observacion AS estadoActual, " +
-           "o.comentario_admin AS solucionAplicada " +
+           "o.comentario_admin AS solucionAplicada, " +
+           "COALESCE(o.costo, 0) AS costo " +
            "FROM observaciones o " +
            "JOIN tickets t ON o.id_ticket = t.id_ticket " +
            "JOIN obras ob ON t.id_obra = ob.id_obra " +
