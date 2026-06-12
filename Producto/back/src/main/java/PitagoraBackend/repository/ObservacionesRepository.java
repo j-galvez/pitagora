@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 import PitagoraBackend.model.Observaciones;
 import PitagoraBackend.dto.TopFallaDTO;
 import PitagoraBackend.dto.ObraConIncidenciasDTO;
+import PitagoraBackend.dto.ReporteObraDTO;
+import PitagoraBackend.dto.ReporteObraProjection;
+import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 @Repository
@@ -56,6 +59,31 @@ public interface ObservacionesRepository extends JpaRepository<Observaciones, In
            "GROUP BY ob.idObra, ob.nombreObra " +
            "ORDER BY COUNT(o) DESC")
     List<ObraConIncidenciasDTO> findObrasByCategoria(Integer idCategoria);
+
+    // REPORTE DE TRAZABILIDAD DE OBRAS (Nativo para asegurar compatibilidad con la estructura de la BD)
+    @Query(value = "SELECT " +
+           "ob.nombre_obra AS obra, " +
+           "COALESCE(c.nombre_empresa, 'Sin Cliente') AS cliente, " +
+           "concat(u.nombre, ' ', u.apellido_paterno) AS responsable, " +
+           "o.fecha_registro AS fechaRegistro, " +
+           "o.fecha_termino AS fechaResolucion, " +
+           "o.falla AS fallaDetectada, " +
+           "o.ubicacion_exacta AS ubicacionExacta, " +
+           "o.estado_observacion AS estadoActual, " +
+           "o.comentario_admin AS solucionAplicada " +
+           "FROM observaciones o " +
+           "JOIN tickets t ON o.id_ticket = t.id_ticket " +
+           "JOIN obras ob ON t.id_obra = ob.id_obra " +
+           "LEFT JOIN clientes c ON ob.id_cliente = c.id_cliente " +
+           "LEFT JOIN usuarios u ON t.id_usuario = u.id_usuario", nativeQuery = true)
+    List<ReporteObraProjection> findReporteTrazabilidad();
+
+    // BÚSQUEDA OMNIBOX
+    @Query("SELECT o FROM Observaciones o WHERE " +
+           "LOWER(o.falla) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(o.descripcionProblema) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(o.ubicacionExacta) LIKE LOWER(CONCAT('%', :query, '%'))")
+    List<Observaciones> searchObservaciones(@Param("query") String query);
 }
 
 
