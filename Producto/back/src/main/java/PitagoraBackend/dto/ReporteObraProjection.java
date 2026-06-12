@@ -12,4 +12,5 @@ public interface ReporteObraProjection {
     String getUbicacionExacta();
     String getEstadoActual();
     String getSolucionAplicada();
+    Long getCosto();
 }

@@ -18,4 +18,5 @@ public class ReporteObraDTO {
     private String ubicacionExacta;
     private String estadoActual;
     private String solucionAplicada;
+    private Long costo;
 }
