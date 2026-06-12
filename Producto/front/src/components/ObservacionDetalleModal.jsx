@@ -32,7 +32,7 @@ const TABS = [
   { id: 'evidencias', label: 'Evidencias', icon: FaImages },
 ];
 
-const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
+const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChange = true }) => {
   const [observacion, setObservacion] = useState(null);
   const [categoria, setCategoria] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -126,10 +126,25 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
   const cargarMensajes = async () => {
     setLoadingMensajes(true);
     try {
-      const data = await mensajesService.getMensajesPorObservacion(idObservacion);
-      setMensajes(data);
+      // Intentar obtener el hilo de comunicación (mensajes + notificaciones)
+      const response = await fetch(`${API_URL}/observaciones/${idObservacion}/hilo-comunicacion`);
+      if (response.ok) {
+        const data = await response.json();
+        setMensajes(data);
+      } else {
+        // Fallback: obtener solo mensajes manuales
+        const data = await mensajesService.getMensajesPorObservacion(idObservacion);
+        setMensajes(data);
+      }
     } catch (err) {
-      console.error('Error al cargar mensajes:', err);
+      console.error('Error al cargar hilo de comunicación:', err);
+      try {
+        // Fallback a mensajes simples si el hilo falla
+        const data = await mensajesService.getMensajesPorObservacion(idObservacion);
+        setMensajes(data);
+      } catch (fallbackErr) {
+        console.error('Error en fallback:', fallbackErr);
+      }
     } finally {
       setLoadingMensajes(false);
     }
@@ -154,11 +169,19 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
     setPreviewImagen(previewUrlRef.current);
   };
 
+  const hayCambioEstadoPendiente = () => {
+    if (!allowEstadoChange || activeTab !== 'mensajes') return false;
+    const estadoActual = (observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal || '').toLowerCase();
+    const estadoNuevo = (nuevoEstado || '').toLowerCase();
+    return Boolean(estadoActual && estadoNuevo && estadoActual !== estadoNuevo);
+  };
+
   const handleEnviarMensaje = async (texto, imagen) => {
     const mensajeTexto = (texto ?? nuevoMensaje).trim();
     const imagenFile = imagen !== undefined ? imagen : imagenSeleccionada;
+    const hayCambioEstado = hayCambioEstadoPendiente();
 
-    if (!mensajeTexto && !imagenFile) {
+    if (!mensajeTexto && !imagenFile && !hayCambioEstado) {
       return;
     }
 
@@ -167,25 +190,26 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
       return;
     }
 
-    // Confirmación y cambio de estado solo en pestaña Mensajes
     const estadoActual = (observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal || '').toLowerCase();
     const estadoNuevo = (nuevoEstado || '').toLowerCase();
 
-    if (activeTab === 'mensajes' && estadoActual && estadoNuevo && estadoActual !== estadoNuevo) {
+    if (hayCambioEstado) {
       const ok = window.confirm(
         `El estado actual es \"${estadoActual}\" y el nuevo estado será \"${estadoNuevo}\". ¿Deseas continuar?`
       );
       if (!ok) return;
     }
 
+    const mensajeAEnviar = mensajeTexto || (hayCambioEstado ? `Se cambia el estado a: ${nuevoEstado}` : null);
+
     setEnviandoMensaje(true);
     try {
       await mensajesService.crearMensaje(
-        { idObservacion, idUsuario, mensaje: mensajeTexto || null },
+        { idObservacion, idUsuario, mensaje: mensajeAEnviar },
         imagenFile || null
       );
 
-      if (activeTab === 'mensajes' && estadoActual && estadoNuevo && estadoActual !== estadoNuevo) {
+      if (hayCambioEstado) {
         const idObs = observacion?.idObservacion || observacion?.id_observacion || idObservacion;
         const actualizada = await observacionesService.updateObservacion(idObs, {
           estadoObservacion: nuevoEstado,
@@ -472,6 +496,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
             <ObservacionEstadoBar
               nuevoEstado={nuevoEstado}
               onEstadoChange={setNuevoEstado}
+              estadoActual={observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal}
             />
 
             {previewImagen && (
@@ -543,7 +568,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion }) => {
                   variant="primary"
                   size="sm"
                   onClick={() => handleEnviarMensaje()}
-                  disabled={enviandoMensaje || (!nuevoMensaje.trim() && !imagenSeleccionada) || !obs}
+                  disabled={enviandoMensaje || (!nuevoMensaje.trim() && !imagenSeleccionada && !hayCambioEstadoPendiente()) || !obs}
                 >
                   {enviandoMensaje ? (
                     <Spinner animation="border" size="sm" />

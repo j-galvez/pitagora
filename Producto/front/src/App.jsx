@@ -8,6 +8,8 @@ import IndexUsuario from './pages/cliente/IndexUsuario';
 import CrearTicket from './pages/cliente/CrearTicket';
 import CrearObservacion from './pages/cliente/CrearObservacion';
 import Formulario from './pages/tests/formulario';
+import PerfilCliente from './pages/cliente/PerfilCliente';
+import PerfilAdmin from './pages/admin/PerfilAdmin';
 import GestionUsuario from './pages/admin/GestionUsuario';
 import CrearUsuario from './pages/admin/CrearUsuario';
 import EditarUsuario from './pages/admin/EditarUsuario';
@@ -19,6 +21,8 @@ import ListaClientes from './pages/admin/ListaClientes';
 import ReporteBitacoraObra from './pages/admin/ReporteBitacoraObra';
 import ResultadosBusqueda from './pages/admin/ResultadosBusqueda';
 import ResetPassword from './pages/ResetPassword';
+import MisMensajes from './pages/MisMensajes';
+import DetalleCorreosGrupo from './pages/DetalleCorreosGrupo';
 
 
 function App() {
@@ -37,14 +41,18 @@ function App() {
       <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole="admin"><GestionUsuario /></ProtectedRoute>} />
       <Route path="/admin/crear-usuarios" element={<ProtectedRoute requiredRole="admin"><CrearUsuario /></ProtectedRoute>} />
       <Route path="/admin/usuarios/:id_usuario" element={<ProtectedRoute requiredRole="admin"><EditarUsuario /></ProtectedRoute>} />
+      <Route path="/perfil-admin" element={<ProtectedRoute requiredRole="admin"><PerfilAdmin /></ProtectedRoute>} />
 
       {/* Rutas de Cliente */}
       <Route path="/dashboard" element={<ProtectedRoute requiredRole="usuario"><IndexUsuario /></ProtectedRoute>} />
-
+      <Route path="/perfil" element={<ProtectedRoute requiredRole="usuario"><PerfilCliente /></ProtectedRoute>} />
+      
       {/* Rutas compartidas */}
       <Route path="/crear-ticket" element={<ProtectedRoute><CrearTicket /></ProtectedRoute>} />
       <Route path="/crear-observacion" element={<ProtectedRoute><CrearObservacion /></ProtectedRoute>} />
       <Route path="/crear-observacion/:id_ticket" element={<ProtectedRoute><CrearObservacion /></ProtectedRoute>} />
+      <Route path="/mensajes" element={<ProtectedRoute><MisMensajes /></ProtectedRoute>} />
+      <Route path="/mensajes/detalle" element={<ProtectedRoute><DetalleCorreosGrupo /></ProtectedRoute>} />
 
       {/* Rutas públicas */}
       <Route path="/" element={<Login />} />

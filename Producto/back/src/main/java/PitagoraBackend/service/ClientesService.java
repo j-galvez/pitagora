@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import PitagoraBackend.repository.ClientesRepository;
 import PitagoraBackend.dto.ClienteDTO;
+import PitagoraBackend.dto.ClienteDetalleDTO;
 import PitagoraBackend.model.Clientes;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -76,6 +77,15 @@ public class ClientesService {
             throw new IllegalArgumentException("Cliente no encontrado con ID: " + id);
         }
         return cliente.get();
+    }
+
+    // READ - Obtener cliente por ID con región, comuna y dirección
+    public ClienteDetalleDTO obtenerClienteConDetallesById(Integer id) {
+        ClienteDetalleDTO cliente = clientesRepository.findClienteConDetallesById(id);
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente no encontrado con ID: " + id);
+        }
+        return cliente;
     }
 
     // UPDATE - Actualizar cliente

@@ -2,6 +2,7 @@ package PitagoraBackend.model;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -37,6 +38,7 @@ public class Clientes {
     private String telefono;
 
     @Column(name = "direccion_calle", columnDefinition = "TEXT")
+    @JsonAlias("direccion")
     private String direccionCalle;
 
     @Column(name = "id_region")

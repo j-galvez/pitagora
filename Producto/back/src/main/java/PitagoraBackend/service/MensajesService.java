@@ -18,6 +18,7 @@ import PitagoraBackend.repository.EvidenciasRepository;
 import PitagoraBackend.repository.MensajesRepository;
 import PitagoraBackend.repository.ObservacionesRepository;
 import PitagoraBackend.repository.UsuariosRepository;
+import PitagoraBackend.service.NotificationService;
 
 @Service
 public class MensajesService {
@@ -33,6 +34,9 @@ public class MensajesService {
 
     @Autowired
     private UsuariosRepository usuariosRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     private ImageStorageService imageStorageService;
@@ -78,6 +82,12 @@ public class MensajesService {
         }
 
         Mensajes guardado = mensajesRepository.save(mensaje);
+        // Enviar notificación por correo a las partes involucradas
+        try {
+            notificationService.notificarMensajeCreado(guardado);
+        } catch (Exception e) {
+            // no bloquear la operación en caso de fallo en el envío
+        }
         return toDTO(guardado);
     }
 

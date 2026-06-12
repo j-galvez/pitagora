@@ -21,15 +21,18 @@ const AdminLayout = ({
   };
 
   return (
-    <div className="d-flex vh-100 overflow-hidden">
-      {/* Barra lateral - Se mantiene fija por el vh-100 del contenedor padre */}
+    <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
+      {/* Barra lateral - Se mantiene fija */}
       <NavbarAdmin usuario={usuario} />
       
       {/* Contenedor principal con scroll independiente */}
-      <div className="flex-grow-1 d-flex flex-column h-100" style={{ backgroundColor: '#F8F9FA' }}>
+      <div 
+        className="d-flex flex-column flex-grow-1" 
+        style={{ backgroundColor: '#F8F9FA', height: '100vh', minWidth: 0 }}
+      >
         
-        {/* Barra de Navegación Superior - Estática en la parte superior del flex-column */}
-        <nav className="navbar navbar-dark shadow-sm" style={{ backgroundColor: '#002840', zIndex: 1030 }}>
+        {/* Barra de Navegación Superior - Estática */}
+        <nav className="navbar navbar-dark shadow-sm flex-shrink-0" style={{ backgroundColor: '#002840', zIndex: 1030 }}>
           <div className="container-fluid d-flex justify-content-between align-items-center py-2">
             <div className="d-flex align-items-center">
               {/* Botón Offcanvas para móviles */}
@@ -73,7 +76,9 @@ const AdminLayout = ({
             </div>
           </div>
         </nav>
-        <div className="flex-grow-1 overflow-auto p-4 custom-scrollbar">
+
+        {/* Área de contenido con scroll propio */}
+        <div className="flex-grow-1 overflow-auto p-4 custom-scrollbar" style={{ minHeight: 0 }}>
           {children}
         </div>
       </div>
