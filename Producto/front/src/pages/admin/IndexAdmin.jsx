@@ -130,23 +130,23 @@ export default function IndexAdmin() {
                   <div className="card-body">
                     <h5 className="card-title mb-4">Acciones Rápidas</h5>
                     <div className="d-grid gap-2">
-                      <button 
+                      <button
                         className="btn btn-primary text-white"
                         style={{ backgroundColor: '#003860', borderColor: '#003860' }}
-                        onClick={() => window.location.href = '/crear-obra'}
+                        onClick={() => navigate('/admin/crear-obra')}
                       >
                         <FaTicketAlt className="me-2" />
                         Nueva Obra
                       </button>
-                      <button 
+                      <button
                         className="btn btn-outline-primary"
-                        onClick={() => window.location.href = '/crear-cliente'}
+                        onClick={() => navigate('/admin/crear-cliente')}
                       >
                         Nuevo Cliente
                       </button>
-                      <button 
+                      <button
                         className="btn btn-outline-secondary"
-                        onClick={() => window.location.href = '/crear-usuario'}
+                        onClick={() => navigate('/admin/crear-usuarios')}
                       >
                         Nuevo Usuario
                       </button>

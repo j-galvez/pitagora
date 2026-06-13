@@ -32,7 +32,7 @@ const TABS = [
   { id: 'evidencias', label: 'Evidencias', icon: FaImages },
 ];
 
-const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChange = true }) => {
+const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChange = true, onObservacionActualizada }) => {
   const [observacion, setObservacion] = useState(null);
   const [categoria, setCategoria] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -126,25 +126,11 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
   const cargarMensajes = async () => {
     setLoadingMensajes(true);
     try {
-      // Intentar obtener el hilo de comunicación (mensajes + notificaciones)
-      const response = await fetch(`${API_URL}/observaciones/${idObservacion}/hilo-comunicacion`);
-      if (response.ok) {
-        const data = await response.json();
-        setMensajes(data);
-      } else {
-        // Fallback: obtener solo mensajes manuales
-        const data = await mensajesService.getMensajesPorObservacion(idObservacion);
-        setMensajes(data);
-      }
+      const data = await mensajesService.getMensajesPorObservacion(idObservacion);
+      setMensajes(data);
     } catch (err) {
-      console.error('Error al cargar hilo de comunicación:', err);
-      try {
-        // Fallback a mensajes simples si el hilo falla
-        const data = await mensajesService.getMensajesPorObservacion(idObservacion);
-        setMensajes(data);
-      } catch (fallbackErr) {
-        console.error('Error en fallback:', fallbackErr);
-      }
+      console.error('Error al cargar mensajes:', err);
+      setMensajes([]);
     } finally {
       setLoadingMensajes(false);
     }
@@ -217,6 +203,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
         setObservacion(actualizada);
         const nuevoEstadoPersistido = actualizada?.estadoObservacion || actualizada?.estado_observacion || nuevoEstado;
         setEstadoOriginal(nuevoEstadoPersistido);
+        onObservacionActualizada?.(actualizada);
       }
 
       setNuevoMensaje('');

@@ -15,7 +15,7 @@ export default function NavbarAdmin({ usuario }) {
       {/* Logo */}
       <div className="mb-4 text-center py-2">
         <img 
-          src="https://www.pitagora.cl/images/logo_up_pitagora.gif" 
+          src="https://storage.googleapis.com/pitagora-evidencias-bucket/logo.gif" 
           alt="PITAGORA Logo" 
           className="img-fluid" 
           style={{ maxHeight: '50px', backgroundColor: 'white', borderRadius: '4px', padding: '5px' }} 

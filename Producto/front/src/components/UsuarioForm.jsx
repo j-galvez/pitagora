@@ -1,27 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaEdit, FaSave, FaTimes } from 'react-icons/fa';
 
 const UsuarioForm = ({
   usuario,
   formData,
+  setFormData,
   loading,
   error,
-  onFieldSave,
   onSubmit,
   onCancel,
+  tieneTickets = false,
 }) => {
-  const [editingField, setEditingField] = useState(null);
-  const [tempValue, setTempValue] = useState('');
-  const [fieldError, setFieldError] = useState('');
   const [regiones, setRegiones] = useState([]);
   const [comunas, setComunas] = useState([]);
   const [comunasFiltradas, setComunasFiltradas] = useState([]);
   const [obras, setObras] = useState([]);
+  const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  useEffect(() => {
+    if (formData.idRegion) {
+      const filtradas = comunas.filter((c) => c.idRegion === Number(formData.idRegion));
+      setComunasFiltradas(filtradas);
+    }
+  }, [formData.idRegion, comunas]);
 
   const cargarDatos = async () => {
     try {
@@ -48,140 +53,91 @@ const UsuarioForm = ({
     }
   };
 
-  const startEditing = (fieldName) => {
-    setEditingField(fieldName);
-    setTempValue(formData[fieldName] != null ? String(formData[fieldName]) : '');
-    setFieldError('');
-  };
-
-  const cancelEditing = () => {
-    setEditingField(null);
-    setFieldError('');
-  };
-
-  const handleTempChange = (e) => {
-    const { value } = e.target;
-
-    if (editingField === 'telefono') {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Validación especial para teléfono
+    if (name === 'telefono') {
       const soloNumeros = value.replace(/\D/g, '');
-      // Solo limita a 9 dígitos máximo, pero permite escribir y borrar libremente
       if (soloNumeros.length <= 9) {
-        setTempValue(soloNumeros);
+        setFormData(prev => ({ ...prev, [name]: soloNumeros }));
+        
         if (soloNumeros.length > 0 && soloNumeros.length < 9) {
-          setFieldError('El teléfono debe tener exactamente 9 dígitos.');
-        } else if (soloNumeros.length === 0) {
-          setFieldError('');
+          setValidationErrors(prev => ({ ...prev, telefono: 'El teléfono debe tener exactamente 9 dígitos.' }));
         } else {
-          setFieldError('');
+          setValidationErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.telefono;
+            return newErrors;
+          });
         }
       }
       return;
     }
 
-    setTempValue(value);
-    setFieldError('');
-  };
-
-  const saveField = async () => {
-    if (!editingField) return;
-
-    if (editingField === 'telefono') {
-      if (!/^\d{9}$/.test(tempValue)) {
-        setFieldError('El teléfono debe tener exactamente 9 dígitos.');
-        return;
-      }
+    // Validación de correo
+    if (name === 'correo' && value && !/^\S+@\S+\.\S+$/.test(value)) {
+      setValidationErrors(prev => ({ ...prev, correo: 'Ingresa un correo válido.' }));
+    } else if (name === 'correo') {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.correo;
+        return newErrors;
+      });
     }
 
-    if (editingField === 'correo' && tempValue && !/^\S+@\S+\.\S+$/.test(tempValue)) {
-      setFieldError('Ingresa un correo válido.');
+    // Manejo especial para región (resetear comuna cuando cambia región)
+    if (name === 'idRegion') {
+      const filtradas = comunas.filter((c) => c.idRegion === Number(value));
+      setComunasFiltradas(filtradas);
+      setFormData(prev => ({ ...prev, [name]: value, idComuna: '' }));
       return;
     }
 
-    const parsedValue = ['idRegion', 'idComuna', 'idObra'].includes(editingField)
-      ? tempValue === ''
-        ? null
-        : Number(tempValue)
-      : tempValue;
-
-    await onFieldSave(editingField, parsedValue);
-    setEditingField(null);
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-   const renderField = ({ label, name, type = 'text', placeholder = '', options = null, readOnly = false }) => {
+  const renderField = ({ label, name, type = 'text', placeholder = '', options = null, readOnly = false, disabled = false, helpText = '' }) => {
     const value = formData[name] != null ? String(formData[name]) : '';
-    const isEditing = editingField === name;
-
-    const handleSelectChangeForField = (e) => {
-      const { value } = e.target;
-      setTempValue(value);
-      
-      if (name === 'idRegion') {
-        const filtradas = comunas.filter((c) => c.idRegion === Number(value));
-        setComunasFiltradas(filtradas);
-      }
-      
-      setFieldError('');
-    };
 
     return (
       <div className="col-md-6">
         <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>
           {label}
         </label>
-        <div className="input-group">
-          {isEditing ? (
-            options ? (
-              <select className="form-select" value={tempValue} onChange={handleSelectChangeForField}>
-                {options.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type={name === 'telefono' ? 'text' : type}
-                inputMode={name === 'telefono' ? 'numeric' : 'text'}
-                className={`form-control ${fieldError ? 'is-invalid' : ''}`}
-                value={tempValue}
-                onChange={handleTempChange}
-                placeholder={placeholder}
-                autoFocus
-              />
-            )
-          ) : (
-            <input
-              type={type}
-              className="form-control"
-              value={value}
-              readOnly={readOnly}
-              placeholder={placeholder}
-            />
-          )}
-          {!readOnly && (
-            <button
-              type="button"
-              className={`btn btn-outline-${isEditing ? 'success' : 'primary'}`}
-              onClick={isEditing ? saveField : () => startEditing(name)}
-              disabled={loading}
-              title={isEditing ? 'Guardar' : 'Editar'}
-            >
-              {isEditing ? <FaSave /> : <FaEdit />}
-            </button>
-          )}
-          {isEditing && (
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={cancelEditing}
-              disabled={loading}
-              title="Cancelar"
-            >
-              <FaTimes />
-            </button>
-          )}
-        </div>
-        {isEditing && fieldError && <div className="invalid-feedback d-block">{fieldError}</div>}
+        {options ? (
+          <select
+            className={`form-select ${validationErrors[name] ? 'is-invalid' : ''}`}
+            name={name}
+            value={value}
+            onChange={handleChange}
+            disabled={disabled || readOnly}
+          >
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type={name === 'telefono' ? 'text' : type}
+            inputMode={name === 'telefono' ? 'numeric' : 'text'}
+            className={`form-control ${validationErrors[name] ? 'is-invalid' : ''}`}
+            name={name}
+            value={value}
+            onChange={handleChange}
+            placeholder={placeholder}
+            readOnly={readOnly}
+            disabled={disabled}
+          />
+        )}
+        {validationErrors[name] && (
+          <div className="invalid-feedback d-block">{validationErrors[name]}</div>
+        )}
+        {helpText && (
+          <div className="form-text text-muted small">{helpText}</div>
+        )}
       </div>
     );
   };
@@ -195,6 +151,8 @@ const UsuarioForm = ({
       </div>
     );
   }
+
+  const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
   return (
     <div className="container py-4" style={{ overflowX: 'auto', overflowY: 'auto', maxWidth: '100%' }}>
@@ -223,7 +181,7 @@ const UsuarioForm = ({
               <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>
                 RUN
               </label>
-              <input type="text" className="form-control" value={usuario.run || ''} readOnly />
+              <input type="text" className="form-control" value={usuario.run || ''} readOnly disabled />
             </div>
             {renderField({
               label: 'Rol',
@@ -239,7 +197,7 @@ const UsuarioForm = ({
           </div>
 
           <div className="row g-3 mb-3">
-            {renderField({ label: 'Teléfono', name: 'telefono', type: 'tel', placeholder: '9 12345678' })}
+            {renderField({ label: 'Teléfono', name: 'telefono', type: 'tel', placeholder: '912345678' })}
             {renderField({
               label: 'Estado',
               name: 'estado',
@@ -274,6 +232,8 @@ const UsuarioForm = ({
             {renderField({
               label: 'Obra',
               name: 'idObra',
+              disabled: tieneTickets,
+              helpText: tieneTickets ? 'No se puede cambiar la obra porque el usuario tiene tickets creados' : '',
               options: [
                 { value: '', label: 'Seleccionar obra' },
                 ...obras.map(o => ({ value: o.idObra, label: o.nombreObra }))
@@ -291,6 +251,7 @@ const UsuarioForm = ({
                 className="form-control"
                 value={usuario.fechaCreacion ? new Date(usuario.fechaCreacion).toLocaleString('es-ES') : ''}
                 readOnly
+                disabled
               />
             </div>
           </div>
@@ -299,7 +260,7 @@ const UsuarioForm = ({
             <button type="button" className="btn btn-outline-secondary px-4" onClick={onCancel} disabled={loading}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary px-4" disabled={loading || !!fieldError}>
+            <button type="submit" className="btn btn-primary px-4" disabled={loading || hasValidationErrors}>
               {loading ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>

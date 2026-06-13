@@ -29,6 +29,7 @@ const EditarUsuario = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tieneTickets, setTieneTickets] = useState(false);
 
   useEffect(() => {
     const fetchUsuario = async () => {
@@ -36,6 +37,7 @@ const EditarUsuario = () => {
       setError('');
 
       try {
+        // Cargar datos del usuario
         const response = await fetch(`http://localhost:8080/api/usuarios/${id_usuario}`);
         if (!response.ok) {
           throw new Error('No se encontró el usuario');
@@ -55,6 +57,18 @@ const EditarUsuario = () => {
           idComuna: data.idComuna != null ? data.idComuna : '',
           estado: data.estado || 'Activo'
         });
+
+        // Verificar si el usuario tiene tickets
+        try {
+          const ticketsResponse = await fetch(`http://localhost:8080/api/tickets/usuario/${id_usuario}`);
+          if (ticketsResponse.ok) {
+            const tickets = await ticketsResponse.json();
+            setTieneTickets(tickets && tickets.length > 0);
+          }
+        } catch (ticketsErr) {
+          console.error('Error al verificar tickets:', ticketsErr);
+          // No bloqueamos la carga si falla la verificación de tickets
+        }
       } catch (err) {
         setError(err.message || 'Error al cargar el usuario');
       } finally {
@@ -66,54 +80,31 @@ const EditarUsuario = () => {
     fetchUsuario();
   }, [id_usuario]);
 
-  const handleFieldSave = async (name, value) => {
-    setLoading(true);
-    setError('');
-    try {
-      const payload = { [name]: value };
-      const response = await fetch(`http://localhost:8080/api/usuarios/${id_usuario}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Error al guardar el campo');
-      }
-
-      const updatedUsuario = await response.json();
-      setUsuario(updatedUsuario);
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    } catch (err) {
-      setError(err.message || 'Error al guardar el campo');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      // Si el usuario tiene tickets, no permitir cambiar la obra
+      const payload = {
+        nombre: formData.nombre,
+        apellidoPaterno: formData.apellidoPaterno,
+        apellidoMaterno: formData.apellidoMaterno,
+        correo: formData.correo,
+        telefono: formData.telefono,
+        direccionCalle: formData.direccionCalle,
+        rol: formData.rol,
+        idObra: tieneTickets ? usuario.idObra : (formData.idObra || null),
+        idRegion: formData.idRegion || null,
+        idComuna: formData.idComuna || null,
+        estado: formData.estado,
+      };
+
       const response = await fetch(`http://localhost:8080/api/usuarios/${id_usuario}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nombre: formData.nombre,
-          apellidoPaterno: formData.apellidoPaterno,
-          apellidoMaterno: formData.apellidoMaterno,
-          correo: formData.correo,
-          telefono: formData.telefono,
-          direccionCalle: formData.direccionCalle,
-          rol: formData.rol,
-          idObra: formData.idObra || null,
-          idRegion: formData.idRegion || null,
-          idComuna: formData.idComuna || null,
-          estado: formData.estado,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -173,9 +164,9 @@ const EditarUsuario = () => {
   }
 
   return (
-    <AdminLayout 
-      usuario={usuarioLogueado} 
-      titulo="Editar Usuario" 
+    <AdminLayout
+      usuario={usuarioLogueado}
+      titulo="Editar Usuario"
       handleVolver={handleVolver}
     >
         <div className="container mt-4">
@@ -192,11 +183,12 @@ const EditarUsuario = () => {
         <UsuarioForm
           usuario={usuario}
           formData={formData}
+          setFormData={setFormData}
           loading={loading}
           error={error}
-          onFieldSave={handleFieldSave}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
+          tieneTickets={tieneTickets}
         />
     </AdminLayout>
   );
