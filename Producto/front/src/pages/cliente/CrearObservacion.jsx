@@ -26,6 +26,7 @@ export default function CrearObservacion() {
   const [observacionSeleccionada, setObservacionSeleccionada] = useState(null);
   const [showDetalleModal, setShowDetalleModal] = useState(false);
   const fileInputRef = useRef(null);
+  const saveButtonRef = useRef(null);
 
   const usuarioLocalStorage = JSON.parse(localStorage.getItem('usuario'));
   const usuarioLogueado = usuarioLocalStorage || {};
@@ -33,14 +34,6 @@ export default function CrearObservacion() {
 
   const isAdmin = usuarioLogueado.rol === 'admin';
 
-  // Helper para formatear fecha de forma segura
-  const formatearFecha = (fechaStr) => {
-    if (!fechaStr) return 'Fecha no disponible';
-    const fecha = new Date(fechaStr);
-    return isNaN(fecha) ? 'Fecha inválida' : fecha.toLocaleDateString();
-  };
-
-  // Estado para nueva observación
   const [newObservation, setNewObservation] = useState({
     falla: '',
     ubicacion_exacta: '',
@@ -49,6 +42,42 @@ export default function CrearObservacion() {
     id_categoria: '',
     fotos: []
   });
+
+  // Helper para formatear fecha de forma segura
+  const formatearFecha = (fechaStr) => {
+    if (!fechaStr) return 'Fecha no disponible';
+    const fecha = new Date(fechaStr);
+    return isNaN(fecha) ? 'Fecha inválida' : fecha.toLocaleDateString();
+  };
+
+  const getNombreObraTicket = (ticket) =>
+    ticket.obra?.nombreObra ||
+    ticket.obra?.nombre_obra ||
+    `Obra #${ticket.idObra || ticket.id_obra}`;
+
+  const observacionEnEdicion = isAddingObservation && (
+    newObservation.falla.trim() ||
+    newObservation.ubicacion_exacta.trim() ||
+    newObservation.descripcion_problema.trim() ||
+    newObservation.fotos.length > 0
+  );
+
+  const hayPendientes = nuevasObservaciones.length > 0 || observacionEnEdicion;
+
+  const MENSAJE_SALIDA = 'Tienes observaciones sin guardar. ¿Salir sin guardar?';
+
+  const scrollAlBotonGuardar = () => {
+    if (saveButtonRef.current) {
+      saveButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const confirmarSalida = () => {
+    if (!hayPendientes) return true;
+    const confirmar = window.confirm(MENSAJE_SALIDA);
+    if (!confirmar) scrollAlBotonGuardar();
+    return confirmar;
+  };
 
   useEffect(() => {
     cargarTicketsDisponibles();
@@ -77,6 +106,46 @@ export default function CrearObservacion() {
       setObservacionesExistentes([]);
     }
   }, [selectedTicketId]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (hayPendientes) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hayPendientes]);
+
+  useEffect(() => {
+    if (!hayPendientes) return;
+
+    const handleClick = (e) => {
+      const anchor = e.target.closest('a[href]');
+      if (!anchor) return;
+
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      if (href.startsWith('http') && !href.startsWith(window.location.origin)) return;
+
+      try {
+        const url = new URL(href, window.location.origin);
+        if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      } catch {
+        return;
+      }
+
+      if (!window.confirm(MENSAJE_SALIDA)) {
+        e.preventDefault();
+        e.stopPropagation();
+        scrollAlBotonGuardar();
+      }
+    };
+
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, [hayPendientes]);
 
   const cargarTicketsDisponibles = async () => {
     if (!idUsuarioActual && !isAdmin) return;
@@ -203,11 +272,17 @@ export default function CrearObservacion() {
         );
       }
 
-      setSuccess('¡Nuevas observaciones guardadas correctamente!');
-      // Recargar las observaciones existentes
-      cargarObservacionesExistentes(selectedTicketId);
       setNuevasObservaciones([]);
-      
+      setIsAddingObservation(false);
+
+      if (isAdmin) {
+        navigate('/admin/tickets');
+        return;
+      }
+
+      setSuccess('¡Nuevas observaciones guardadas correctamente!');
+      cargarObservacionesExistentes(selectedTicketId);
+
       setTimeout(() => {
         setSuccess('');
       }, 3000);
@@ -220,7 +295,18 @@ export default function CrearObservacion() {
   };
 
   const handleVolver = () => {
+    if (!confirmarSalida()) return;
     navigate(isAdmin ? '/admin-dashboard' : '/dashboard');
+  };
+
+  const handleTicketChange = (e) => {
+    const newId = e.target.value;
+    if (newId === selectedTicketId) return;
+    if (hayPendientes && !window.confirm(MENSAJE_SALIDA)) {
+      scrollAlBotonGuardar();
+      return;
+    }
+    setSelectedTicketId(newId);
   };
 
   return (
@@ -258,6 +344,30 @@ export default function CrearObservacion() {
               </div>
             )}
 
+            {nuevasObservaciones.length > 0 && (
+              <div className="alert alert-warning d-flex align-items-start mb-4 border-0 shadow-sm" role="alert">
+                <i className="bi bi-exclamation-triangle-fill me-2 fs-5 mt-1"></i>
+                <div style={{ fontSize: '14px' }}>
+                  Tienes {nuevasObservaciones.length} observación{nuevasObservaciones.length !== 1 ? 'es' : ''} pendiente{nuevasObservaciones.length !== 1 ? 's' : ''} de guardar.
+                  Presiona <strong>Guardar nuevas observaciones</strong> antes de salir.
+                  {observacionEnEdicion && (
+                    <div className="mt-1 text-muted" style={{ fontSize: '13px' }}>
+                      También tienes una observación en borrador sin aceptar.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {nuevasObservaciones.length === 0 && observacionEnEdicion && (
+              <div className="alert alert-warning d-flex align-items-start mb-4 border-0 shadow-sm" role="alert">
+                <i className="bi bi-exclamation-triangle-fill me-2 fs-5 mt-1"></i>
+                <div style={{ fontSize: '14px' }}>
+                  Tienes una observación en borrador. Presiona <strong>Aceptar</strong> y luego <strong>Guardar nuevas observaciones</strong> antes de salir.
+                </div>
+              </div>
+            )}
+
             <div className="mb-4 border-bottom pb-3">
               <h5 className="text-dark mb-1">Detalles de la Solicitud</h5>
               <span className="text-muted" style={{ fontSize: '13px' }}>Gestiona las fallas técnicas del ticket seleccionado</span>
@@ -269,7 +379,7 @@ export default function CrearObservacion() {
               <select 
                 className="form-select"
                 value={selectedTicketId}
-                onChange={(e) => setSelectedTicketId(e.target.value)}
+                onChange={handleTicketChange}
                 disabled={loadingTickets}
               >
                 <option value="">-- Selecciona un Ticket --</option>
@@ -278,7 +388,7 @@ export default function CrearObservacion() {
                   const tFecha = t.fechaCreacion || t.fecha_creacion;
                   return (
                     <option key={tId} value={tId}>
-                      Ticket #{tId} - (Creado: {formatearFecha(tFecha)})
+                      Ticket #{tId} — {getNombreObraTicket(t)} (Creado: {formatearFecha(tFecha)})
                     </option>
                   );
                 })}
@@ -461,7 +571,8 @@ export default function CrearObservacion() {
               <button className="btn btn-outline-secondary px-4" onClick={handleVolver}>Volver al Dashboard</button>
               {nuevasObservaciones.length > 0 && (
                 <button 
-                  className="btn px-5 fw-bold text-white"
+                  ref={saveButtonRef}
+                  className="btn px-5 fw-bold text-white btn-guardar-pendiente"
                   style={{ backgroundColor: '#0B3B60' }}
                   onClick={handleSubmitAll}
                   disabled={loading}
@@ -497,6 +608,13 @@ export default function CrearObservacion() {
         .border-dashed { border-style: dashed !important; }
         .object-fit-cover { object-fit: cover; }
         .hover-bg-light:hover { background-color: #f8f9fa !important; border-color: #0d6efd !important; }
+        @keyframes pulso-guardar {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(11, 59, 96, 0.5); }
+          50% { box-shadow: 0 0 0 10px rgba(11, 59, 96, 0); }
+        }
+        .btn-guardar-pendiente {
+          animation: pulso-guardar 1.8s ease-in-out infinite;
+        }
       `}} />
     </div>
   );

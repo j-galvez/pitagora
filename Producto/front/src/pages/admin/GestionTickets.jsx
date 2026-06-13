@@ -24,7 +24,7 @@ const GestionTickets = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Todos');
-  const [ticketExpandido, setTicketExpandido] = useState(null);
+  const [ticketsExpandidos, setTicketsExpandidos] = useState(new Set());
   const [loadingAccion, setLoadingAccion] = useState(false);
   
   // Estado para Modal de Detalle (Compañero)
@@ -44,6 +44,108 @@ const GestionTickets = () => {
   useEffect(() => {
     inicializarDatos();
   }, []);
+
+  const getNombreObra = (idObra) => {
+    const obra = obras[idObra];
+    if (!obra) return `ID: ${idObra}`;
+    return obra.nombreObra || `ID: ${idObra}`;
+  };
+
+  const getNombreCliente = (idObra) => {
+    const obra = obras[idObra];
+    return obra?.nombreEmpresa || 'Sin cliente';
+  };
+
+  const observacionCoincideBusqueda = (obs, query) => {
+    const q = query.toLowerCase();
+    return ['falla', 'descripcionProblema', 'descripcion_problema', 'ubicacionExacta', 'ubicacion_exacta']
+      .some((campo) => (obs[campo] || '').toLowerCase().includes(q));
+  };
+
+  const getTimestampObservacion = (obs) => {
+    const fecha = obs.fechaRegistro || obs.fecha_registro;
+    if (!fecha) return 0;
+    const ts = new Date(fecha).getTime();
+    return Number.isNaN(ts) ? 0 : ts;
+  };
+
+  const ordenarObservaciones = (lista) =>
+    [...lista].sort((a, b) => {
+      const diff = getTimestampObservacion(b) - getTimestampObservacion(a);
+      if (diff !== 0) return diff;
+      return (b.idObservacion || b.id_observacion || 0) - (a.idObservacion || a.id_observacion || 0);
+    });
+
+  const formatFechaObservacion = (obs) => {
+    const fecha = obs.fechaRegistro || obs.fecha_registro;
+    if (!fecha) return '-';
+    return new Date(fecha).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getObservacionesParaMostrar = (ticketId) => {
+    const obsDeTicket = todasObservaciones.filter(
+      (o) => (o.idTicket || o.id_ticket) === ticketId
+    );
+    const ordenadas = ordenarObservaciones(obsDeTicket);
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return ordenadas;
+
+    const coincidentes = ordenadas.filter((o) => observacionCoincideBusqueda(o, query));
+    if (coincidentes.length > 0) return coincidentes;
+
+    return ordenadas;
+  };
+
+  const highlightText = (text, highlight) => {
+    if (!text) return '';
+    if (!highlight.trim()) return text;
+    const parts = text.split(new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    return (
+      <span>
+        {parts.map((part, i) =>
+          part.toLowerCase() === highlight.toLowerCase() ? (
+            <mark key={i} className="p-0 bg-warning bg-opacity-50">{part}</mark>
+          ) : (
+            part
+          )
+        )}
+      </span>
+    );
+  };
+
+  const toggleTicketExpandido = (ticketId) => {
+    setTicketsExpandidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(ticketId)) next.delete(ticketId);
+      else next.add(ticketId);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return;
+
+    const idsConObsCoincidentes = tickets
+      .filter((t) => {
+        const ticketId = t.idTicket || t.id_ticket;
+        const obsDeTicket = todasObservaciones.filter(
+          (o) => (o.idTicket || o.id_ticket) === ticketId
+        );
+        return obsDeTicket.some((o) => observacionCoincideBusqueda(o, query));
+      })
+      .map((t) => t.idTicket || t.id_ticket);
+
+    if (idsConObsCoincidentes.length > 0) {
+      setTicketsExpandidos((prev) => new Set([...prev, ...idsConObsCoincidentes]));
+    }
+  }, [searchTerm, tickets, todasObservaciones]);
 
   // Formatear número a moneda chilena (sin decimales, con separador de miles)
   const formatMoneda = (valor) => {
@@ -137,7 +239,12 @@ const GestionTickets = () => {
     if (res.ok) {
       const data = await res.json();
       const mapa = {};
-      data.forEach(o => mapa[o.idObra || o.id_obra] = o.nombreObra || o.nombre_obra);
+      data.forEach((o) => {
+        mapa[o.idObra || o.id_obra] = {
+          nombreObra: o.nombreObra || o.nombre_obra,
+          nombreEmpresa: o.nombreEmpresa || o.nombre_empresa || '',
+        };
+      });
       setObras(mapa);
     }
   };
@@ -239,14 +346,22 @@ const GestionTickets = () => {
   const filteredTickets = tickets.filter((t) => {
     const query = searchTerm.toLowerCase();
     const idT = String(t.idTicket || t.id_ticket);
-    const nombreObra = (obras[t.idObra || t.id_obra] || '').toLowerCase();
+    const idObra = t.idObra || t.id_obra;
+    const nombreObra = getNombreObra(idObra).toLowerCase();
+    const nombreCliente = getNombreCliente(idObra).toLowerCase();
     const nombreUsuario = (usuarios[t.idUsuario || t.id_usuario] || '').toLowerCase();
-    
-    // Búsqueda en observaciones
-    const obsDeEsteTicket = todasObservaciones.filter(o => (o.idTicket || o.id_ticket) === (t.idTicket || t.id_ticket));
-    const coincideFalla = obsDeEsteTicket.some(o => (o.falla || '').toLowerCase().includes(query));
 
-    const matchesSearch = idT.includes(query) || nombreObra.includes(query) || nombreUsuario.includes(query) || coincideFalla;
+    const obsDeEsteTicket = todasObservaciones.filter(
+      (o) => (o.idTicket || o.id_ticket) === (t.idTicket || t.id_ticket)
+    );
+    const coincideObservacion = obsDeEsteTicket.some((o) => observacionCoincideBusqueda(o, query));
+
+    const matchesSearch =
+      idT.includes(query) ||
+      nombreObra.includes(query) ||
+      nombreCliente.includes(query) ||
+      nombreUsuario.includes(query) ||
+      coincideObservacion;
 
     const estado = t.estadoGeneral || t.estado_general;
     if (activeTab === 'Todos') return matchesSearch;
@@ -302,7 +417,7 @@ const GestionTickets = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="ID, obra, usuario o nombre de falla..."
+                  placeholder="ID, obra, cliente, usuario u observación..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -327,6 +442,7 @@ const GestionTickets = () => {
                 <tr>
                   <th style={{ width: '80px' }}>ID</th>
                   <th>Proyecto / Obra</th>
+                  <th>Cliente</th>
                   <th>Usuario Asignado</th>
                   <th>Fecha</th>
                   <th>Estado</th>
@@ -337,7 +453,7 @@ const GestionTickets = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="text-center py-4">
+                    <td colSpan="8" className="text-center py-4">
                       <div className="spinner-border text-primary" role="status"></div>
                       <div className="mt-2 text-muted">Cargando tickets...</div>
                     </td>
@@ -345,19 +461,23 @@ const GestionTickets = () => {
                 ) : filteredTickets.length > 0 ? (
                   filteredTickets.map((t) => {
                     const ticketId = t.idTicket || t.id_ticket;
-                    const isExpanded = ticketExpandido === ticketId;
-                    const obsTicket = todasObservaciones.filter(o => (o.idTicket || o.id_ticket) === ticketId);
+                    const idObra = t.idObra || t.id_obra;
+                    const isExpanded = ticketsExpandidos.has(ticketId);
+                    const obsTicket = getObservacionesParaMostrar(ticketId);
 
                     return (
                       <React.Fragment key={ticketId}>
                         <tr 
                           style={{ fontSize: '14px', cursor: 'pointer' }} 
-                          onClick={() => setTicketExpandido(isExpanded ? null : ticketId)}
+                          onClick={() => toggleTicketExpandido(ticketId)}
                           className={isExpanded ? 'table-light' : ''}
                         >
                           <td className="fw-bold text-secondary">#{ticketId}</td>
                           <td>
-                            <div className="fw-semibold"><FaBuilding className="me-1 text-muted" style={{ fontSize: '12px' }}/> {obras[t.idObra || t.id_obra] || `ID: ${t.idObra || t.id_obra}`}</div>
+                            <div className="fw-semibold"><FaBuilding className="me-1 text-muted" style={{ fontSize: '12px' }}/> {getNombreObra(idObra)}</div>
+                          </td>
+                          <td>
+                            <div className="text-dark">{getNombreCliente(idObra)}</div>
                           </td>
                           <td>
                             <div className="text-dark"><FaUser className="me-1 text-muted" style={{ fontSize: '12px' }}/> {usuarios[t.idUsuario || t.id_usuario] || `ID: ${t.idUsuario || t.id_usuario}`}</div>
@@ -383,7 +503,7 @@ const GestionTickets = () => {
                         {/* Fila de Detalle Expandible (Observations) */}
                         {isExpanded && (
                           <tr>
-                            <td colSpan="7" className="p-0 border-0">
+                            <td colSpan="8" className="p-0 border-0">
                               <div className="bg-light p-4 border-start border-primary border-4 shadow-inner">
                                 <div className="d-flex justify-content-between align-items-center mb-3">
                                   <h6 className="mb-0 fw-bold" style={{ fontSize: '15px' }}>
@@ -409,11 +529,12 @@ const GestionTickets = () => {
                                     <table className="table table-sm table-borderless mb-0 align-middle">
                                       <thead className="bg-dark text-white" style={{ fontSize: '12px' }}>
                                         <tr>
-                                          <th className="ps-3 py-2" style={{ width: '35%' }}>FALLA</th>
-                                          <th className="py-2" style={{ width: '20%' }}>UBICACIÓN</th>
+                                          <th className="ps-3 py-2" style={{ width: '30%' }}>FALLA</th>
+                                          <th className="py-2" style={{ width: '14%' }}>FECHA</th>
+                                          <th className="py-2" style={{ width: '18%' }}>UBICACIÓN</th>
                                           <th className="py-2" style={{ width: '10%' }}>URGENCIA</th>
-                                          <th className="py-2 text-center" style={{ width: '20%' }}>COSTO</th>
-                                          <th className="py-2 pe-3 text-center" style={{ width: '15%' }}>ESTADO</th>
+                                          <th className="py-2 text-center" style={{ width: '18%' }}>COSTO</th>
+                                          <th className="py-2 pe-3 text-center" style={{ width: '10%' }}>ESTADO</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -428,13 +549,27 @@ const GestionTickets = () => {
                                                 style={{ fontSize: '14px', cursor: 'pointer', width: 'fit-content' }}
                                                 onClick={(e) => handleVerObservacion(e, obs.idObservacion || obs.id_observacion)}
                                               >
-                                                {obs.falla}
+                                                {searchTerm.trim()
+                                                  ? highlightText(obs.falla, searchTerm.trim())
+                                                  : obs.falla}
                                                 <FaEye className="text-muted" style={{ fontSize: '11px' }} title="Ver detalle" />
                                               </div>
-                                              <div className="text-muted small" style={{ maxWidth: '300px' }}>{obs.descripcionProblema || obs.descripcion_problema}</div>
+                                              <div className="text-muted small" style={{ maxWidth: '300px' }}>
+                                                {searchTerm.trim()
+                                                  ? highlightText(obs.descripcionProblema || obs.descripcion_problema, searchTerm.trim())
+                                                  : (obs.descripcionProblema || obs.descripcion_problema)}
+                                              </div>
+                                            </td>
+                                            <td style={{ fontSize: '12px' }} className="text-muted text-nowrap">
+                                              <FaClock className="me-1" style={{ fontSize: '10px' }} />
+                                              {formatFechaObservacion(obs)}
                                             </td>
                                             <td style={{ fontSize: '13px' }}>
-                                              <span className="badge bg-light text-dark border fw-normal">{obs.ubicacionExacta || obs.ubicacion_exacta}</span>
+                                              <span className="badge bg-light text-dark border fw-normal">
+                                                {searchTerm.trim()
+                                                  ? highlightText(obs.ubicacionExacta || obs.ubicacion_exacta, searchTerm.trim())
+                                                  : (obs.ubicacionExacta || obs.ubicacion_exacta)}
+                                              </span>
                                             </td>
                                             <td>
                                               <span className={`badge ${obs.urgencia === 'alta' ? 'bg-danger' : obs.urgencia === 'media' ? 'bg-warning text-dark' : 'bg-info text-dark'}`} style={{ fontSize: '11px' }}>
@@ -488,7 +623,7 @@ const GestionTickets = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center text-muted py-4">
+                    <td colSpan="8" className="text-center text-muted py-4">
                       No se encontraron tickets que coincidan con la búsqueda.
                     </td>
                   </tr>

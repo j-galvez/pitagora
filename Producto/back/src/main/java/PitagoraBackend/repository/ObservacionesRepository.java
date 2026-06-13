@@ -41,6 +41,10 @@ public interface ObservacionesRepository extends JpaRepository<Observaciones, In
     // Contar observaciones de alta urgencia que no están terminadas
     @Query("SELECT COUNT(o) FROM Observaciones o WHERE o.urgencia = 'alta' AND o.estadoObservacion != 'terminado' AND o.estadoObservacion != 'no aplica'")
     Long countObservacionesAltaUrgencia();
+
+    // Contar observaciones terminadas
+    @Query("SELECT COUNT(o) FROM Observaciones o WHERE o.estadoObservacion = 'terminado'")
+    Long countObservacionesTerminadas();
     
     // Top 5 categorías más reportadas
     @Query("SELECT new PitagoraBackend.dto.TopFallaDTO(c.nombreCategoria, COUNT(o)) " +

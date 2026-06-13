@@ -281,6 +281,8 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
   };
 
   const obs = observacion;
+  const estadoObservacion = (obs?.estadoObservacion || obs?.estado_observacion || '').toLowerCase();
+  const mostrarConfirmacionCliente = estadoObservacion === 'en espera aceptación';
 
   const renderGeneralTab = () => (
     <>
@@ -357,6 +359,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
         </div>
       </div>
 
+      {mostrarConfirmacionCliente && (
       <div className="card mb-4 border-0 shadow-sm">
         <div className="card-header bg-light">
           <h5 className="mb-0">
@@ -385,6 +388,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
           </div>
         </div>
       </div>
+      )}
 
       <div className="card border-0 shadow-sm">
         <div className="card-header bg-light">
@@ -480,11 +484,18 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
       <Modal.Footer className="d-flex flex-column gap-2 align-items-stretch">
         {activeTab === 'mensajes' ? (
           <>
-            <ObservacionEstadoBar
-              nuevoEstado={nuevoEstado}
-              onEstadoChange={setNuevoEstado}
-              estadoActual={observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal}
-            />
+            {allowEstadoChange ? (
+              <ObservacionEstadoBar
+                nuevoEstado={nuevoEstado}
+                onEstadoChange={setNuevoEstado}
+                estadoActual={observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal}
+              />
+            ) : (
+              <div>
+                <small className="text-muted d-block mb-1">Estado de Reparación</small>
+                {getEstadoObservacionBadge(observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal)}
+              </div>
+            )}
 
             {previewImagen && (
               <div className="d-flex align-items-center gap-2">
