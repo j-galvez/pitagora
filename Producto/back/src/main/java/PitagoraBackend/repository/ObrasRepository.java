@@ -9,6 +9,8 @@ import java.util.List;
 
 @Repository
 public interface ObrasRepository extends JpaRepository<Obras, Integer> {
+    Long countByEstadoObra(String estadoObra);
+
     // Consulta SQL Nativa para cruzar los datos de las obras con clientes, regiones, comunas y contar observaciones abiertas
     @Query(value = "SELECT o.id_obra AS idObra, o.nombre_obra AS nombreObra, " +
                    "o.descripcion_obra AS descripcionObra, o.direccion_calle AS direccion, " +

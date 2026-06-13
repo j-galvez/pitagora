@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import PitagoraBackend.repository.TicketsRepository;
 import PitagoraBackend.repository.ObservacionesRepository;
 import PitagoraBackend.repository.CategoriasRepository;
+import PitagoraBackend.repository.ClientesRepository;
+import PitagoraBackend.repository.ObrasRepository;
 import PitagoraBackend.dto.DashboardStatsDTO;
 import PitagoraBackend.dto.TopFallaDTO;
 import PitagoraBackend.dto.ObraConIncidenciasDTO;
@@ -23,6 +25,12 @@ public class DashboardService {
     
     @Autowired
     private CategoriasRepository categoriasRepository;
+
+    @Autowired
+    private ClientesRepository clientesRepository;
+
+    @Autowired
+    private ObrasRepository obrasRepository;
     
     /**
      * Obtiene las estadísticas generales del dashboard
@@ -31,13 +39,19 @@ public class DashboardService {
         Long totalTickets = ticketsRepository.count();
         Long ticketsAbiertos = ticketsRepository.countTicketsAbiertos();
         Long observacionesAbiertas = observacionesRepository.countObservacionesAbiertas();
+        Long observacionesTerminadas = observacionesRepository.countObservacionesTerminadas();
         Long observacionesAltaUrgencia = observacionesRepository.countObservacionesAltaUrgencia();
+        Long clientesActivos = clientesRepository.countByEstado("Activo");
+        Long obrasActivas = obrasRepository.countByEstadoObra("Activa");
         
         return new DashboardStatsDTO(
             totalTickets,
             ticketsAbiertos,
             observacionesAbiertas,
-            observacionesAltaUrgencia
+            observacionesTerminadas,
+            observacionesAltaUrgencia,
+            clientesActivos,
+            obrasActivas
         );
     }
     

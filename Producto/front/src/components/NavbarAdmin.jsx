@@ -24,24 +24,26 @@ export default function NavbarAdmin({ usuario }) {
 
       <div className="mb-4 px-2">
         <div className="small text-white-50">Panel de Administración</div>
-        <div className="fw-bold fs-5">{usuario?.nombre || 'Administrador'}</div>
-        <div className="small text-white-50">Gestión de Postventa</div>
+        <Link
+          to="/perfil-admin"
+          className={`text-white text-decoration-none d-block fw-bold fs-5 ${location.pathname === '/perfil-admin' ? 'text-info' : ''}`}
+          style={{ lineHeight: 1.3 }}
+        >
+          {usuario?.nombre || 'Administrador'}
+        </Link>
+        <Link
+          to="/perfil-admin"
+          className={`small text-decoration-none d-inline-flex align-items-center mt-1 ${location.pathname === '/perfil-admin' ? 'text-white fw-semibold' : 'text-white-50'}`}
+        >
+          <i className="bi bi-person-circle me-1"></i> Mi Perfil
+        </Link>
+        <div className="small text-white-50 mt-2">Gestión de Postventa</div>
       </div>
 
       <hr className="my-2 border-secondary" />
 
       {/* Opciones del Administrador */}
       <ul className="nav nav-pills flex-column mb-auto">
-        <li className="nav-item mb-2">
-          <Link 
-            to="/perfil-admin" 
-            className={`nav-link text-white ${location.pathname === '/perfil-admin' ? 'active' : ''}`}
-            style={{ backgroundColor: location.pathname === '/perfil-admin' ? '#003860' : 'transparent' }} 
-          >
-            <i className="bi bi-person-circle me-2"></i> Mi Perfil
-          </Link>
-        </li>
-        
         <li className="nav-item mb-2">
           <Link 
             to="/admin-dashboard" 

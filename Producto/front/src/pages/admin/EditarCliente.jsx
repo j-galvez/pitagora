@@ -241,8 +241,8 @@ const EditarCliente = () => {
 
   return (
     <AdminLayout usuario={usuarioLogueado} titulo="Editar Cliente" handleVolver={handleVolver}>
-      <div className="container py-4" style={{ overflowX: 'auto', overflowY: 'auto', maxWidth: '100%' }}>
-        <div className="card shadow-sm border-0 rounded-3 p-4 mx-auto overflow-auto" style={{ maxWidth: '750px', minWidth: 0, maxHeight: 'calc(100vh - 180px)' }}>
+      <div className="container py-4">
+        <div className="card shadow-sm border-0 rounded-3 p-4 mx-auto" style={{ maxWidth: '750px' }}>
 
           {error && <div className="alert alert-danger">{error}</div>}
           {successMessage && <div className="alert alert-success">{successMessage}</div>}

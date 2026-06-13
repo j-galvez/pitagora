@@ -24,6 +24,8 @@ public interface ClientesRepository extends JpaRepository<Clientes, Integer> {
     // Verificar si existe un cliente con un RUT específico
     boolean existsByRut(String rut);
 
+    Long countByEstado(String estado);
+
     // Nuevo método para obtener clientes con el conteo de observaciones abiertas y obras
     @Query(value = "SELECT " +
                    "    c.id_cliente AS idCliente, " +
