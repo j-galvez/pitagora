@@ -62,6 +62,25 @@ const GestionTickets = () => {
       .reduce((acc, o) => acc + (o.costo || 0), 0);
   };
 
+  const calcularEstadoGeneralTicket = (idTicket, observaciones) => {
+    const obsDeTicket = observaciones.filter(o => (o.idTicket || o.id_ticket) === idTicket);
+    if (obsDeTicket.length === 0) return 'abierto';
+    const todasCerradas = obsDeTicket.every(o => {
+      const estado = (o.estadoObservacion || o.estado_observacion || '').toLowerCase();
+      return estado === 'terminado' || estado === 'no aplica';
+    });
+    return todasCerradas ? 'terminado' : 'en proceso';
+  };
+
+  const sincronizarEstadoTicket = (idTicket, observacionesActualizadas) => {
+    const nuevoEstado = calcularEstadoGeneralTicket(idTicket, observacionesActualizadas);
+    setTickets(prev => prev.map(t =>
+      (t.idTicket || t.id_ticket) === idTicket
+        ? { ...t, estadoGeneral: nuevoEstado }
+        : t
+    ));
+  };
+
   const ESTADOS = [
     'pendiente',
     'en observación',
@@ -158,6 +177,17 @@ const GestionTickets = () => {
     setObsIdSeleccionada(null);
   };
 
+  const handleObservacionActualizada = async (observacionActualizada) => {
+    const idObs = observacionActualizada.idObservacion || observacionActualizada.id_observacion;
+    const idTicket = observacionActualizada.idTicket || observacionActualizada.id_ticket;
+    const actualizadas = todasObservaciones.map(o =>
+      (o.idObservacion || o.id_observacion) === idObs ? { ...o, ...observacionActualizada } : o
+    );
+    setTodasObservaciones(actualizadas);
+    if (idTicket) sincronizarEstadoTicket(idTicket, actualizadas);
+    await cargarTickets();
+  };
+
   // Funciones Modal Cambio de Estado
   const abrirModalEstado = (e, obs) => {
     if (window.getSelection().toString().length > 0) return; // Evitar abrir modal si se está seleccionando texto
@@ -185,11 +215,15 @@ const GestionTickets = () => {
       });
       
       if (response.ok) {
-        setTodasObservaciones(prev => prev.map(o => 
-          (o.idObservacion || o.id_observacion) === idObs 
-            ? { ...o, estadoObservacion: nuevoEstado, comentarioAdmin: comentarioAdmin } 
+        const idTicket = obsParaCambio.idTicket || obsParaCambio.id_ticket;
+        const actualizadas = todasObservaciones.map(o =>
+          (o.idObservacion || o.id_observacion) === idObs
+            ? { ...o, estadoObservacion: nuevoEstado, comentarioAdmin: comentarioAdmin }
             : o
-        ));
+        );
+        setTodasObservaciones(actualizadas);
+        if (idTicket) sincronizarEstadoTicket(idTicket, actualizadas);
+        await cargarTickets();
         setShowStatusModal(false);
       } else {
         alert('Error al actualizar el estado');
@@ -470,6 +504,7 @@ const GestionTickets = () => {
         show={showObsModal}
         onHide={handleCerrarObsModal}
         idObservacion={obsIdSeleccionada}
+        onObservacionActualizada={handleObservacionActualizada}
       />
 
       {/* Modal de Costos */}
