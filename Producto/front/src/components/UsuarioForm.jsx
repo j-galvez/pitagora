@@ -10,6 +10,7 @@ const UsuarioForm = ({
   onSubmit,
   onCancel,
   tieneTickets = false,
+  isAdminView = true,
 }) => {
   const [regiones, setRegiones] = useState([]);
   const [comunas, setComunas] = useState([]);
@@ -186,6 +187,8 @@ const UsuarioForm = ({
             {renderField({
               label: 'Rol',
               name: 'rol',
+              disabled: !isAdminView,
+              readOnly: !isAdminView,
               options: [
                 { value: 'admin', label: 'admin' },
                 { value: 'usuario', label: 'usuario' },
@@ -201,6 +204,8 @@ const UsuarioForm = ({
             {renderField({
               label: 'Estado',
               name: 'estado',
+              disabled: !isAdminView,
+              readOnly: !isAdminView,
               options: [
                 { value: 'Activo', label: 'Activo' },
                 { value: 'Inactivo', label: 'Inactivo' },
@@ -232,8 +237,13 @@ const UsuarioForm = ({
             {renderField({
               label: 'Obra',
               name: 'idObra',
-              disabled: tieneTickets,
-              helpText: tieneTickets ? 'No se puede cambiar la obra porque el usuario tiene tickets creados' : '',
+              disabled: !isAdminView || tieneTickets,
+              readOnly: !isAdminView,
+              helpText: !isAdminView
+                ? 'Solo el administrador puede cambiar la obra asignada'
+                : tieneTickets
+                  ? 'No se puede cambiar la obra porque el usuario tiene tickets creados'
+                  : '',
               options: [
                 { value: '', label: 'Seleccionar obra' },
                 ...obras.map(o => ({ value: o.idObra, label: o.nombreObra }))

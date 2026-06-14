@@ -10,6 +10,7 @@ import PitagoraBackend.repository.ObrasRepository;
 import PitagoraBackend.dto.DashboardStatsDTO;
 import PitagoraBackend.dto.TopFallaDTO;
 import PitagoraBackend.dto.ObraConIncidenciasDTO;
+import PitagoraBackend.dto.ObraCostoDTO;
 import PitagoraBackend.model.Categorias;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -61,6 +62,17 @@ public class DashboardService {
     public List<TopFallaDTO> obtenerTopFallas() {
         return observacionesRepository.findTop5Fallas()
             .stream()
+            .limit(5)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtiene el top 5 de obras con mayor costo acumulado
+     */
+    public List<ObraCostoDTO> obtenerTopObrasPorCosto() {
+        return observacionesRepository.findObrasPorCosto()
+            .stream()
+            .filter(o -> o.getMontoTotal() != null && o.getMontoTotal() > 0)
             .limit(5)
             .collect(Collectors.toList());
     }

@@ -189,6 +189,7 @@ const EditarUsuario = () => {
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           tieneTickets={tieneTickets}
+          isAdminView={true}
         />
     </AdminLayout>
   );

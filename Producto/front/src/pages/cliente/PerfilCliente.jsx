@@ -166,11 +166,12 @@ const PerfilCliente = () => {
             <UsuarioForm
               usuario={usuario}
               formData={formData}
+              setFormData={setFormData}
               loading={loading}
               error={error}
-              onFieldSave={handleFieldSave}
               onSubmit={handleSubmit}
               onCancel={handleCancel}
+              isAdminView={false}
             />
           </>
         )}
