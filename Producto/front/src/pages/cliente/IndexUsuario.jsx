@@ -127,7 +127,7 @@ export default function IndexUsuario() {
 
   return (
     <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#F8F9FA' }}>
-      <NavbarUsuario usuario={usuarioLogueado} hasActiveTicket={!!ticketActivo} />
+      <NavbarUsuario usuario={usuarioLogueado} />
 
       <div className="d-flex flex-column flex-grow-1" style={{ height: '100vh', minWidth: 0 }}>
         <nav className="navbar navbar-dark flex-shrink-0" style={{ backgroundColor: '#002840' }}>
@@ -154,24 +154,14 @@ export default function IndexUsuario() {
                 <p className="text-secondary mb-0">Revisa el estado de tu solicitud activa y sus observaciones de postventa.</p>
               </div>
               {ticketActivo ? (
-                <div className="d-flex flex-wrap gap-2">
-                  <button
-                    className="btn btn-info d-flex align-items-center gap-2 shadow-sm text-white"
-                    onClick={() => navigate(`/crear-observacion/${ticketId}`)}
-                    style={{ backgroundColor: '#0056b3', borderColor: '#0056b3' }}
-                  >
-                    <i className="bi bi-pencil-square"></i>
-                    <span>Gestionar Solicitud</span>
-                  </button>
-                  <button
-                    className="btn btn-outline-primary d-flex align-items-center gap-2 shadow-sm"
-                    onClick={() => navigate(`/crear-observacion/${ticketId}`)}
-                    style={{ borderColor: '#003860', color: '#003860' }}
-                  >
-                    <i className="bi bi-plus-lg"></i>
-                    <span>Agregar Observación</span>
-                  </button>
-                </div>
+                <button
+                  className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+                  onClick={() => navigate(`/crear-observacion/${ticketId}`)}
+                  style={{ backgroundColor: '#003860', borderColor: '#003860' }}
+                >
+                  <i className="bi bi-plus-lg"></i>
+                  <span>Agregar Observación</span>
+                </button>
               ) : (
                 <button
                   className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"

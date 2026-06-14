@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaTicketAlt, FaClipboardList, FaExclamationTriangle, FaChartBar } from 'react-icons/fa';
+import { FaTicketAlt, FaClipboardList, FaChartBar, FaCheckCircle } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import KPICard from '../../components/dashboard/KPICard';
 import TopFallasChart from '../../components/dashboard/TopFallasChart';
+import TopObrasCostoChart from '../../components/dashboard/TopObrasCostoChart';
 import PieChartExpandable from '../../components/dashboard/PieChartExpandable';
-import { obtenerEstadisticas, obtenerTopFallas } from '../../services/dashboardService';
+import { obtenerEstadisticas, obtenerTopFallas, obtenerTopObrasPorCosto } from '../../services/dashboardService';
 
 export default function IndexAdmin() {
   const navigate = useNavigate();
@@ -13,9 +14,13 @@ export default function IndexAdmin() {
     totalTickets: 0,
     ticketsAbiertos: 0,
     observacionesAbiertas: 0,
-    observacionesAltaUrgencia: 0
+    observacionesTerminadas: 0,
+    observacionesAltaUrgencia: 0,
+    clientesActivos: 0,
+    obrasActivas: 0,
   });
   const [topFallas, setTopFallas] = useState([]);
+  const [topObrasCosto, setTopObrasCosto] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -34,13 +39,15 @@ export default function IndexAdmin() {
     setError('');
     try {
       // Cargar estadísticas y top fallas en paralelo
-      const [estadisticas, fallas] = await Promise.all([
+      const [estadisticas, fallas, obrasCosto] = await Promise.all([
         obtenerEstadisticas(),
-        obtenerTopFallas()
+        obtenerTopFallas(),
+        obtenerTopObrasPorCosto()
       ]);
       
-      setStats(estadisticas);
+      setStats((prev) => ({ ...prev, ...estadisticas }));
       setTopFallas(fallas);
+      setTopObrasCosto(obrasCosto);
     } catch (err) {
       console.error('Error al cargar datos del dashboard:', err);
       setError('Error al cargar los datos del dashboard');
@@ -99,10 +106,10 @@ export default function IndexAdmin() {
               </div>
               <div className="col-12 col-sm-6 col-lg-3">
                 <KPICard
-                  titulo="Alta Urgencia"
-                  valor={stats.observacionesAltaUrgencia}
-                  icono={<FaExclamationTriangle />}
-                  color="danger"
+                  titulo="Observaciones Terminadas"
+                  valor={stats.observacionesTerminadas}
+                  icono={<FaCheckCircle />}
+                  color="success"
                 />
               </div>
             </div>
@@ -123,6 +130,13 @@ export default function IndexAdmin() {
               </div>
             </div>
 
+            {/* Top Obras por Costo */}
+            <div className="row g-4 mb-4">
+              <div className="col-12">
+                <TopObrasCostoChart datos={topObrasCosto} />
+              </div>
+            </div>
+
             {/* Panel de acciones rápidas y resumen */}
             <div className="row g-4">
               <div className="col-12 col-lg-6">
@@ -130,23 +144,23 @@ export default function IndexAdmin() {
                   <div className="card-body">
                     <h5 className="card-title mb-4">Acciones Rápidas</h5>
                     <div className="d-grid gap-2">
-                      <button 
+                      <button
                         className="btn btn-primary text-white"
                         style={{ backgroundColor: '#003860', borderColor: '#003860' }}
-                        onClick={() => window.location.href = '/crear-obra'}
+                        onClick={() => navigate('/admin/crear-obra')}
                       >
                         <FaTicketAlt className="me-2" />
                         Nueva Obra
                       </button>
-                      <button 
+                      <button
                         className="btn btn-outline-primary"
-                        onClick={() => window.location.href = '/crear-cliente'}
+                        onClick={() => navigate('/admin/crear-cliente')}
                       >
                         Nuevo Cliente
                       </button>
-                      <button 
+                      <button
                         className="btn btn-outline-secondary"
-                        onClick={() => window.location.href = '/crear-usuario'}
+                        onClick={() => navigate('/admin/crear-usuarios')}
                       >
                         Nuevo Usuario
                       </button>
@@ -177,10 +191,16 @@ export default function IndexAdmin() {
                           {stats.observacionesAltaUrgencia}
                         </span>
                       </li>
+                      <li className="d-flex justify-content-between align-items-center mb-3">
+                        <span className="text-muted small">Clientes Activos</span>
+                        <span className="badge bg-primary">
+                          {stats.clientesActivos}
+                        </span>
+                      </li>
                       <li className="d-flex justify-content-between align-items-center">
-                        <span className="text-muted small">Categorías Activas</span>
+                        <span className="text-muted small">Obras Activas</span>
                         <span className="badge bg-success">
-                          {topFallas.length}
+                          {stats.obrasActivas}
                         </span>
                       </li>
                     </ul>

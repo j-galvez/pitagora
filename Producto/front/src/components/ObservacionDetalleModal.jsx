@@ -32,7 +32,7 @@ const TABS = [
   { id: 'evidencias', label: 'Evidencias', icon: FaImages },
 ];
 
-const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChange = true }) => {
+const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChange = true, onObservacionActualizada }) => {
   const [observacion, setObservacion] = useState(null);
   const [categoria, setCategoria] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -126,25 +126,11 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
   const cargarMensajes = async () => {
     setLoadingMensajes(true);
     try {
-      // Intentar obtener el hilo de comunicación (mensajes + notificaciones)
-      const response = await fetch(`${API_URL}/observaciones/${idObservacion}/hilo-comunicacion`);
-      if (response.ok) {
-        const data = await response.json();
-        setMensajes(data);
-      } else {
-        // Fallback: obtener solo mensajes manuales
-        const data = await mensajesService.getMensajesPorObservacion(idObservacion);
-        setMensajes(data);
-      }
+      const data = await mensajesService.getMensajesPorObservacion(idObservacion);
+      setMensajes(data);
     } catch (err) {
-      console.error('Error al cargar hilo de comunicación:', err);
-      try {
-        // Fallback a mensajes simples si el hilo falla
-        const data = await mensajesService.getMensajesPorObservacion(idObservacion);
-        setMensajes(data);
-      } catch (fallbackErr) {
-        console.error('Error en fallback:', fallbackErr);
-      }
+      console.error('Error al cargar mensajes:', err);
+      setMensajes([]);
     } finally {
       setLoadingMensajes(false);
     }
@@ -217,6 +203,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
         setObservacion(actualizada);
         const nuevoEstadoPersistido = actualizada?.estadoObservacion || actualizada?.estado_observacion || nuevoEstado;
         setEstadoOriginal(nuevoEstadoPersistido);
+        onObservacionActualizada?.(actualizada);
       }
 
       setNuevoMensaje('');
@@ -294,6 +281,8 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
   };
 
   const obs = observacion;
+  const estadoObservacion = (obs?.estadoObservacion || obs?.estado_observacion || '').toLowerCase();
+  const mostrarConfirmacionCliente = estadoObservacion === 'en espera aceptación';
 
   const renderGeneralTab = () => (
     <>
@@ -370,6 +359,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
         </div>
       </div>
 
+      {mostrarConfirmacionCliente && (
       <div className="card mb-4 border-0 shadow-sm">
         <div className="card-header bg-light">
           <h5 className="mb-0">
@@ -398,6 +388,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
           </div>
         </div>
       </div>
+      )}
 
       <div className="card border-0 shadow-sm">
         <div className="card-header bg-light">
@@ -493,11 +484,18 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
       <Modal.Footer className="d-flex flex-column gap-2 align-items-stretch">
         {activeTab === 'mensajes' ? (
           <>
-            <ObservacionEstadoBar
-              nuevoEstado={nuevoEstado}
-              onEstadoChange={setNuevoEstado}
-              estadoActual={observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal}
-            />
+            {allowEstadoChange ? (
+              <ObservacionEstadoBar
+                nuevoEstado={nuevoEstado}
+                onEstadoChange={setNuevoEstado}
+                estadoActual={observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal}
+              />
+            ) : (
+              <div>
+                <small className="text-muted d-block mb-1">Estado de Reparación</small>
+                {getEstadoObservacionBadge(observacion?.estadoObservacion || observacion?.estado_observacion || estadoOriginal)}
+              </div>
+            )}
 
             {previewImagen && (
               <div className="d-flex align-items-center gap-2">

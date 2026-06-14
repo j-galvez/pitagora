@@ -14,7 +14,7 @@ const PerfilAdmin = () => {
   };
 
   // Obtenemos el ID del propio administrador que está usando el sistema
-  const id_usuario = usuarioLogueado.id_usuario;
+  const id_usuario = usuarioLogueado.idUsuario || usuarioLogueado.id_usuario;
 
   const [usuario, setUsuario] = useState(null);
   const [formData, setFormData] = useState({
@@ -147,43 +147,41 @@ const PerfilAdmin = () => {
     navigate('/admin-dashboard');
   };
 
-  if (loading && !usuario) {
-    return (
-      <div className="container mt-5 py-5 text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Cargando...</span>
-        </div>
-        <div className="mt-3">Cargando tus datos de administrador...</div>
-      </div>
-    );
-  }
-
   return (
-    // Reutilizamos el AdminLayout que envuelve el menú lateral morado y el título superior de forma automática
     <AdminLayout 
       usuario={usuarioLogueado} 
       titulo="Mi Perfil de Administrador" 
       handleVolver={handleVolver}
     >
-      <div className="container mt-4">
-        <div className="row">
-          <div className="col-12">
-            {error && <div className="alert alert-danger" role="alert">{error}</div>}
-            {successMsg && <div className="alert alert-success" role="alert">{successMsg}</div>}
+      {loading && !usuario ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
           </div>
+          <div className="mt-3">Cargando tus datos de administrador...</div>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="container mt-4">
+            <div className="row">
+              <div className="col-12">
+                {error && <div className="alert alert-danger" role="alert">{error}</div>}
+                {successMsg && <div className="alert alert-success" role="alert">{successMsg}</div>}
+              </div>
+            </div>
+          </div>
 
-      {/* Inyectamos el formulario reutilizable que renderiza los candados y la edición por fila */}
-      <UsuarioForm
-        usuario={usuario}
-        formData={formData}
-        loading={loading}
-        error={error}
-        onFieldSave={handleFieldSave} // Envía la función para guardar campo por campo
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-      />
+          <UsuarioForm
+            usuario={usuario}
+            formData={formData}
+            loading={loading}
+            error={error}
+            onFieldSave={handleFieldSave}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+          />
+        </>
+      )}
     </AdminLayout>
   );
 };

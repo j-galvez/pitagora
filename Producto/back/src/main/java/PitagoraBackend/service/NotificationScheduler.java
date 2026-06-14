@@ -19,6 +19,9 @@ public class NotificationScheduler {
     private ObservacionesRepository observacionesRepository;
 
     @Autowired
+    private ObservacionesService observacionesService;
+
+    @Autowired
     private NotificationService notificationService;
 
     private static final int MAX_RECORDATORIOS = 4;
@@ -57,13 +60,13 @@ public class NotificationScheduler {
                 observacionesRepository.save(obs);
             } else {
                 // Tras 4 recordatorios sin respuesta, cerrar automáticamente
-                obs.setEstadoObservacion("terminado");
-                obs.setFechaTermino(LocalDateTime.now());
-                observacionesRepository.save(obs);
                 try {
-                    notificationService.notificarCambioEstado(obs, "en espera aceptación");
+                    Observaciones update = new Observaciones();
+                    update.setEstadoObservacion("terminado");
+                    observacionesService.actualizarObservaciones(obs.getIdObservacion(), update);
+                    log.info("Observación {} cerrada automáticamente tras {} recordatorios", obs.getIdObservacion(), MAX_RECORDATORIOS);
                 } catch (Exception e) {
-                    log.error("Error notificando cierre automático de observación {}: {}", obs.getIdObservacion(), e.getMessage(), e);
+                    log.error("Error cerrando automáticamente observación {}: {}", obs.getIdObservacion(), e.getMessage(), e);
                 }
             }
         }

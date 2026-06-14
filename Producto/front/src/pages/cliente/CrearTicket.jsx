@@ -11,6 +11,8 @@ export default function CrearTicket() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [obras, setObras] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [idClienteSeleccionado, setIdClienteSeleccionado] = useState('');
   const [usuariosObra, setUsuariosObra] = useState([]);
   
   // Recuperar usuario
@@ -23,6 +25,16 @@ export default function CrearTicket() {
 
   // Estado para el nombre de la obra (lo buscamos si no viene en el login)
   const [nombreObraReal, setNombreObraReal] = useState(usuarioLogueado.nombre_obra || usuarioLogueado.nombreObra || '');
+  const [nombreClienteReal, setNombreClienteReal] = useState('');
+
+  const getObraId = (obra) => obra?.idObra || obra?.id_obra;
+  const getClienteId = (cliente) => cliente?.idCliente || cliente?.id_cliente;
+  const getClienteIdDeObra = (obra) => obra?.idCliente || obra?.id_cliente;
+
+  const obrasFiltradas = obras.filter((obra) => {
+    if (!idClienteSeleccionado) return true;
+    return String(getClienteIdDeObra(obra)) === String(idClienteSeleccionado);
+  });
 
   const [formData, setFormData] = useState({
     idObra: isAdmin ? '' : (idObraActual || ''),
@@ -45,15 +57,17 @@ export default function CrearTicket() {
 
   useEffect(() => {
     if (isAdmin) {
-      cargarObras();
+      cargarDatosAdmin();
     } else if (idObraActual && !nombreObraReal) {
-      // Si no tenemos el nombre de la obra pero sí el ID, buscarlo en el servidor
       fetch(`http://localhost:8080/api/obras/${idObraActual}`)
         .then(res => {
           if (!res.ok) throw new Error('Error al cargar obra');
           return res.json();
         })
-        .then(data => setNombreObraReal(data.nombreObra || data.nombre_obra))
+        .then(data => {
+          setNombreObraReal(data.nombreObra || data.nombre_obra);
+          setNombreClienteReal(data.nombreEmpresa || data.nombre_empresa || '');
+        })
         .catch(err => {
           console.error("Error al obtener nombre de obra:", err);
           setNombreObraReal(`Obra ID: ${idObraActual}`);
@@ -67,22 +81,62 @@ export default function CrearTicket() {
     }
   }, [isAdmin, formData.idObra]);
 
-  const cargarObras = async () => {
+  const cargarDatosAdmin = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/obras');
-      if (response.ok) {
-        const data = await response.json();
-        setObras(data || []);
+      const [obrasRes, clientesRes] = await Promise.all([
+        fetch('http://localhost:8080/api/obras'),
+        fetch('http://localhost:8080/api/clientes'),
+      ]);
+
+      if (obrasRes.ok) {
+        setObras(await obrasRes.json() || []);
       } else {
         throw new Error('Error al cargar obras');
       }
+
+      if (clientesRes.ok) {
+        setClientes(await clientesRes.json() || []);
+      } else {
+        throw new Error('Error al cargar clientes');
+      }
     } catch (err) {
-      console.error('Error al cargar obras:', err);
+      console.error('Error al cargar datos:', err);
       setObras([
-        { id_obra: 1, nombre_obra: 'Edificio Los Almendros' },
-        { id_obra: 2, nombre_obra: 'Condominio El Roble' }
+        { id_obra: 1, id_cliente: 1, nombre_obra: 'Edificio Los Almendros', nombreEmpresa: 'Cliente demo' },
+        { id_obra: 2, id_cliente: 2, nombre_obra: 'Condominio El Roble', nombreEmpresa: 'Cliente demo 2' },
+      ]);
+      setClientes([
+        { id_cliente: 1, nombre_empresa: 'Cliente demo' },
+        { id_cliente: 2, nombre_empresa: 'Cliente demo 2' },
       ]);
     }
+  };
+
+  const handleClienteChange = (e) => {
+    const idCliente = e.target.value;
+    setIdClienteSeleccionado(idCliente);
+
+    if (!idCliente) return;
+
+    if (formData.idObra) {
+      const obraActual = obras.find((o) => String(getObraId(o)) === String(formData.idObra));
+      if (obraActual && String(getClienteIdDeObra(obraActual)) !== String(idCliente)) {
+        setFormData((prev) => ({ ...prev, idObra: '', idUsuario: '' }));
+        setUsuariosObra([]);
+      }
+    }
+  };
+
+  const handleObraChange = (e) => {
+    const idObra = e.target.value;
+    const obra = obras.find((o) => String(getObraId(o)) === String(idObra));
+    const idCliente = obra ? getClienteIdDeObra(obra) : '';
+
+    if (idCliente) {
+      setIdClienteSeleccionado(String(idCliente));
+    }
+
+    setFormData((prev) => ({ ...prev, idObra, idUsuario: '' }));
   };
 
   const cargarUsuariosPorObra = async (idObra) => {
@@ -90,16 +144,18 @@ export default function CrearTicket() {
       const response = await fetch(`http://localhost:8080/api/usuarios/obra/${idObra}`);
       if (response.ok) {
         const data = await response.json();
-        setUsuariosObra(data || []);
+        const asignables = (data || []).filter(u => {
+          const rol = (u.rol || '').toLowerCase();
+          const id = u.idUsuario || u.id_usuario;
+          return rol !== 'admin' && Number(id) !== Number(idUsuarioActual);
+        });
+        setUsuariosObra(asignables);
       } else {
         throw new Error('Error al cargar usuarios de la obra');
       }
     } catch (err) {
       console.error('Error al cargar usuarios:', err);
-      setUsuariosObra([
-        { id_usuario: 6, nombre: 'Roberto Silva', apellido_paterno: 'Silva' },
-        { id_usuario: 7, nombre: 'Patricia Jiménez', apellido_paterno: 'Jiménez' }
-      ]);
+      setUsuariosObra([]);
     }
   };
 
@@ -112,6 +168,11 @@ export default function CrearTicket() {
     }
     if (isAdmin && !formData.idUsuario) {
       setError('Por favor selecciona un usuario para asignar el ticket');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (isAdmin && Number(formData.idUsuario) === Number(idUsuarioActual)) {
+      setError('No puedes asignar un ticket a tu propio usuario administrador');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -194,29 +255,63 @@ export default function CrearTicket() {
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>OBRA ASOCIADA</label>
-                {isAdmin ? (
-                  <select 
-                    className="form-select"
-                    value={formData.idObra}
-                    onChange={(e) => setFormData({...formData, idObra: e.target.value, idUsuario: ''})}
-                    required
-                  >
-                    <option value="">Seleccione una obra...</option>
-                    {obras.map(obra => (
-                      <option key={obra.idObra || obra.id_obra} value={obra.idObra || obra.id_obra}>
-                        {obra.nombreObra || obra.nombre_obra}
+              {isAdmin ? (
+                <>
+                  <div className="mb-4">
+                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>CLIENTE</label>
+                    <select
+                      className="form-select"
+                      value={idClienteSeleccionado}
+                      onChange={handleClienteChange}
+                    >
+                      <option value="">Todos los clientes...</option>
+                      {clientes.map((cliente) => (
+                        <option key={getClienteId(cliente)} value={getClienteId(cliente)}>
+                          {cliente.nombreEmpresa || cliente.nombre_empresa}
+                        </option>
+                      ))}
+                    </select>
+                    <small className="text-muted" style={{ fontSize: '12px' }}>
+                      Selecciona un cliente para filtrar las obras, o elige la obra directamente.
+                    </small>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>OBRA ASOCIADA</label>
+                    <select
+                      className="form-select"
+                      value={formData.idObra}
+                      onChange={handleObraChange}
+                      required
+                    >
+                      <option value="">
+                        {idClienteSeleccionado ? 'Seleccione una obra del cliente...' : 'Seleccione una obra...'}
                       </option>
-                    ))}
-                  </select>
-                ) : (
+                      {obrasFiltradas.map((obra) => (
+                        <option key={getObraId(obra)} value={getObraId(obra)}>
+                          {obra.nombreObra || obra.nombre_obra}
+                          {!idClienteSeleccionado && (obra.nombreEmpresa || obra.nombre_empresa)
+                            ? ` — ${obra.nombreEmpresa || obra.nombre_empresa}`
+                            : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <div className="mb-4">
+                  <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>CLIENTE</label>
+                  <div className="p-3 bg-light rounded border mb-3">
+                    <p className="mb-0 fw-bold">{nombreClienteReal || 'Cargando cliente...'}</p>
+                  </div>
+
+                  <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>OBRA ASOCIADA</label>
                   <div className="p-3 bg-light rounded border">
                     <p className="mb-0 fw-bold">{nombreObraReal || 'Cargando obra...'}</p>
                     <small className="text-muted" style={{ fontSize: '12px' }}>ID Obra: {idObraActual || 'N/A'}</small>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {isAdmin && (
                 <div className="mb-4">

@@ -164,7 +164,7 @@ export default function Login() {
                     <form onSubmit={handleSubmit}>
                       <div className="d-flex align-items-center mb-4 pb-3 justify-content-center">
                         <img
-                          src="https://www.pitagora.cl/images/logo_up_pitagora.gif"
+                          src="https://storage.googleapis.com/pitagora-evidencias-bucket/logo.gif"
                           alt="PITAGORA Logo"
                           style={{ maxHeight: '60px' }}
                         />

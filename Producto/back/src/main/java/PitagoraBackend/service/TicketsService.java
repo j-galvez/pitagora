@@ -6,6 +6,7 @@ import PitagoraBackend.repository.TicketsRepository;
 import PitagoraBackend.repository.UsuariosRepository;
 import PitagoraBackend.repository.ObrasRepository;
 import PitagoraBackend.model.Tickets;
+import PitagoraBackend.model.Usuarios;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +53,13 @@ public class TicketsService {
         // Validación 6: Verificar que el usuario dueño existe
         if (!usuariosRepository.existsById(tickets.getIdUsuario())) {
             throw new IllegalArgumentException("El usuario dueño no existe con ID: " + tickets.getIdUsuario());
+        }
+
+        // Validación 7: Un ticket no puede asignarse a un administrador
+        Usuarios usuarioAsignado = usuariosRepository.findById(tickets.getIdUsuario())
+            .orElseThrow(() -> new IllegalArgumentException("El usuario dueño no existe con ID: " + tickets.getIdUsuario()));
+        if ("admin".equalsIgnoreCase(usuarioAsignado.getRol())) {
+            throw new IllegalArgumentException("No se puede asignar un ticket a un usuario administrador.");
         }
 
         // REGLA DE NEGOCIO: Solo un ticket abierto por usuario

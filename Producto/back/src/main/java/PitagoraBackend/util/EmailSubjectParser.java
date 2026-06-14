@@ -64,8 +64,13 @@ public final class EmailSubjectParser {
         return nombre.trim().replaceAll("\\s+", " ");
     }
 
+    /**
+     * Formato estándar de asunto para todos los correos de postventa.
+     * Ejemplo: Ticket N° 9, Postventa, Baño inclusivo sede PAO1
+     */
     public static String generarAsuntoEstandar(int idTicket, String nombreObra) {
-        return String.format("Ticket N° %d, Postventa, %s", idTicket, nombreObra);
+        String obra = (nombreObra == null || nombreObra.isBlank()) ? "Obra" : nombreObra.trim();
+        return String.format("Ticket N° %d, Postventa, %s", idTicket, obra);
     }
 
     public static class ParsedSubject {

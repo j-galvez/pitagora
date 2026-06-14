@@ -67,7 +67,7 @@ export default function CardObservacion({ observacion, onVerDetalle }) {
           {descripcion}
         </p>
 
-        {confirmacion && (
+        {confirmacion && estadoObservacion?.toLowerCase() === 'espera de aceptación' && (
           <div className="mt-3 pt-2 border-top">
             <small className="text-secondary">
               Confirmación cliente: <strong>{confirmacion}</strong>

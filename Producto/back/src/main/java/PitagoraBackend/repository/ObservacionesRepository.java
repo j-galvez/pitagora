@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import PitagoraBackend.model.Observaciones;
 import PitagoraBackend.dto.TopFallaDTO;
 import PitagoraBackend.dto.ObraConIncidenciasDTO;
+import PitagoraBackend.dto.ObraCostoDTO;
 import PitagoraBackend.dto.ReporteObraDTO;
 import PitagoraBackend.dto.ReporteObraProjection;
 import org.springframework.data.repository.query.Param;
@@ -41,6 +42,10 @@ public interface ObservacionesRepository extends JpaRepository<Observaciones, In
     // Contar observaciones de alta urgencia que no están terminadas
     @Query("SELECT COUNT(o) FROM Observaciones o WHERE o.urgencia = 'alta' AND o.estadoObservacion != 'terminado' AND o.estadoObservacion != 'no aplica'")
     Long countObservacionesAltaUrgencia();
+
+    // Contar observaciones terminadas
+    @Query("SELECT COUNT(o) FROM Observaciones o WHERE o.estadoObservacion = 'terminado'")
+    Long countObservacionesTerminadas();
     
     // Top 5 categorías más reportadas
     @Query("SELECT new PitagoraBackend.dto.TopFallaDTO(c.nombreCategoria, COUNT(o)) " +
@@ -59,6 +64,14 @@ public interface ObservacionesRepository extends JpaRepository<Observaciones, In
            "GROUP BY ob.idObra, ob.nombreObra " +
            "ORDER BY COUNT(o) DESC")
     List<ObraConIncidenciasDTO> findObrasByCategoria(Integer idCategoria);
+
+    // Top obras por costo acumulado
+    @Query("SELECT new PitagoraBackend.dto.ObraCostoDTO(ob.idObra, ob.nombreObra, COALESCE(SUM(o.costo), 0)) " +
+           "FROM Observaciones o, Tickets t, Obras ob " +
+           "WHERE o.idTicket = t.idTicket AND t.idObra = ob.idObra " +
+           "GROUP BY ob.idObra, ob.nombreObra " +
+           "ORDER BY SUM(o.costo) DESC")
+    List<ObraCostoDTO> findObrasPorCosto();
 
     // REPORTE DE TRAZABILIDAD DE OBRAS (Nativo para asegurar compatibilidad con la estructura de la BD)
     @Query(value = "SELECT " +

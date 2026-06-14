@@ -1,19 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import NavbarUsuario from '../../components/NavbarUsuario'; 
+import UsuarioLayout from '../../components/UsuarioLayout';
 import UsuarioForm from '../../components/UsuarioForm';
+
 const PerfilCliente = () => {
   const navigate = useNavigate();
 
-  // 1. Obtener el usuario logueado desde el localStorage (Igual que en EditarUsuario)
   const usuarioLogueado = JSON.parse(localStorage.getItem('usuario')) || {
     nombre: 'Cliente',
     rol: 'cliente'
   };
 
-  // Extraemos el id del usuario que inició sesión para saber a quién cargar
-  const id_usuario = usuarioLogueado.id_usuario; 
+  const id_usuario = usuarioLogueado.idUsuario || usuarioLogueado.id_usuario;
 
   const [usuario, setUsuario] = useState(null);
   const [formData, setFormData] = useState({
@@ -138,59 +137,46 @@ const PerfilCliente = () => {
   };
 
   const handleCancel = () => {
-    navigate('/dashboard'); // Si cancela, vuelve a su panel principal
-  };
-
-  const handleVolver = () => {
     navigate('/dashboard');
   };
 
-  // Pantalla de carga con los mismos estilos Bootstrap que ellos implementaron
-  if (loading && !usuario) {
-    return (
-      <div className="d-flex">
-        {/* Aquí puedes usar el navbar del cliente si lo tienen */}
-        <div className="flex-grow-1 container mt-4 py-5 text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
-          <div className="mt-3">Cargando tus datos de perfil...</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-  <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#F8F9FA' }}>
-    <NavbarUsuario usuario={usuarioLogueado} />
-
-    <div className="d-flex flex-column flex-grow-1" style={{ height: '100vh', minWidth: 0, overflowY: 'auto' }}>
-      <div className="container mt-4 p-4">
-        <div className="row">
-          <div className="col-12">
-            <h2 className="mb-1" style={{ color: '#003860', fontWeight: 'bold' }}>Mi Perfil</h2>
-            <p className="text-muted mb-4">Modifica tus datos de contacto y revisa tu información personal</p>
-
-            {error && (
-              <div className="alert alert-danger" role="alert">
-                {error}
-              </div>
-            )}
+    <UsuarioLayout usuario={usuarioLogueado} titulo="Mi Perfil">
+      <div className="container p-4">
+        {loading && !usuario ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Cargando...</span>
+            </div>
+            <div className="mt-3">Cargando tus datos de perfil...</div>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="row">
+              <div className="col-12">
+                <p className="text-muted mb-4">Modifica tus datos de contacto y revisa tu información personal</p>
+                {error && (
+                  <div className="alert alert-danger" role="alert">
+                    {error}
+                  </div>
+                )}
+              </div>
+            </div>
 
-        <UsuarioForm
-          usuario={usuario}
-          formData={formData}
-          loading={loading}
-          error={error}
-          onFieldSave={handleFieldSave}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-        />
+            <UsuarioForm
+              usuario={usuario}
+              formData={formData}
+              setFormData={setFormData}
+              loading={loading}
+              error={error}
+              onSubmit={handleSubmit}
+              onCancel={handleCancel}
+              isAdminView={false}
+            />
+          </>
+        )}
       </div>
-    </div>
-  </div>
+    </UsuarioLayout>
   );
 };
 

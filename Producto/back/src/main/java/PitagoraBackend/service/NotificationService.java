@@ -60,9 +60,13 @@ public class NotificationService {
     private String backendUrl;
 
     private String buildSubject(Observaciones obs) {
-        Integer ticketId = obs.getIdTicket();
+        return buildSubjectFromTicketId(obs.getIdTicket());
+    }
+
+    private String buildSubjectFromTicketId(Integer ticketId) {
         if (ticketId == null) {
-            return String.format("observación %d", obs.getIdObservacion());
+            log.warn("No se pudo resolver ticket para asunto de correo");
+            return EmailSubjectParser.generarAsuntoEstandar(0, "Obra");
         }
 
         String nombreObra = ticketsRepository.findById(ticketId)
@@ -230,13 +234,13 @@ public class NotificationService {
 
     public void notificarCorreoEntrante(CorreosEntrantes correo) {
         Integer ticketId = correo.getIdTicket();
+        if (ticketId == null) return;
+
         Optional<PitagoraBackend.model.Tickets> ticketOpt = ticketsRepository.findById(ticketId);
         if (ticketOpt.isEmpty()) return;
 
         PitagoraBackend.model.Tickets ticket = ticketOpt.get();
-        String nombreObra = obrasRepository.findById(ticket.getIdObra())
-                .map(Obras::getNombreObra).orElse("Obra");
-        String subject = EmailSubjectParser.generarAsuntoEstandar(ticketId, nombreObra);
+        String subject = buildSubjectFromTicketId(ticketId);
         String title = "Nuevo mensaje por correo en el ticket";
         String body = String.format(
                 "<p>Se ha recibido un mensaje por correo en el ticket <strong>%d</strong>:</p>%s",

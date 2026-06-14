@@ -7,6 +7,7 @@ import PitagoraBackend.service.DashboardService;
 import PitagoraBackend.dto.DashboardStatsDTO;
 import PitagoraBackend.dto.TopFallaDTO;
 import PitagoraBackend.dto.ObraConIncidenciasDTO;
+import PitagoraBackend.dto.ObraCostoDTO;
 import java.util.List;
 
 @RestController
@@ -39,6 +40,20 @@ public class DashboardController {
         try {
             List<TopFallaDTO> topFallas = dashboardService.obtenerTopFallas();
             return ResponseEntity.ok(topFallas);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * GET /api/dashboard/top-obras-costo
+     * Obtiene el top 5 de obras con mayor costo acumulado
+     */
+    @GetMapping("/top-obras-costo")
+    public ResponseEntity<List<ObraCostoDTO>> obtenerTopObrasPorCosto() {
+        try {
+            List<ObraCostoDTO> obras = dashboardService.obtenerTopObrasPorCosto();
+            return ResponseEntity.ok(obras);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }

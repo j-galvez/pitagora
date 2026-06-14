@@ -11,6 +11,9 @@ public class DashboardStatsDTO {
     private Long totalTickets;
     private Long ticketsAbiertos;
     private Long observacionesAbiertas;
+    private Long observacionesTerminadas;
     private Long observacionesAltaUrgencia;
+    private Long clientesActivos;
+    private Long obrasActivas;
 }
 

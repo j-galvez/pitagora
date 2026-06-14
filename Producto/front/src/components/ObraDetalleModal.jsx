@@ -329,8 +329,8 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
               <div className="card-body">
                 <div className="row text-center g-3">
                   <div className="col-md-4">
-                    <div className="p-3 bg-danger bg-opacity-10 rounded">
-                      <h3 className="text-danger mb-0">{observacionesAbiertas.length}</h3>
+                    <div className="p-3 bg-success bg-opacity-10 rounded">
+                      <h3 className="text-success mb-0">{observacionesAbiertas.length}</h3>
                       <small className="text-muted">Abiertas</small>
                     </div>
                   </div>
@@ -341,8 +341,8 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
                     </div>
                   </div>
                   <div className="col-md-4">
-                    <div className="p-3 bg-success bg-opacity-10 rounded">
-                      <h3 className="text-success mb-0">{observacionesCerradas.length}</h3>
+                    <div className="p-3 bg-danger bg-opacity-10 rounded">
+                      <h3 className="text-danger mb-0">{observacionesCerradas.length}</h3>
                       <small className="text-muted">Cerradas</small>
                     </div>
                   </div>
