@@ -61,6 +61,23 @@ export const obtenerTopFallas = async () => {
 };
 
 /**
+ * Obtiene el top 5 de obras con mayor costo acumulado
+ * @returns {Promise<Array>} Array de objetos con idObra, nombreObra y montoTotal
+ */
+export const obtenerTopObrasPorCosto = async () => {
+  try {
+    const response = await fetch(`${API_URL}/top-obras-costo`);
+    if (!response.ok) {
+      throw new Error('Error al obtener top obras por costo');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error en obtenerTopObrasPorCosto:', error);
+    throw error;
+  }
+};
+
+/**
  * Obtiene las obras asociadas a una categoría (drill-down)
  * @param {string} nombreCategoria - Nombre de la categoría
  * @returns {Promise<Array>} Array de objetos con idObra, nombreObra y cantidad

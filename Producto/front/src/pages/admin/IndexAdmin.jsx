@@ -4,8 +4,9 @@ import { FaTicketAlt, FaClipboardList, FaChartBar, FaCheckCircle } from 'react-i
 import AdminLayout from '../../components/AdminLayout';
 import KPICard from '../../components/dashboard/KPICard';
 import TopFallasChart from '../../components/dashboard/TopFallasChart';
+import TopObrasCostoChart from '../../components/dashboard/TopObrasCostoChart';
 import PieChartExpandable from '../../components/dashboard/PieChartExpandable';
-import { obtenerEstadisticas, obtenerTopFallas } from '../../services/dashboardService';
+import { obtenerEstadisticas, obtenerTopFallas, obtenerTopObrasPorCosto } from '../../services/dashboardService';
 
 export default function IndexAdmin() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function IndexAdmin() {
     obrasActivas: 0,
   });
   const [topFallas, setTopFallas] = useState([]);
+  const [topObrasCosto, setTopObrasCosto] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -37,13 +39,15 @@ export default function IndexAdmin() {
     setError('');
     try {
       // Cargar estadísticas y top fallas en paralelo
-      const [estadisticas, fallas] = await Promise.all([
+      const [estadisticas, fallas, obrasCosto] = await Promise.all([
         obtenerEstadisticas(),
-        obtenerTopFallas()
+        obtenerTopFallas(),
+        obtenerTopObrasPorCosto()
       ]);
       
       setStats((prev) => ({ ...prev, ...estadisticas }));
       setTopFallas(fallas);
+      setTopObrasCosto(obrasCosto);
     } catch (err) {
       console.error('Error al cargar datos del dashboard:', err);
       setError('Error al cargar los datos del dashboard');
@@ -123,6 +127,13 @@ export default function IndexAdmin() {
                   datos={topFallas}
                   onNavigate={navigate}
                 />
+              </div>
+            </div>
+
+            {/* Top Obras por Costo */}
+            <div className="row g-4 mb-4">
+              <div className="col-12">
+                <TopObrasCostoChart datos={topObrasCosto} />
               </div>
             </div>
 
