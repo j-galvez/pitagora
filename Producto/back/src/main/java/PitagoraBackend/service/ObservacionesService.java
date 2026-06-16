@@ -10,6 +10,8 @@ import PitagoraBackend.repository.CostosObservacionRepository;
 import PitagoraBackend.repository.EvidenciasRepository;
 import PitagoraBackend.repository.ObservacionesRepository;
 import PitagoraBackend.repository.TicketsRepository;
+import PitagoraBackend.repository.ObrasRepository;
+import PitagoraBackend.model.Tickets;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -25,6 +27,9 @@ public class ObservacionesService {
     
     @Autowired
     private TicketsRepository ticketsRepository;
+
+    @Autowired
+    private ObrasRepository obrasRepository;
 
     @Autowired
     private EvidenciasRepository evidenciasRepository;
@@ -59,6 +64,15 @@ public class ObservacionesService {
         if (observaciones.getIdTicket() == null) {
             throw new IllegalArgumentException("El ID del ticket es requerido");
         }
+
+        Tickets ticket = ticketsRepository.findById(observaciones.getIdTicket())
+            .orElseThrow(() -> new IllegalArgumentException("El ticket no existe con ID: " + observaciones.getIdTicket()));
+
+        var obra = obrasRepository.findById(ticket.getIdObra())
+            .orElseThrow(() -> new IllegalArgumentException("La obra asociada al ticket no existe"));
+        if (obra.getEstadoObra() == null || !obra.getEstadoObra().equalsIgnoreCase("Activa")) {
+            throw new IllegalArgumentException("No se pueden crear observaciones en una obra inactiva.");
+        }
         
         // Validación 2: id_categoria es requerido
         if (observaciones.getIdCategoria() == null) {
@@ -80,10 +94,7 @@ public class ObservacionesService {
             throw new IllegalArgumentException("La descripción del problema es requerida");
         }
         
-        // Validación 6: Verificar que el ticket existe
-        if (!ticketsRepository.existsById(observaciones.getIdTicket())) {
-            throw new IllegalArgumentException("El ticket no existe con ID: " + observaciones.getIdTicket());
-        }
+        // Validación 6: Verificar que el ticket existe (ya validado arriba)
         
         // Validación 7: Verificar que la categoría existe (cuando implementes Categorias.java)
         // if (!categoriasRepository.existsById(observaciones.getIdCategoria())) {

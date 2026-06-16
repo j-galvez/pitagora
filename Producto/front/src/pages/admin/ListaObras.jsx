@@ -17,7 +17,7 @@ const ListaObras = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('Todos');
+  const [activeTab, setActiveTab] = useState('Activas');
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
   const [showModal, setShowModal] = useState(false);

@@ -6,6 +6,7 @@ public interface ClienteDTO {
     String getRut();
     String getCorreoContacto();
     String getTelefono();
+    String getEstado();
     // Conteo de observaciones abiertas
     Long getNumeroObservacionesAbiertas();
     // Conteo de obras

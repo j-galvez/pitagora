@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaFileContract, FaSave } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
+import { esClienteActivo } from '../../utils/estadoEntidades';
 
 const EditarObra = () => {
   const { id_obra } = useParams();
@@ -269,11 +270,20 @@ const EditarObra = () => {
                 required
               >
                 <option value="">Selecciona un cliente</option>
-                {clientes.map((cliente) => (
-                  <option key={cliente.idCliente} value={cliente.idCliente}>
-                    {cliente.nombreEmpresa}
-                  </option>
-                ))}
+                {clientes
+                  .filter((cliente) => {
+                    const clienteId = String(cliente.idCliente || cliente.id_cliente);
+                    return esClienteActivo(cliente) || clienteId === formData.idCliente;
+                  })
+                  .map((cliente) => {
+                    const clienteId = cliente.idCliente || cliente.id_cliente;
+                    return (
+                      <option key={clienteId} value={clienteId}>
+                        {cliente.nombreEmpresa || cliente.nombre_empresa}
+                        {!esClienteActivo(cliente) ? ' (Inactivo)' : ''}
+                      </option>
+                    );
+                  })}
               </select>
               {errors.idCliente && <div className="invalid-feedback">{errors.idCliente}</div>}
             </div>

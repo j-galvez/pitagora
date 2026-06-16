@@ -4,6 +4,7 @@ import { FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
 import NavbarUsuario from '../../components/NavbarUsuario';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import Footer from '../../components/Footer';
+import { esClienteActivo, esObraActiva, esUsuarioActivo } from '../../utils/estadoEntidades';
 
 export default function CrearTicket() {
   const navigate = useNavigate();
@@ -31,10 +32,12 @@ export default function CrearTicket() {
   const getClienteId = (cliente) => cliente?.idCliente || cliente?.id_cliente;
   const getClienteIdDeObra = (obra) => obra?.idCliente || obra?.id_cliente;
 
-  const obrasFiltradas = obras.filter((obra) => {
+  const obrasFiltradas = obras.filter(esObraActiva).filter((obra) => {
     if (!idClienteSeleccionado) return true;
     return String(getClienteIdDeObra(obra)) === String(idClienteSeleccionado);
   });
+
+  const clientesActivos = clientes.filter(esClienteActivo);
 
   const [formData, setFormData] = useState({
     idObra: isAdmin ? '' : (idObraActual || ''),
@@ -58,22 +61,30 @@ export default function CrearTicket() {
   useEffect(() => {
     if (isAdmin) {
       cargarDatosAdmin();
-    } else if (idObraActual && !nombreObraReal) {
-      fetch(`http://localhost:8080/api/obras/${idObraActual}`)
-        .then(res => {
-          if (!res.ok) throw new Error('Error al cargar obra');
-          return res.json();
-        })
-        .then(data => {
-          setNombreObraReal(data.nombreObra || data.nombre_obra);
-          setNombreClienteReal(data.nombreEmpresa || data.nombre_empresa || '');
-        })
-        .catch(err => {
-          console.error("Error al obtener nombre de obra:", err);
-          setNombreObraReal(`Obra ID: ${idObraActual}`);
-        });
+      return;
     }
-  }, [isAdmin, idObraActual, nombreObraReal]);
+
+    if (!idObraActual) return;
+
+    const cargarDatosObraUsuario = async () => {
+      try {
+        const res = await fetch(`http://localhost:8080/api/obras/${idObraActual}`);
+        if (!res.ok) throw new Error('Error al cargar obra');
+        const data = await res.json();
+        setNombreObraReal(data.nombreObra || data.nombre_obra || '');
+        setNombreClienteReal(data.nombreEmpresa || data.nombre_empresa || '');
+        const estadoObra = data.estadoObra || data.estado_obra;
+        if (estadoObra && estadoObra !== 'Activa') {
+          setError('Tu obra no está activa. No puedes crear nuevas solicitudes.');
+        }
+      } catch (err) {
+        console.error('Error al obtener datos de la obra:', err);
+        setNombreObraReal((prev) => prev || `Obra ID: ${idObraActual}`);
+      }
+    };
+
+    cargarDatosObraUsuario();
+  }, [isAdmin, idObraActual]);
 
   useEffect(() => {
     if (isAdmin && formData.idObra) {
@@ -147,7 +158,7 @@ export default function CrearTicket() {
         const asignables = (data || []).filter(u => {
           const rol = (u.rol || '').toLowerCase();
           const id = u.idUsuario || u.id_usuario;
-          return rol !== 'admin' && Number(id) !== Number(idUsuarioActual);
+          return rol !== 'admin' && Number(id) !== Number(idUsuarioActual) && esUsuarioActivo(u);
         });
         setUsuariosObra(asignables);
       } else {
@@ -161,6 +172,10 @@ export default function CrearTicket() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isAdmin && error) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (!formData.idObra) {
       setError('Por favor selecciona una obra');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -251,7 +266,7 @@ export default function CrearTicket() {
 
             <div className="mb-4 border-bottom pb-3">
               <h5 className="text-dark mb-1">Información de la Solicitud</h5>
-              <span className="text-muted" style={{ fontSize: '13px' }}>Inicia una nueva solicitud de postventa para tu obra</span>
+              <span className="text-muted" style={{ fontSize: '13px' }}>Inicia un nuevo ticket de postventa para tu obra</span>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -264,15 +279,15 @@ export default function CrearTicket() {
                       value={idClienteSeleccionado}
                       onChange={handleClienteChange}
                     >
-                      <option value="">Todos los clientes...</option>
-                      {clientes.map((cliente) => (
+                      <option value="">Todos los clientes activos...</option>
+                      {clientesActivos.map((cliente) => (
                         <option key={getClienteId(cliente)} value={getClienteId(cliente)}>
                           {cliente.nombreEmpresa || cliente.nombre_empresa}
                         </option>
                       ))}
                     </select>
                     <small className="text-muted" style={{ fontSize: '12px' }}>
-                      Selecciona un cliente para filtrar las obras, o elige la obra directamente.
+                      Solo se muestran clientes y obras activos.
                     </small>
                   </div>
 

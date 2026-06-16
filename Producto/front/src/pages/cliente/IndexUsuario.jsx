@@ -151,7 +151,7 @@ export default function IndexUsuario() {
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
               <div>
                 <h1 className="h3 mb-1" style={{ color: '#003860', fontWeight: 'bold' }}>Mis Solicitudes</h1>
-                <p className="text-secondary mb-0">Revisa el estado de tu solicitud activa y sus observaciones de postventa.</p>
+                <p className="text-secondary mb-0">Revisa el estado de tu ticket activo y sus observaciones de postventa.</p>
               </div>
               {ticketActivo ? (
                 <button
@@ -169,7 +169,7 @@ export default function IndexUsuario() {
                   style={{ backgroundColor: '#003860', borderColor: '#003860' }}
                 >
                   <i className="bi bi-plus-lg"></i>
-                  <span>Nueva Solicitud</span>
+                  <span>Nuevo ticket</span>
                 </button>
               )}
             </div>
@@ -243,13 +243,13 @@ export default function IndexUsuario() {
             ) : (
               <div className="alert alert-light border text-center py-5">
                 <i className="bi bi-file-earmark-plus fs-1 d-block mb-3 text-secondary"></i>
-                <p className="mb-3">No tienes una solicitud activa en este momento.</p>
+                <p className="mb-3">No tienes un ticket activo en este momento.</p>
                 <button
                   className="btn btn-primary"
                   onClick={() => navigate('/crear-ticket')}
                   style={{ backgroundColor: '#003860', borderColor: '#003860' }}
                 >
-                  Crear nueva solicitud
+                  Crear nuevo ticket 
                 </button>
               </div>
             )}

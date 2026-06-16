@@ -3,6 +3,8 @@ package PitagoraBackend.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import PitagoraBackend.repository.ObrasRepository;
+import PitagoraBackend.repository.ClientesRepository;
+import PitagoraBackend.model.Clientes;
 import PitagoraBackend.model.Obras;
 import java.time.LocalDateTime;
 import PitagoraBackend.dto.ObraDTO;
@@ -14,6 +16,24 @@ public class ObrasService {
 
     @Autowired
     private ObrasRepository obrasRepository;
+
+    @Autowired
+    private ClientesRepository clientesRepository;
+
+    private void validarClienteActivo(Integer idCliente) {
+        Clientes cliente = clientesRepository.findById(idCliente)
+            .orElseThrow(() -> new IllegalArgumentException("El cliente no existe con ID: " + idCliente));
+        if (cliente.getEstado() == null || !cliente.getEstado().equalsIgnoreCase("Activo")) {
+            throw new IllegalArgumentException("No se puede operar con un cliente inactivo.");
+        }
+    }
+
+    public void validarObraActiva(Integer idObra) {
+        Obras obra = obtenerObraById(idObra);
+        if (obra.getEstadoObra() == null || !obra.getEstadoObra().equalsIgnoreCase("Activa")) {
+            throw new IllegalArgumentException("La obra no está activa. No se puede continuar con esta operación.");
+        }
+    }
 
     // CREATE - Crear obra
     public Obras crearObras(Obras obras) {
@@ -37,10 +57,7 @@ public class ObrasService {
             throw new IllegalArgumentException("El ID de la comuna es requerido");
         }
 
-        // Nota: Cuando implementes Clientes.java, valida que el cliente existe:
-        // if (!clientesRepository.existsById(obras.getIdCliente())) {
-        //     throw new IllegalArgumentException("El cliente no existe con ID: " + obras.getIdCliente());
-        // }
+        validarClienteActivo(obras.getIdCliente());
 
         // Establecer valores por defecto
         if (obras.getEstadoObra() == null || obras.getEstadoObra().isEmpty()) {

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { esObraActiva } from '../utils/estadoEntidades';
+import CambiarPasswordSection from './CambiarPasswordSection';
 
 const UsuarioForm = ({
   usuario,
@@ -43,7 +45,9 @@ const UsuarioForm = ({
 
       setRegiones(regionesData);
       setComunas(comunasData);
-      setObras(obrasData);
+      setObras(obrasData.filter((obra) =>
+        esObraActiva(obra) || String(obra.idObra || obra.id_obra) === String(formData.idObra)
+      ));
 
       if (formData.idRegion) {
         const filtradas = comunasData.filter((c) => c.idRegion === Number(formData.idRegion));
@@ -154,6 +158,8 @@ const UsuarioForm = ({
   }
 
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
+  const userId = usuario.idUsuario || usuario.id_usuario;
+  const usuarioInactivo = formData.estado === 'Inactivo';
 
   return (
     <div className="container py-4" style={{ overflowX: 'auto', overflowY: 'auto', maxWidth: '100%' }}>
@@ -192,9 +198,6 @@ const UsuarioForm = ({
               options: [
                 { value: 'admin', label: 'admin' },
                 { value: 'usuario', label: 'usuario' },
-                { value: 'cliente', label: 'cliente' },
-                { value: 'jefe_obra', label: 'jefe_obra' },
-                { value: 'tecnico', label: 'tecnico' },
               ],
             })}
           </div>
@@ -246,7 +249,10 @@ const UsuarioForm = ({
                   : '',
               options: [
                 { value: '', label: 'Seleccionar obra' },
-                ...obras.map(o => ({ value: o.idObra, label: o.nombreObra }))
+                ...obras.map(o => ({
+                  value: o.idObra || o.id_obra,
+                  label: `${o.nombreObra || o.nombre_obra}${!esObraActiva(o) ? ' (Inactiva)' : ''}`,
+                }))
               ]
             })}
           </div>
@@ -275,6 +281,14 @@ const UsuarioForm = ({
             </button>
           </div>
         </form>
+
+        <div className="border-top pt-3 mt-2">
+          <h6 className="text-secondary mb-3" style={{ fontSize: '13px' }}>Contraseña</h6>
+          <CambiarPasswordSection
+            idUsuario={userId}
+            disabled={usuarioInactivo}
+          />
+        </div>
       </div>
     </div>
   );

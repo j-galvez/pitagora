@@ -3,6 +3,8 @@ package PitagoraBackend.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import PitagoraBackend.repository.UsuariosRepository;
+import PitagoraBackend.repository.ObrasRepository;
+import PitagoraBackend.model.Obras;
 import PitagoraBackend.model.Usuarios;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
@@ -18,6 +20,17 @@ public class UsuariosService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private ObrasRepository obrasRepository;
+
+    private void validarObraActiva(Integer idObra) {
+        Obras obra = obrasRepository.findById(idObra)
+            .orElseThrow(() -> new IllegalArgumentException("La obra no existe con ID: " + idObra));
+        if (obra.getEstadoObra() == null || !obra.getEstadoObra().equalsIgnoreCase("Activa")) {
+            throw new IllegalArgumentException("No se puede asignar un usuario a una obra inactiva.");
+        }
+    }
 
     // CREATE
     public Usuarios crearUsuarios(Usuarios usuarios) {
@@ -74,6 +87,10 @@ public class UsuariosService {
 
         if (usuarios.getRol().equals("usuario") && usuarios.getIdObra() == null) {
             throw new IllegalArgumentException("Para el rol usuario debe asignarse una obra");
+        }
+
+        if (usuarios.getIdObra() != null) {
+            validarObraActiva(usuarios.getIdObra());
         }
 
         if (usuarios.getTelefono() != null && !usuarios.getTelefono().isEmpty() && !validarTelefono(usuarios.getTelefono())) {
@@ -197,6 +214,7 @@ public class UsuariosService {
         }
 
         if (usuariosActualizado.getIdObra() != null) {
+            validarObraActiva(usuariosActualizado.getIdObra());
             usuarioExistente.setIdObra(usuariosActualizado.getIdObra());
         }
 

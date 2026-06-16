@@ -7,6 +7,7 @@ import PitagoraBackend.repository.UsuariosRepository;
 import PitagoraBackend.repository.ObrasRepository;
 import PitagoraBackend.model.Tickets;
 import PitagoraBackend.model.Usuarios;
+import PitagoraBackend.model.Obras;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +23,22 @@ public class TicketsService {
     
     @Autowired
     private ObrasRepository obrasRepository;
+
+    private void validarObraActiva(Integer idObra) {
+        Obras obra = obrasRepository.findById(idObra)
+            .orElseThrow(() -> new IllegalArgumentException("La obra no existe con ID: " + idObra));
+        if (obra.getEstadoObra() == null || !obra.getEstadoObra().equalsIgnoreCase("Activa")) {
+            throw new IllegalArgumentException("No se puede crear un ticket para una obra inactiva.");
+        }
+    }
+
+    private void validarUsuarioActivo(Integer idUsuario, String contexto) {
+        Usuarios usuario = usuariosRepository.findById(idUsuario)
+            .orElseThrow(() -> new IllegalArgumentException("El usuario no existe con ID: " + idUsuario));
+        if (usuario.getEstado() == null || !usuario.getEstado().equalsIgnoreCase("Activo")) {
+            throw new IllegalArgumentException("No se puede " + contexto + " con un usuario inactivo.");
+        }
+    }
 
     // CREATE - Crear ticket (contenedor vacío para observaciones)
     public Tickets crearTickets(Tickets tickets) {
@@ -40,20 +57,23 @@ public class TicketsService {
             throw new IllegalArgumentException("El ID del usuario (dueño/cliente) es requerido");
         }
         
-        // Validación 4: Verificar que la obra existe
+        // Validación 4: Verificar que la obra existe y está activa
         if (!obrasRepository.existsById(tickets.getIdObra())) {
             throw new IllegalArgumentException("La obra no existe con ID: " + tickets.getIdObra());
         }
+        validarObraActiva(tickets.getIdObra());
         
-        // Validación 5: Verificar que el usuario creador existe
+        // Validación 5: Verificar que el usuario creador existe y está activo
         if (!usuariosRepository.existsById(tickets.getIdUsuarioCreador())) {
             throw new IllegalArgumentException("El usuario creador no existe con ID: " + tickets.getIdUsuarioCreador());
         }
+        validarUsuarioActivo(tickets.getIdUsuarioCreador(), "crear un ticket");
 
-        // Validación 6: Verificar que el usuario dueño existe
+        // Validación 6: Verificar que el usuario dueño existe y está activo
         if (!usuariosRepository.existsById(tickets.getIdUsuario())) {
             throw new IllegalArgumentException("El usuario dueño no existe con ID: " + tickets.getIdUsuario());
         }
+        validarUsuarioActivo(tickets.getIdUsuario(), "asignar un ticket");
 
         // Validación 7: Un ticket no puede asignarse a un administrador
         Usuarios usuarioAsignado = usuariosRepository.findById(tickets.getIdUsuario())

@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaFileContract, FaArrowLeft } from 'react-icons/fa';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import AdminLayout from '../../components/AdminLayout';
+import { esClienteActivo } from '../../utils/estadoEntidades';
 
 const CrearObra = () => {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ const CrearObra = () => {
 
   const cargarClientes = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/clientes');
+      const response = await fetch('http://localhost:8080/api/clientes/activos');
       if (response.ok) {
         const data = await response.json();
         setClientes(data);
@@ -281,12 +282,15 @@ const CrearObra = () => {
                 required
               >
                 <option value="">Selecciona un cliente</option>
-                {clientes.map((cliente) => (
-                  <option key={cliente.idCliente} value={cliente.idCliente}>
-                    {cliente.nombreEmpresa}
+                {clientes.filter(esClienteActivo).map((cliente) => (
+                  <option key={cliente.idCliente || cliente.id_cliente} value={cliente.idCliente || cliente.id_cliente}>
+                    {cliente.nombreEmpresa || cliente.nombre_empresa}
                   </option>
                 ))}
               </select>
+              {clientes.length === 0 && (
+                <small className="text-muted">No hay clientes activos disponibles.</small>
+              )}
               {errors.idCliente && (
                 <div className="invalid-feedback">
                   {errors.idCliente}
@@ -465,6 +469,11 @@ const CrearObra = () => {
                 <option value="Garantía Vencida">Garantía Vencida</option>
                 <option value="Cerrada">Cerrada</option>
               </select>
+              {(formData.estadoObra === 'Cerrada' || formData.estadoObra === 'Garantía Vencida') && (
+                <div className="alert alert-warning mt-2 py-2" style={{ fontSize: '13px' }}>
+                  <strong>Atención:</strong> Una obra con estado "{formData.estadoObra}" no permitirá crear nuevos tickets u observaciones.
+                </div>
+              )}
             </div>
 
             {/* Botones de acción */}

@@ -33,6 +33,7 @@ public interface ClientesRepository extends JpaRepository<Clientes, Integer> {
                    "    c.rut AS rut, " +
                    "    c.correo_contacto AS correoContacto, " +
                    "    c.telefono AS telefono, " +
+                   "    c.estado AS estado, " +
                    "    COALESCE(COUNT(DISTINCT obs.id_observacion), 0) AS numeroObservacionesAbiertas, " +
                    "    COALESCE(COUNT(DISTINCT o.id_obra), 0) AS numeroObras " +
                    "FROM clientes c " +
@@ -40,7 +41,7 @@ public interface ClientesRepository extends JpaRepository<Clientes, Integer> {
                    "LEFT JOIN tickets t ON o.id_obra = t.id_obra " +
                    "LEFT JOIN observaciones obs ON t.id_ticket = obs.id_ticket " +
                    "    AND obs.estado_observacion IN ('pendiente', 'en observación', 'aplica', 'en proceso', 'en espera aceptación') " +
-                   "GROUP BY c.id_cliente, c.nombre_empresa, c.rut, c.correo_contacto, c.telefono " +
+                   "GROUP BY c.id_cliente, c.nombre_empresa, c.rut, c.correo_contacto, c.telefono, c.estado " +
                    "ORDER BY c.nombre_empresa", nativeQuery = true)
     List<ClienteDTO> findAllClientesConObservaciones();
 

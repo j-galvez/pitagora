@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaUserPlus } from 'react-icons/fa';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import AdminLayout from '../../components/AdminLayout';
+import { esObraActiva } from '../../utils/estadoEntidades';
 
 const CrearUsuario = () => {
   const navigate = useNavigate();
@@ -68,7 +69,7 @@ const CrearUsuario = () => {
     try {
       const response = await fetch('http://localhost:8080/api/obras');
       const data = await response.json();
-      setObras(data);
+      setObras(data.filter(esObraActiva));
     } catch (error) {
       console.error('Error cargando obras:', error);
     }
@@ -465,6 +466,11 @@ const CrearUsuario = () => {
                   <option value="Activo">Activo</option>
                   <option value="Inactivo">Inactivo</option>
                 </select>
+                {formData.estado === 'Inactivo' && (
+                  <div className="alert alert-warning mt-2 py-2" style={{ fontSize: '13px' }}>
+                    <strong>Atención:</strong> Un usuario inactivo no podrá acceder ni participar en nuevos tickets u observaciones.
+                  </div>
+                )}
               </div>
               <div className="col-md-4">
                 <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Obra asignada</label>
@@ -477,15 +483,17 @@ const CrearUsuario = () => {
                 >
                   <option value="">Seleccionar obra</option>
                   {obras.map((obra) => (
-                    <option key={obra.idObra} value={obra.idObra}>
-                      {obra.nombreObra}
+                    <option key={obra.idObra || obra.id_obra} value={obra.idObra || obra.id_obra}>
+                      {obra.nombreObra || obra.nombre_obra}
                     </option>
                   ))}
                 </select>
                 <small className="form-text text-muted">
                   {formData.rol === 'admin'
                     ? 'Los admins no requieren obra obligatoria.'
-                    : 'Para usuarios la obra es obligatoria.'}
+                    : obras.length === 0
+                      ? 'No hay obras activas disponibles para asignar.'
+                      : 'Solo se muestran obras activas.'}
                 </small>
               </div>
             </div>

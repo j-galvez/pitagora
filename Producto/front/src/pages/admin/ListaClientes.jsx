@@ -6,6 +6,8 @@ import AdminLayout from '../../components/AdminLayout';
 import ClienteDetalleModal from '../../components/ClienteDetalleModal';
 import { clientesService } from '../../services/clientesService';
 
+const getEstadoCliente = (cliente) => cliente.estado || 'Activo';
+
 const ListaClientes = () => {
   const navigate = useNavigate();
   const usuarioLogueado = JSON.parse(localStorage.getItem('usuario')) || {
@@ -17,6 +19,7 @@ const ListaClientes = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('Activos');
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
   const [showModalDetalle, setShowModalDetalle] = useState(false);
@@ -75,11 +78,15 @@ const ListaClientes = () => {
 
   const filteredClientes = clientes.filter((cliente) => {
     const lowerSearch = searchTerm.toLowerCase();
-    return (
+    const matchesSearch =
       (cliente.nombreEmpresa || cliente.nombre_empresa)?.toLowerCase().includes(lowerSearch) ||
       (cliente.correoContacto || cliente.correo_contacto)?.toLowerCase().includes(lowerSearch) ||
-      (cliente.rut)?.toLowerCase().includes(lowerSearch)
-    );
+      (cliente.rut)?.toLowerCase().includes(lowerSearch);
+
+    const estado = getEstadoCliente(cliente);
+    if (activeTab === 'Activos') return matchesSearch && estado === 'Activo';
+    if (activeTab === 'Inactivos') return matchesSearch && estado === 'Inactivo';
+    return matchesSearch;
   });
 
   const sortedClientes = [...filteredClientes].sort((a, b) => {
@@ -159,7 +166,7 @@ const ListaClientes = () => {
             </div>
           )}
 
-          <div className="row g-3 mb-4">
+          <div className="row g-3 mb-4 align-items-center justify-content-between">
             <div className="col-md-6">
               <div className="input-group">
                 <span className="input-group-text bg-light text-muted"><FaSearch /></span>
@@ -171,6 +178,17 @@ const ListaClientes = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+            </div>
+            <div className="col-md-6 d-flex justify-content-md-end gap-1 flex-wrap">
+              {['Activos', 'Inactivos', 'Todos'].map((tab) => (
+                <button
+                  key={tab}
+                  className={`btn btn-sm px-3 ${activeTab === tab ? 'btn-dark' : 'btn-outline-secondary'}`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -193,13 +211,14 @@ const ListaClientes = () => {
                   <th style={{ cursor: 'pointer' }} onClick={() => handleSort('telefono')}>
                     Teléfono Contacto {getSortIcon('telefono')}
                   </th>
+                  <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4">
+                    <td colSpan="7" className="text-center py-4">
                       <div className="spinner-border text-primary" role="status">
                         <span className="visually-hidden">Cargando...</span>
                       </div>
@@ -228,6 +247,11 @@ const ListaClientes = () => {
                       {/* El backend devuelve 'telefono', no 'telefonoContacto' */}
                       <td>{cliente.telefono || '-'}</td>
                       <td>
+                        <span className={`badge ${getEstadoCliente(cliente) === 'Activo' ? 'bg-success' : 'bg-danger'}`}>
+                          {getEstadoCliente(cliente)}
+                        </span>
+                      </td>
+                      <td>
                         <button
                            className="btn btn-light btn-sm text-primary me-2"
                            onClick={() => handleEditClick(cliente)}
@@ -249,7 +273,7 @@ const ListaClientes = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="text-center text-muted py-3">
+                    <td colSpan="7" className="text-center text-muted py-3">
                       No se encontraron clientes.
                     </td>
                   </tr>

@@ -6,6 +6,7 @@ import NavbarAdmin from '../../components/NavbarAdmin';
 import Footer from '../../components/Footer';
 import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
 import { observacionesService } from '../../services/observacionesService';
+import { esObraActiva } from '../../utils/estadoEntidades';
 
 const MAX_FOTOS = 2;
 
@@ -23,6 +24,7 @@ export default function CrearObservacion() {
   const [loadingExistentes, setLoadingExistentes] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [obrasPorId, setObrasPorId] = useState({});
   const [observacionSeleccionada, setObservacionSeleccionada] = useState(null);
   const [showDetalleModal, setShowDetalleModal] = useState(false);
   const fileInputRef = useRef(null);
@@ -152,21 +154,33 @@ export default function CrearObservacion() {
     
     setLoadingTickets(true);
     try {
-      const endpoint = isAdmin 
-        ? 'http://localhost:8080/api/tickets' 
-        : `http://localhost:8080/api/tickets/usuario/${idUsuarioActual}`;
-      
-      const response = await fetch(endpoint);
-      if (response.ok) {
-        const data = await response.json();
-        // Filtramos para mostrar solo los que no están terminados (abierto o en proceso)
-        const ticketsActivos = (data || []).filter(t => {
-          const est = (t.estadoGeneral || t.estado_general || '').toLowerCase();
-          return est === 'abierto' || est === 'en proceso';
-        });
-        setTickets(ticketsActivos);
-      } else {
-        throw new Error('Error al cargar tickets');
+      const [ticketsRes, obrasRes] = await Promise.all([
+        fetch(isAdmin ? 'http://localhost:8080/api/tickets' : `http://localhost:8080/api/tickets/usuario/${idUsuarioActual}`),
+        fetch('http://localhost:8080/api/obras'),
+      ]);
+
+      if (!ticketsRes.ok) throw new Error('Error al cargar tickets');
+
+      const data = await ticketsRes.json();
+      const obrasData = obrasRes.ok ? await obrasRes.json() : [];
+      const mapaObras = {};
+      (obrasData || []).forEach((obra) => {
+        const id = obra.idObra || obra.id_obra;
+        mapaObras[id] = obra;
+      });
+      setObrasPorId(mapaObras);
+
+      const ticketsActivos = (data || []).filter(t => {
+        const est = (t.estadoGeneral || t.estado_general || '').toLowerCase();
+        const idObra = t.idObra || t.id_obra;
+        const obra = mapaObras[idObra];
+        return (est === 'abierto' || est === 'en proceso') && obra && esObraActiva(obra);
+      });
+      setTickets(ticketsActivos);
+
+      if (urlTicketId && !ticketsActivos.some(t => String(t.idTicket || t.id_ticket) === String(urlTicketId))) {
+        setError('El ticket seleccionado pertenece a una obra inactiva o no está disponible.');
+        setSelectedTicketId('');
       }
     } catch (err) {
       console.error('Error al cargar tickets:', err);
