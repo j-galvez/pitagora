@@ -44,7 +44,7 @@ const ReporteCostosGrafico = ({ usuarioLogueado }) => {
   const exportarPDF = () => {
     try {
       const doc = new jsPDF({
-        orientation: 'portrait',
+        orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
@@ -52,33 +52,30 @@ const ReporteCostosGrafico = ({ usuarioLogueado }) => {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       
-      // Encabezado
-      doc.setFillColor(0, 56, 96);
-      doc.rect(0, 0, pageWidth, 40, 'F');
-      
-      doc.setFontSize(22);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
+      // Encabezado al estilo Reporte Trazabilidad
+      doc.setFontSize(18);
+      doc.setTextColor(40);
       doc.text('REPORTE DE COSTOS POR OBRA', 14, 20);
       
       doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text('Sistema de Gestión Postventa - Pitagora', 14, 30);
-      doc.text(`Generado por: ${usuarioLogueado?.nombre || 'Administrador'} | Fecha: ${new Date().toLocaleString()}`, 14, 35);
+      doc.setTextColor(100);
+      doc.text('Sistema de Gestión Postventa - Pitagora', 14, 28);
+      doc.text(`Generado por: ${usuarioLogueado?.nombre || 'Administrador'} | Fecha: ${new Date().toLocaleString()}`, 14, 34);
 
-      // --- GRÁFICO PDF ---
-      const chartStartY = 55;
-      const chartHeight = 40;
-      const marginX = 25;
+      // --- GRÁFICO PDF (Adaptado a Landscape) ---
+      const chartStartY = 45;
+      const chartHeight = 50;
+      const marginX = 40;
       const chartAreaWidth = pageWidth - (marginX * 2);
       
+      // Eje X sutil
       doc.setDrawColor(200);
       doc.setLineWidth(0.2);
       doc.line(marginX, chartStartY + chartHeight, marginX + chartAreaWidth, chartStartY + chartHeight);
 
       if (datos.length > 0) {
         const maxMonto = Math.max(...datos.map(item => item.montoTotal));
-        const barWidth = Math.min(10, (chartAreaWidth / datos.length) * 0.6);
+        const barWidth = Math.min(15, (chartAreaWidth / datos.length) * 0.5);
         const gap = (chartAreaWidth - (barWidth * datos.length)) / (datos.length + 1);
 
         datos.forEach((item, i) => {
@@ -94,19 +91,26 @@ const ReporteCostosGrafico = ({ usuarioLogueado }) => {
           doc.setFillColor(r, g, b);
           doc.rect(x, y, barWidth, barH, 'F');
 
-          doc.setFontSize(7); 
+          // Valor arriba
+          doc.setFontSize(8); 
           doc.setTextColor(40);
           doc.setFont(undefined, 'bold');
           doc.text(formatCurrency(item.montoTotal), x + (barWidth / 2), y - 2, { align: 'center' });
           
-          doc.setFontSize(7);
+          // Índice debajo
+          doc.setFontSize(8);
           doc.setFont(undefined, 'normal');
-          doc.text(`${i + 1}`, x + (barWidth / 2), chartStartY + chartHeight + 4, { align: 'center' });
+          doc.text(`${i + 1}`, x + (barWidth / 2), chartStartY + chartHeight + 5, { align: 'center' });
         });
       }
 
-      // --- TABLA ---
-      const tableColumn = ['#', 'Obra / Proyecto', 'Costo Acumulado', '%'];
+      // --- TABLA DE DETALLE (Estilo Striped como el otro reporte) ---
+      const tableColumn = [
+        { content: '#', styles: { halign: 'center' } },
+        { content: 'Obra / Proyecto', styles: { halign: 'left' } },
+        { content: 'Costo Acumulado', styles: { halign: 'right' } },
+        { content: 'Porcentaje del Total (%)', styles: { halign: 'right' } }
+      ];
       const totalGeneral = datos.reduce((acc, curr) => acc + curr.montoTotal, 0);
       
       const tableRows = datos.map((item, index) => [
@@ -120,14 +124,23 @@ const ReporteCostosGrafico = ({ usuarioLogueado }) => {
         head: [tableColumn],
         body: tableRows,
         startY: chartStartY + chartHeight + 15,
-        theme: 'grid',
-        headStyles: { fillColor: [0, 56, 96], textColor: 255 },
-        styles: { fontSize: 8 },
-        columnStyles: { 0: { cellWidth: 8 }, 2: { halign: 'right' }, 3: { halign: 'right' } }
+        theme: 'striped',
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [50, 50, 50], textColor: 255 },
+        columnStyles: { 
+          0: { cellWidth: 10, halign: 'center' }, 
+          2: { halign: 'right' }, 
+          3: { halign: 'right' } 
+        },
+        margin: { left: 14, right: 14 }
       });
 
-      doc.setFontSize(10);
-      doc.text(`TOTAL INVERSIÓN: ${formatCurrency(totalGeneral)}`, pageWidth - 14, doc.lastAutoTable.finalY + 10, { align: 'right' });
+      // Total final
+      const finalY = doc.lastAutoTable.finalY || 150;
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(40);
+      doc.text(`TOTAL INVERSIÓN: ${formatCurrency(totalGeneral)}`, pageWidth - 14, finalY + 10, { align: 'right' });
 
       doc.save(`Reporte_Costos_Pitagora_${new Date().getTime()}.pdf`);
     } catch (err) {
