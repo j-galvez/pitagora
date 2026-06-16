@@ -52,6 +52,7 @@ const ReporteCostosGrafico = ({ usuarioLogueado }) => {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       
+      // Encabezado
       doc.setFillColor(0, 56, 96);
       doc.rect(0, 0, pageWidth, 40, 'F');
       
@@ -65,6 +66,7 @@ const ReporteCostosGrafico = ({ usuarioLogueado }) => {
       doc.text('Sistema de Gestión Postventa - Pitagora', 14, 30);
       doc.text(`Generado por: ${usuarioLogueado?.nombre || 'Administrador'} | Fecha: ${new Date().toLocaleString()}`, 14, 35);
 
+      // --- GRÁFICO PDF ---
       const chartStartY = 55;
       const chartHeight = 40;
       const marginX = 25;
@@ -103,6 +105,7 @@ const ReporteCostosGrafico = ({ usuarioLogueado }) => {
         });
       }
 
+      // --- TABLA ---
       const tableColumn = ['#', 'Obra / Proyecto', 'Costo Acumulado', '%'];
       const totalGeneral = datos.reduce((acc, curr) => acc + curr.montoTotal, 0);
       
@@ -135,167 +138,168 @@ const ReporteCostosGrafico = ({ usuarioLogueado }) => {
 
   if (loading) {
     return (
-      <div className="text-center py-5"><div className="spinner-border text-primary" role="status"></div><p className="mt-2">Cargando...</p></div>
+      <div className="text-center py-5"><div className="spinner-border text-primary" role="status"></div><p className="mt-2 text-muted">Cargando...</p></div>
     );
   }
 
   const maxMonto = datos.length > 0 ? Math.max(...datos.map(item => item.montoTotal)) : 0;
 
   return (
-    <div className="p-4 bg-light min-vh-100">
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm border-start border-primary border-4">
+    <div className="p-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h4 className="mb-1 fw-bold text-dark">Inversión por Obra</h4>
-          <p className="text-muted small mb-0">Sistema Pitagora - Control de Costos Postventa</p>
+          <h5 className="mb-0">Distribución de Costos por Proyecto</h5>
+          <p className="text-muted mb-0 small">Visualización gráfica de la inversión acumulada por cada obra activa.</p>
         </div>
-        <button className="btn btn-danger px-4 shadow-sm fw-bold" onClick={exportarPDF} disabled={datos.length === 0}>
-          <FaFilePdf className="me-2" /> Exportar PDF
+        <button 
+          className="btn btn-outline-danger btn-sm d-flex align-items-center" 
+          onClick={exportarPDF} 
+          disabled={datos.length === 0}
+        >
+          <FaFilePdf className="me-2" /> PDF
         </button>
       </div>
 
       {datos.length === 0 ? (
-        <div className="card text-center py-5 border-0 shadow-sm"><div className="card-body text-muted">No hay datos registrados.</div></div>
+        <div className="text-center py-5 bg-light rounded-3 border">
+          <p className="text-muted">No hay datos registrados.</p>
+        </div>
       ) : (
-        <div className="card shadow-sm border-0 bg-white">
-          <div className="card-body p-4">
-            <h6 className="fw-bold text-muted mb-4 text-uppercase small tracking-wider border-bottom pb-2">Visualización de Gastos</h6>
-            
-            <div className="row">
-              {/* Chart Area */}
-              <div className="col-lg-9">
-                <div 
-                  className="bg-light rounded-3 shadow-inner" 
-                  style={{ 
-                    height: '500px', // Aumentamos un poco más la altura total
-                    position: 'relative',
-                    padding: '80px 20px' // Padding uniforme para que las etiquetas respiren
-                  }}
-                >
-                  {/* Contenedor interno que ocupa el espacio restante después del padding */}
-                  <div 
-                    className="d-flex align-items-end justify-content-around h-100 w-100"
-                  >
-                    {datos.map((item, index) => {
-                      const heightPercent = (item.montoTotal / maxMonto) * 100;
-                      const color = coloresPaleta[index % coloresPaleta.length];
-                      const isHovered = hoveredIndex === index;
+        <div className="row g-4">
+          {/* Chart Area */}
+          <div className="col-lg-9">
+            <div 
+              className="bg-light rounded-3 border shadow-sm" 
+              style={{ 
+                height: '500px', 
+                position: 'relative',
+                padding: '80px 20px'
+              }}
+            >
+              {/* Contenedor interno */}
+              <div 
+                className="d-flex align-items-end justify-content-around h-100 w-100"
+              >
+                {datos.map((item, index) => {
+                  const heightPercent = (item.montoTotal / maxMonto) * 100;
+                  const color = coloresPaleta[index % coloresPaleta.length];
+                  const isHovered = hoveredIndex === index;
 
-                      return (
+                  return (
+                    <div 
+                      key={item.idObra || index}
+                      className="d-flex flex-column align-items-center"
+                      style={{ 
+                        width: '45px', 
+                        height: `${heightPercent}%`,
+                        cursor: 'pointer',
+                        position: 'relative',
+                        zIndex: isHovered ? 5 : 1,
+                        transition: 'height 1s ease-out'
+                      }}
+                      onMouseEnter={() => setHoveredIndex(index)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                    >
+                      {/* Tooltip flotante */}
+                      {isHovered && (
                         <div 
-                          key={item.idObra || index}
-                          className="d-flex flex-column align-items-center"
+                          className="position-absolute shadow-lg p-2 rounded bg-dark text-white text-center" 
                           style={{ 
-                            width: '45px', 
-                            height: `${heightPercent}%`,
-                            cursor: 'pointer',
-                            position: 'relative',
-                            zIndex: isHovered ? 5 : 1,
-                            transition: 'height 1s ease-out'
+                            bottom: 'calc(100% + 40px)', 
+                            left: '50%', 
+                            transform: 'translateX(-50%)', 
+                            zIndex: 100, 
+                            width: '180px',
+                            fontSize: '0.8rem'
                           }}
-                          onMouseEnter={() => setHoveredIndex(index)}
-                          onMouseLeave={() => setHoveredIndex(null)}
                         >
-                          {/* Tooltip flotante */}
-                          {isHovered && (
-                            <div 
-                              className="position-absolute shadow-lg p-2 rounded bg-dark text-white text-center" 
-                              style={{ 
-                                bottom: 'calc(100% + 40px)', 
-                                left: '50%', 
-                                transform: 'translateX(-50%)', 
-                                zIndex: 100, 
-                                width: '180px',
-                                fontSize: '0.8rem'
-                              }}
-                            >
-                              <div className="fw-bold border-bottom mb-1 pb-1">{item.nombreObra}</div>
-                              <div className="text-info">{formatCurrency(item.montoTotal)}</div>
-                            </div>
-                          )}
-
-                          {/* Texto de Costo - Dentro del área de padding superior */}
-                          <div 
-                            className="position-absolute text-center" 
-                            style={{ 
-                              bottom: '100%',
-                              marginBottom: '12px',
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              fontSize: '0.8rem', 
-                              fontWeight: 'bold', 
-                              color: isHovered ? color : '#444',
-                              whiteSpace: 'nowrap',
-                              zIndex: 2
-                            }}
-                          >
-                            {formatCurrency(item.montoTotal)}
-                          </div>
-
-                          {/* Barra */}
-                          <div 
-                            className="w-100 h-100 rounded-top shadow-sm"
-                            style={{ 
-                              backgroundColor: color,
-                              opacity: hoveredIndex !== null && !isHovered ? 0.3 : 1,
-                              transition: 'opacity 0.3s',
-                              border: '1px solid rgba(0,0,0,0.05)'
-                            }}
-                          ></div>
-                          
-                          {/* Índice numérico - Dentro del área de padding inferior */}
-                          <div 
-                            className="position-absolute fw-bold text-secondary text-center" 
-                            style={{ 
-                              top: '100%',
-                              marginTop: '15px',
-                              fontSize: '0.9rem',
-                              width: '100%'
-                            }}
-                          >
-                            {index + 1}
-                          </div>
+                          <div className="fw-bold border-bottom mb-1 pb-1 text-truncate">{item.nombreObra}</div>
+                          <div className="text-info">{formatCurrency(item.montoTotal)}</div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+                      )}
 
-              {/* Legend Area */}
-              <div className="col-lg-3 border-start">
-                <div className="ps-3">
-                  <h6 className="fw-bold small mb-3 text-muted">LEYENDA</h6>
-                  <div className="overflow-auto" style={{ maxHeight: '360px' }}>
-                    {datos.map((item, index) => (
+                      {/* Texto de Costo */}
                       <div 
-                        key={index} 
-                        className={`d-flex align-items-center mb-2 p-1 rounded transition-all ${hoveredIndex === index ? 'bg-light' : ''}`}
-                        style={{ cursor: 'pointer', fontSize: '0.8rem' }}
-                        onMouseEnter={() => setHoveredIndex(index)}
-                        onMouseLeave={() => setHoveredIndex(null)}
+                        className="position-absolute text-center" 
+                        style={{ 
+                          bottom: '100%',
+                          marginBottom: '12px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          fontSize: '0.8rem', 
+                          fontWeight: 'bold', 
+                          color: isHovered ? color : '#444',
+                          whiteSpace: 'nowrap',
+                          zIndex: 2
+                        }}
                       >
-                        <span 
-                          className="badge rounded-1 me-2 d-flex align-items-center justify-content-center" 
-                          style={{ 
-                            width: '20px', 
-                            height: '20px', 
-                            backgroundColor: coloresPaleta[index % coloresPaleta.length],
-                            fontSize: '0.7rem'
-                          }}
-                        >
-                          {index + 1}
-                        </span>
-                        <span className="text-truncate fw-medium" title={item.nombreObra}>
-                          {item.nombreObra}
-                        </span>
+                        {formatCurrency(item.montoTotal)}
                       </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 pt-3 border-top">
-                    <div className="small text-muted mb-1">Inversión Total:</div>
-                    <div className="h5 fw-bold text-success">{formatCurrency(datos.reduce((a, b) => a + b.montoTotal, 0))}</div>
-                  </div>
+
+                      {/* Barra */}
+                      <div 
+                        className="w-100 h-100 rounded-top shadow-sm"
+                        style={{ 
+                          backgroundColor: color,
+                          opacity: hoveredIndex !== null && !isHovered ? 0.3 : 1,
+                          transition: 'opacity 0.3s',
+                          border: '1px solid rgba(0,0,0,0.05)'
+                        }}
+                      ></div>
+                      
+                      {/* Índice numérico */}
+                      <div 
+                        className="position-absolute fw-bold text-secondary text-center" 
+                        style={{ 
+                          top: '100%',
+                          marginTop: '15px',
+                          fontSize: '0.9rem',
+                          width: '100%'
+                        }}
+                      >
+                        {index + 1}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Legend Area */}
+          <div className="col-lg-3">
+            <div className="card border-0 bg-transparent h-100">
+              <div className="card-body p-0">
+                <h6 className="fw-bold text-muted mb-3 text-uppercase small tracking-wider">Leyenda</h6>
+                <div className="overflow-auto" style={{ maxHeight: '380px' }}>
+                  {datos.map((item, index) => (
+                    <div 
+                      key={index} 
+                      className={`d-flex align-items-center mb-2 p-1 rounded transition-all ${hoveredIndex === index ? 'bg-light border' : ''}`}
+                      style={{ cursor: 'pointer', fontSize: '0.8rem' }}
+                      onMouseEnter={() => setHoveredIndex(index)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                    >
+                      <span 
+                        className="badge rounded-1 me-2 d-flex align-items-center justify-content-center" 
+                        style={{ 
+                          width: '20px', 
+                          height: '20px', 
+                          backgroundColor: coloresPaleta[index % coloresPaleta.length],
+                          fontSize: '0.7rem'
+                        }}
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="text-truncate fw-medium" title={item.nombreObra}>
+                        {item.nombreObra}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-3 border-top">
+                  <div className="small text-muted mb-1">Inversión Total:</div>
+                  <div className="h5 fw-bold text-success">{formatCurrency(datos.reduce((a, b) => a + b.montoTotal, 0))}</div>
                 </div>
               </div>
             </div>
@@ -304,9 +308,9 @@ const ReporteCostosGrafico = ({ usuarioLogueado }) => {
       )}
 
       {/* Footer Info */}
-      <div className="mt-4 p-3 bg-white rounded-3 shadow-sm border text-center small text-muted">
+      <div className="mt-5 p-3 bg-light rounded-3 border text-center small text-muted">
         <FaInfoCircle className="me-2 text-primary" />
-        Utiliza el gráfico para visualizar la distribución de gastos. Pasa el cursor sobre las barras para identificar cada proyecto en el <strong>Sistema Pitagora</strong>.
+        Pasa el cursor sobre las barras para ver detalles. Datos actualizados del <strong>Sistema Pitagora</strong>.
       </div>
     </div>
   );
