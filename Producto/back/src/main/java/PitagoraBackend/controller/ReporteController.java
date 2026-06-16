@@ -1,5 +1,6 @@
 package PitagoraBackend.controller;
 
+import PitagoraBackend.dto.ObraCostoDTO;
 import PitagoraBackend.dto.ReporteObraDTO;
 import PitagoraBackend.service.ReporteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,16 @@ public class ReporteController {
     public ResponseEntity<List<ReporteObraDTO>> getReporteTrazabilidad() {
         try {
             List<ReporteObraDTO> reporte = reporteService.getReporteTrazabilidad();
+            return ResponseEntity.ok(reporte);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @GetMapping("/costos-por-obra")
+    public ResponseEntity<List<ObraCostoDTO>> getCostosPorObra() {
+        try {
+            List<ObraCostoDTO> reporte = reporteService.getCostosPorObra();
             return ResponseEntity.ok(reporte);
         } catch (Exception e) {
             return ResponseEntity.status(500).build();

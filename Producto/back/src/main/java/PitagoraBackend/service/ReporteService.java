@@ -1,5 +1,6 @@
 package PitagoraBackend.service;
 
+import PitagoraBackend.dto.ObraCostoDTO;
 import PitagoraBackend.dto.ReporteObraDTO;
 import PitagoraBackend.dto.ReporteObraProjection;
 import PitagoraBackend.repository.ObservacionesRepository;
@@ -29,5 +30,9 @@ public class ReporteService {
             p.getSolucionAplicada(),
             p.getCosto()
         )).collect(Collectors.toList());
+    }
+
+    public List<ObraCostoDTO> getCostosPorObra() {
+        return observacionesRepository.findObrasPorCosto();
     }
 }

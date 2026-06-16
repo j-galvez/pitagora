@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaSearch, FaFileExcel, FaFilePdf, FaArrowLeft, FaFilter, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaFileExcel, FaFilePdf, FaArrowLeft, FaFilter, FaTimes, FaChartBar, FaTable } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import { obtenerReporteTrazabilidad } from '../../services/reportesService';
 import { obrasService } from '../../services/obrasService';
 import { clientesService } from '../../services/clientesService';
+import ReporteCostosGrafico from '../../components/ReporteCostosGrafico';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -17,6 +18,7 @@ const ReporteBitacoraObra = () => {
     rol: 'admin'
   };
 
+  const [activeTab, setActiveTab] = useState('trazabilidad');
   const [datos, setDatos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -206,129 +208,163 @@ const ReporteBitacoraObra = () => {
   return (
     <AdminLayout 
       usuario={usuarioLogueado} 
-      titulo="Bitácora de Trazabilidad" 
+      titulo="Reportes del Sistema" 
       handleVolver={handleVolver}
     >
       <div className="container py-4">
-        <div className="card shadow-sm border-0 rounded-3 p-4">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h5 className="mb-0">Reporte de Trazabilidad de Obras</h5>
-              <p className="text-muted mb-0 small">Consolidado de fallas, responsables y estados por proyecto.</p>
-            </div>
-            <div className="d-flex gap-2">
-              <button className="btn btn-outline-success btn-sm d-flex align-items-center" onClick={exportarExcel} disabled={filteredDatos.length === 0}>
-                <FaFileExcel className="me-2" /> Excel
-              </button>
-              <button className="btn btn-outline-danger btn-sm d-flex align-items-center" onClick={exportarPDF} disabled={filteredDatos.length === 0}>
-                <FaFilePdf className="me-2" /> PDF
-              </button>
-            </div>
-          </div>
+        {/* Nav Tabs */}
+        <ul className="nav nav-pills mb-4 bg-white p-2 rounded-3 shadow-sm" role="tablist">
+          <li className="nav-item" role="presentation">
+            <button 
+              className={`nav-link d-flex align-items-center ${activeTab === 'trazabilidad' ? 'active' : 'text-dark fw-semibold'}`}
+              onClick={() => setActiveTab('trazabilidad')}
+              type="button"
+              style={activeTab !== 'trazabilidad' ? { backgroundColor: 'transparent' } : {}}
+            >
+              <FaTable className="me-2" /> Trazabilidad de Obras
+            </button>
+          </li>
+          <li className="nav-item" role="presentation">
+            <button 
+              className={`nav-link d-flex align-items-center ${activeTab === 'costos' ? 'active' : 'text-dark fw-semibold'}`}
+              onClick={() => setActiveTab('costos')}
+              type="button"
+              style={activeTab !== 'costos' ? { backgroundColor: 'transparent' } : {}}
+            >
+              <FaChartBar className="me-2" /> Reporte de Costos
+            </button>
+          </li>
+        </ul>
 
-          {/* SECCIÓN DE FILTROS SIMPLIFICADA */}
-          <div className="row g-3 mb-4 p-3 bg-light rounded-3 border-0">
-            <div className="col-md-3">
-              <label className="form-label small text-muted">Cliente</label>
-              <select className="form-select form-select-sm" value={filtroCliente} onChange={(e) => setFiltroCliente(e.target.value)}>
-                <option value="">Todos los clientes</option>
-                {clientes.map(c => (
-                  <option key={c.idCliente || c.id_cliente} value={c.nombreEmpresa || c.nombre_empresa}>
-                    {c.nombreEmpresa || c.nombre_empresa}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-3">
-              <label className="form-label small text-muted">Obra / Proyecto</label>
-              <select className="form-select form-select-sm" value={filtroObra} onChange={(e) => setFiltroObra(e.target.value)}>
-                <option value="">Todas las obras</option>
-                {obras.map(o => (
-                  <option key={o.idObra || o.id_obra} value={o.nombreObra || o.nombre_obra}>
-                    {o.nombreObra || o.nombre_obra}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-2">
-              <label className="form-label small text-muted">Desde</label>
-              <input type="date" className="form-control form-control-sm" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
-            </div>
-            <div className="col-md-2">
-              <label className="form-label small text-muted">Hasta</label>
-              <input type="date" className="form-control form-control-sm" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
-            </div>
-            <div className="col-md-2 d-flex align-items-end">
-              <div className="input-group input-group-sm">
-                <span className="input-group-text bg-white border-end-0 text-muted"><FaSearch /></span>
-                <input type="text" className="form-control border-start-0 ps-0" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <div className="tab-content">
+          {activeTab === 'trazabilidad' && (
+            <div className="card shadow-sm border-0 rounded-3 p-4">
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                  <h5 className="mb-0">Reporte de Trazabilidad de Obras</h5>
+                  <p className="text-muted mb-0 small">Consolidado de fallas, responsables y estados por proyecto.</p>
+                </div>
+                <div className="d-flex gap-2">
+                  <button className="btn btn-outline-success btn-sm d-flex align-items-center" onClick={exportarExcel} disabled={filteredDatos.length === 0}>
+                    <FaFileExcel className="me-2" /> Excel
+                  </button>
+                  <button className="btn btn-outline-danger btn-sm d-flex align-items-center" onClick={exportarPDF} disabled={filteredDatos.length === 0}>
+                    <FaFilePdf className="me-2" /> PDF
+                  </button>
+                </div>
               </div>
-            </div>
-            {(filtroObra || filtroCliente || fechaDesde || fechaHasta || searchTerm) && (
-              <div className="col-12 mt-2">
-                <button className="btn btn-link btn-sm text-danger p-0" onClick={limparFiltros}>
-                  <FaTimes className="me-1" /> Limpiar filtros
-                </button>
-              </div>
-            )}
-          </div>
 
-          <div className="table-responsive">
-            <table className="table table-hover align-middle">
-              <thead className="table-light text-muted" style={{ fontSize: '14px' }}>
-                <tr>
-                  <th>Obra</th>
-                  <th>Cliente</th>
-                  <th>Responsable</th>
-                  <th>Fecha Registro</th>
-                  <th>Fecha Resolución</th>
-                  <th>Falla</th>
-                  <th>Ubicación</th>
-                  <th>Estado</th>
-                  <th className="text-end">Costo</th>
-                </tr>
-              </thead>
-              <tbody style={{ fontSize: '14px' }}>
-                {loading ? (
-                  <tr>
-                    <td colSpan="9" className="text-center py-4">
-                      <div className="spinner-border text-primary spinner-border-sm" role="status"></div>
-                    </td>
-                  </tr>
-                ) : filteredDatos.length > 0 ? (
-                  filteredDatos.map((item, index) => (
-                    <tr key={index}>
-                      <td className="fw-semibold">{item.obra}</td>
-                      <td>{item.cliente || '-'}</td>
-                      <td>{item.responsable || '-'}</td>
-                      <td>{formatFecha(item.fechaRegistro)}</td>
-                      <td>{formatFecha(item.fechaResolucion)}</td>
-                      <td>{item.fallaDetectada}</td>
-                      <td>{item.ubicacionExacta}</td>
-                      <td>
-                        <span className={`badge ${
-                          item.estadoActual === 'terminado' ? 'bg-success' : 
-                          item.estadoActual === 'en proceso' ? 'bg-primary' : 
-                          item.estadoActual === 'no aplica' ? 'bg-secondary' : 'bg-warning text-dark'
-                        }`}>
-                          {item.estadoActual}
-                        </span>
-                      </td>
-                      <td className="text-end fw-bold text-success" style={{ fontSize: '13px' }}>
-                        {item.costo !== undefined && item.costo !== null ? formatCurrency(item.costo) : formatCurrency(0)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="9" className="text-center text-muted py-4">
-                      No se encontraron datos.
-                    </td>
-                  </tr>
+              {/* SECCIÓN DE FILTROS SIMPLIFICADA */}
+              <div className="row g-3 mb-4 p-3 bg-light rounded-3 border-0">
+                <div className="col-md-3">
+                  <label className="form-label small text-muted">Cliente</label>
+                  <select className="form-select form-select-sm" value={filtroCliente} onChange={(e) => setFiltroCliente(e.target.value)}>
+                    <option value="">Todos los clientes</option>
+                    {clientes.map(c => (
+                      <option key={c.idCliente || c.id_cliente} value={c.nombreEmpresa || c.nombre_empresa}>
+                        {c.nombreEmpresa || c.nombre_empresa}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label small text-muted">Obra / Proyecto</label>
+                  <select className="form-select form-select-sm" value={filtroObra} onChange={(e) => setFiltroObra(e.target.value)}>
+                    <option value="">Todas las obras</option>
+                    {obras.map(o => (
+                      <option key={o.idObra || o.id_obra} value={o.nombreObra || o.nombre_obra}>
+                        {o.nombreObra || o.nombre_obra}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label small text-muted">Desde</label>
+                  <input type="date" className="form-control form-control-sm" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label small text-muted">Hasta</label>
+                  <input type="date" className="form-control form-control-sm" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+                </div>
+                <div className="col-md-2 d-flex align-items-end">
+                  <div className="input-group input-group-sm">
+                    <span className="input-group-text bg-white border-end-0 text-muted"><FaSearch /></span>
+                    <input type="text" className="form-control border-start-0 ps-0" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  </div>
+                </div>
+                {(filtroObra || filtroCliente || fechaDesde || fechaHasta || searchTerm) && (
+                  <div className="col-12 mt-2">
+                    <button className="btn btn-link btn-sm text-danger p-0" onClick={limparFiltros}>
+                      <FaTimes className="me-1" /> Limpiar filtros
+                    </button>
+                  </div>
                 )}
-              </tbody>
-            </table>
-          </div>
+              </div>
+
+              <div className="table-responsive">
+                <table className="table table-hover align-middle">
+                  <thead className="table-light text-muted" style={{ fontSize: '14px' }}>
+                    <tr>
+                      <th>Obra</th>
+                      <th>Cliente</th>
+                      <th>Responsable</th>
+                      <th>Fecha Registro</th>
+                      <th>Fecha Resolución</th>
+                      <th>Falla</th>
+                      <th>Ubicación</th>
+                      <th>Estado</th>
+                      <th className="text-end">Costo</th>
+                    </tr>
+                  </thead>
+                  <tbody style={{ fontSize: '14px' }}>
+                    {loading ? (
+                      <tr>
+                        <td colSpan="9" className="text-center py-4">
+                          <div className="spinner-border text-primary spinner-border-sm" role="status"></div>
+                        </td>
+                      </tr>
+                    ) : filteredDatos.length > 0 ? (
+                      filteredDatos.map((item, index) => (
+                        <tr key={index}>
+                          <td className="fw-semibold">{item.obra}</td>
+                          <td>{item.cliente || '-'}</td>
+                          <td>{item.responsable || '-'}</td>
+                          <td>{formatFecha(item.fechaRegistro)}</td>
+                          <td>{formatFecha(item.fechaResolucion)}</td>
+                          <td>{item.fallaDetectada}</td>
+                          <td>{item.ubicacionExacta}</td>
+                          <td>
+                            <span className={`badge ${
+                              item.estadoActual === 'terminado' ? 'bg-success' : 
+                              item.estadoActual === 'en proceso' ? 'bg-primary' : 
+                              item.estadoActual === 'no aplica' ? 'bg-secondary' : 'bg-warning text-dark'
+                            }`}>
+                              {item.estadoActual}
+                            </span>
+                          </td>
+                          <td className="text-end fw-bold text-success" style={{ fontSize: '13px' }}>
+                            {item.costo !== undefined && item.costo !== null ? formatCurrency(item.costo) : formatCurrency(0)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="9" className="text-center text-muted py-4">
+                          No se encontraron datos.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'costos' && (
+            <div className="card shadow-sm border-0 rounded-3">
+              <ReporteCostosGrafico usuarioLogueado={usuarioLogueado} />
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>

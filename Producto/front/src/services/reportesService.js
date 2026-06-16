@@ -16,3 +16,20 @@ export const obtenerReporteTrazabilidad = async () => {
     throw error;
   }
 };
+
+/**
+ * Obtiene los datos para el reporte de costos por obra
+ * @returns {Promise<Array>} Array de objetos ObraCostoDTO
+ */
+export const obtenerReporteCostos = async () => {
+  try {
+    const response = await fetch(`${API_URL}/costos-por-obra`);
+    if (!response.ok) {
+      throw new Error('Error al obtener el reporte de costos');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error en obtenerReporteCostos:', error);
+    throw error;
+  }
+};
