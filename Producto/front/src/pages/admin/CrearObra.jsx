@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaFileContract, FaArrowLeft } from 'react-icons/fa';
-import NavbarAdmin from '../../components/NavbarAdmin';
+import { FaFileContract } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
-import { esClienteActivo } from '../../utils/estadoEntidades';
+import useEstadoValidation from '../../hooks/useEstadoValidation';
 
 const CrearObra = () => {
   const navigate = useNavigate();
@@ -12,6 +11,8 @@ const CrearObra = () => {
     nombre: 'Administrador',
     rol: 'admin'
   };
+
+  const { estadoError, limpiarEstadoError, validarCliente } = useEstadoValidation();
 
   const [formData, setFormData] = useState({
     idCliente: '',
@@ -34,8 +35,9 @@ const CrearObra = () => {
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
   const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
+  // Estado del cliente seleccionado para mostrar alerta inline
+  const [clienteSeleccionadoActivo, setClienteSeleccionadoActivo] = useState(true);
 
-  // Cargar clientes, regiones y comunas al montar el componente
   useEffect(() => {
     cargarClientes();
     cargarRegiones();
@@ -44,7 +46,7 @@ const CrearObra = () => {
 
   const cargarClientes = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/clientes/activos');
+      const response = await fetch('http://localhost:8080/api/clientes');
       if (response.ok) {
         const data = await response.json();
         setClientes(data);
@@ -59,83 +61,91 @@ const CrearObra = () => {
   const cargarRegiones = async () => {
     try {
       const response = await fetch('http://localhost:8080/api/regiones');
-      if (response.ok) {
-        const data = await response.json();
-        setRegiones(data);
-      } else {
-        console.error('Error al cargar regiones');
-      }
-    } catch (error) {
-      console.error('Error de conexión:', error);
+      if (response.ok) setRegiones(await response.json());
+    } catch (e) {
+      console.error('Error al cargar regiones:', e);
     }
   };
 
   const cargarComunas = async () => {
     try {
       const response = await fetch('http://localhost:8080/api/comunas');
-      if (response.ok) {
-        const data = await response.json();
-        setComunas(data);
-      } else {
-        console.error('Error al cargar comunas');
-      }
-    } catch (error) {
-      console.error('Error de conexión:', error);
+      if (response.ok) setComunas(await response.json());
+    } catch (e) {
+      console.error('Error al cargar comunas:', e);
     }
   };
 
-  // Filtrar comunas por región seleccionada
   const filtrarComunasPorRegion = (idRegion) => {
-    if (!idRegion) {
-      setComunasFiltradas([]);
-      return;
-    }
-    const filtered = comunas.filter(comuna => comuna.idRegion === parseInt(idRegion));
-    setComunasFiltradas(filtered);
+    if (!idRegion) { setComunasFiltradas([]); return; }
+    setComunasFiltradas(comunas.filter(c => c.idRegion === parseInt(idRegion)));
   };
 
-  const validarFecha = (fecha) => {
-    return fecha !== '' && !isNaN(new Date(fecha).getTime());
+  const validarFecha = (f) => f !== '' && !isNaN(new Date(f).getTime());
+  const validarFechaMayor = (f1, f2) => {
+    if (!f1 || !f2) return true;
+    return new Date(f1) < new Date(f2);
   };
 
-  const validarFechaMayor = (fecha1, fecha2) => {
-    if (fecha1 === '' || fecha2 === '') return true;
-    return new Date(fecha1) < new Date(fecha2);
-  };
-
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const { name, value } = e.target;
     let newErrors = { ...errors };
 
-    if (name === 'nombreObra') {
-      setFormData({ ...formData, [name]: value });
-      newErrors.nombreObra = value.trim() === '' ? 'El nombre de la obra es requerido' : '';
-    } else if (name === 'idCliente') {
+    if (name === 'idCliente') {
       setFormData({ ...formData, [name]: value });
       newErrors.idCliente = value === '' ? 'Debes seleccionar un cliente' : '';
+
+      // ── Validación de estado del cliente ──────────────────────────────────
+      if (value) {
+        // Buscar primero en la lista ya cargada (sin fetch adicional)
+        const clienteLocal = clientes.find(
+          c => String(c.idCliente || c.id_cliente) === String(value)
+        );
+        if (clienteLocal) {
+          const activo = clienteLocal.estado === 'Activo';
+          setClienteSeleccionadoActivo(activo);
+          if (!activo) {
+            newErrors.idCliente =
+              `${clienteLocal.nombreEmpresa} está Inactivo. Actívalo antes de crear una obra.`;
+          }
+        } else {
+          // Si no está en la lista (raro), consultar backend
+          const valido = await validarCliente(value);
+          setClienteSeleccionadoActivo(valido);
+        }
+      } else {
+        setClienteSeleccionadoActivo(true);
+        limpiarEstadoError();
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
+    } else if (name === 'nombreObra') {
+      setFormData({ ...formData, [name]: value });
+      newErrors.nombreObra = value.trim() === '' ? 'El nombre de la obra es requerido' : '';
+
     } else if (name === 'idRegion') {
       setFormData({ ...formData, [name]: value, idComuna: '' });
       filtrarComunasPorRegion(value);
       newErrors.idRegion = value === '' ? 'Debes seleccionar una región' : '';
       newErrors.idComuna = '';
+
     } else if (name === 'calle') {
       setFormData({ ...formData, [name]: value });
       newErrors.calle = value.trim() === '' ? 'La calle es requerida' : '';
+
     } else if (name === 'idComuna') {
       setFormData({ ...formData, [name]: value });
       newErrors.idComuna = value === '' ? 'Debes seleccionar una comuna' : '';
+
     } else if (name === 'fechaEntrega') {
       setFormData({ ...formData, [name]: value });
-      if (value === '') {
-        newErrors.fechaEntrega = 'La fecha de entrega es requerida';
-      } else if (!validarFecha(value)) {
-        newErrors.fechaEntrega = 'Fecha inválida';
-      } else {
-        newErrors.fechaEntrega = '';
-      }
+      newErrors.fechaEntrega = !value
+        ? 'La fecha de entrega es requerida'
+        : !validarFecha(value) ? 'Fecha inválida' : '';
+
     } else if (name === 'garantiaExpira') {
       setFormData({ ...formData, [name]: value });
-      if (value === '') {
+      if (!value) {
         newErrors.garantiaExpira = 'La fecha de expiración de garantía es requerida';
       } else if (!validarFecha(value)) {
         newErrors.garantiaExpira = 'Fecha inválida';
@@ -144,6 +154,7 @@ const CrearObra = () => {
       } else {
         newErrors.garantiaExpira = '';
       }
+
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -155,44 +166,46 @@ const CrearObra = () => {
     const archivo = e.target.files[0];
     if (archivo) {
       setArchivoSeleccionado(archivo);
-      // Por ahora solo guardamos el nombre del archivo
-      // Más tarde se subirá a Google Cloud Storage
       setFormData({ ...formData, planosPresupuestos: archivo.name });
     }
   };
 
-  const handleVolver = () => {
-    console.log('Volver al dashboard');
-    navigate('/admin/obras');
-  };
-
-  const handleCancel = () => {
-    navigate('/admin/obras');
-  };
+  const handleVolver = () => navigate('/admin/obras');
+  const handleCancel = () => navigate('/admin/obras');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Validación final completa
-    const newErrors = {};
+    // ── Bloquear envío si el cliente está inactivo ─────────────────────────
+    if (!clienteSeleccionadoActivo) {
+      setError('No es posible crear una obra para un cliente Inactivo.');
+      setLoading(false);
+      return;
+    }
 
-    if (!formData.idCliente) {
-      newErrors.idCliente = 'Debes seleccionar un cliente';
+    // Re-validar contra el backend justo antes de guardar
+    if (formData.idCliente) {
+      const valido = await validarCliente(formData.idCliente);
+      if (!valido) {
+        setError(
+          estadoError ||
+          'No es posible crear una obra para un cliente Inactivo.'
+        );
+        setLoading(false);
+        return;
+      }
     }
-    if (!formData.nombreObra.trim()) {
-      newErrors.nombreObra = 'El nombre de la obra es requerido';
-    }
-    if (!formData.idRegion) {
-      newErrors.idRegion = 'Debes seleccionar una región';
-    }
-    if (!formData.calle.trim()) {
-      newErrors.calle = 'La calle es requerida';
-    }
-    if (!formData.idComuna) {
-      newErrors.idComuna = 'Debes seleccionar una comuna';
-    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Validación de formulario
+    const newErrors = {};
+    if (!formData.idCliente) newErrors.idCliente = 'Debes seleccionar un cliente';
+    if (!formData.nombreObra.trim()) newErrors.nombreObra = 'El nombre de la obra es requerido';
+    if (!formData.idRegion) newErrors.idRegion = 'Debes seleccionar una región';
+    if (!formData.calle.trim()) newErrors.calle = 'La calle es requerida';
+    if (!formData.idComuna) newErrors.idComuna = 'Debes seleccionar una comuna';
     if (!formData.fechaEntrega) {
       newErrors.fechaEntrega = 'La fecha de entrega es requerida';
     } else if (!validarFecha(formData.fechaEntrega)) {
@@ -217,7 +230,7 @@ const CrearObra = () => {
         idCliente: parseInt(formData.idCliente),
         nombreObra: formData.nombreObra,
         descripcionObra: formData.descripcionObra,
-        direccion: `${formData.calle}`,
+        direccion: formData.calle,
         idRegion: parseInt(formData.idRegion),
         idComuna: parseInt(formData.idComuna),
         planosPresupuestos: formData.planosPresupuestos || null,
@@ -228,10 +241,8 @@ const CrearObra = () => {
 
       const response = await fetch('http://localhost:8080/api/obras', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(datosObra),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosObra)
       });
 
       if (response.ok) {
@@ -242,8 +253,8 @@ const CrearObra = () => {
         const errorMessage = await response.text();
         setError(errorMessage || 'Error al crear la obra');
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (err) {
+      console.error('Error:', err);
       setError('Error de conexión con el servidor');
     } finally {
       setLoading(false);
@@ -251,17 +262,23 @@ const CrearObra = () => {
   };
 
   return (
-    <AdminLayout 
-      usuario={usuarioLogueado} 
-      titulo="Creación de Obra" 
+    <AdminLayout
+      usuario={usuarioLogueado}
+      titulo="Creación de Obra"
       handleVolver={handleVolver}
     >
       <div className="container py-4" style={{ overflowX: 'auto', overflowY: 'auto', maxWidth: '100%' }}>
-        <div className="card shadow-sm border-0 rounded-3 p-4 mx-auto overflow-auto" style={{ maxWidth: '750px', minWidth: 0, maxHeight: 'calc(100vh - 180px)' }}>
+        <div
+          className="card shadow-sm border-0 rounded-3 p-4 mx-auto overflow-auto"
+          style={{ maxWidth: '750px', minWidth: 0, maxHeight: 'calc(100vh - 180px)' }}
+        >
+          {error && <div className="alert alert-danger">{error}</div>}
 
-          {error && (
-            <div className="alert alert-danger" role="alert">
-              {error}
+          {/* Alerta global de estado inactivo */}
+          {estadoError && (
+            <div className="alert alert-danger d-flex align-items-start gap-2">
+              <span>⚠️</span>
+              <span>{estadoError}</span>
             </div>
           )}
 
@@ -275,25 +292,30 @@ const CrearObra = () => {
             <div className="mb-3">
               <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Cliente *</label>
               <select
-                className={`form-select ${errors.idCliente ? 'is-invalid' : ''}`}
+                className={`form-select ${errors.idCliente || !clienteSeleccionadoActivo ? 'is-invalid' : ''}`}
                 name="idCliente"
                 value={formData.idCliente}
                 onChange={handleInputChange}
                 required
               >
                 <option value="">Selecciona un cliente</option>
-                {clientes.filter(esClienteActivo).map((cliente) => (
-                  <option key={cliente.idCliente || cliente.id_cliente} value={cliente.idCliente || cliente.id_cliente}>
-                    {cliente.nombreEmpresa || cliente.nombre_empresa}
-                  </option>
-                ))}
+                {clientes.map((cliente) => {
+                  const id = cliente.idCliente || cliente.id_cliente;
+                  const nombre = cliente.nombreEmpresa || cliente.nombre_empresa;
+                  const inactivo = cliente.estado === 'Inactivo';
+                  return (
+                    <option key={id} value={id}>
+                      {nombre}{inactivo ? ' (Inactivo)' : ''}
+                    </option>
+                  );
+                })}
               </select>
-              {clientes.length === 0 && (
-                <small className="text-muted">No hay clientes activos disponibles.</small>
-              )}
               {errors.idCliente && (
-                <div className="invalid-feedback">
-                  {errors.idCliente}
+                <div className="invalid-feedback">{errors.idCliente}</div>
+              )}
+              {!errors.idCliente && !clienteSeleccionadoActivo && (
+                <div className="invalid-feedback d-block">
+                  Este cliente está Inactivo. Actívalo en Gestión de Clientes para poder asignarle obras.
                 </div>
               )}
             </div>
@@ -310,11 +332,7 @@ const CrearObra = () => {
                 placeholder="Ej: Edificio Centro Comercial"
                 required
               />
-              {errors.nombreObra && (
-                <div className="invalid-feedback">
-                  {errors.nombreObra}
-                </div>
-              )}
+              {errors.nombreObra && <div className="invalid-feedback">{errors.nombreObra}</div>}
             </div>
 
             {/* Descripción de Obra */}
@@ -327,7 +345,7 @@ const CrearObra = () => {
                 onChange={handleInputChange}
                 placeholder="Describe los detalles del proyecto"
                 rows="3"
-              ></textarea>
+              />
             </div>
 
             {/* Región */}
@@ -341,36 +359,26 @@ const CrearObra = () => {
                 required
               >
                 <option value="">Selecciona una región</option>
-                {regiones.map((region) => (
-                  <option key={region.idRegion} value={region.idRegion}>
-                    {region.nombreRegion}
-                  </option>
+                {regiones.map((r) => (
+                  <option key={r.idRegion} value={r.idRegion}>{r.nombreRegion}</option>
                 ))}
               </select>
-              {errors.idRegion && (
-                <div className="invalid-feedback">
-                  {errors.idRegion}
-                </div>
-              )}
+              {errors.idRegion && <div className="invalid-feedback">{errors.idRegion}</div>}
             </div>
 
-            {/* Dirección - Calle y Numeración */}
+            {/* Calle */}
             <div className="mb-3">
-                <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Calle *</label>
-                <input
-                  type="text"
-                  className={`form-control ${errors.calle ? 'is-invalid' : ''}`}
-                  name="calle"
-                  value={formData.calle}
-                  onChange={handleInputChange}
-                  placeholder="Ej: Avenida Principal"
-                  required
-                />
-                {errors.calle && (
-                  <div className="invalid-feedback">
-                    {errors.calle}
-                  </div>
-                )}
+              <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Calle *</label>
+              <input
+                type="text"
+                className={`form-control ${errors.calle ? 'is-invalid' : ''}`}
+                name="calle"
+                value={formData.calle}
+                onChange={handleInputChange}
+                placeholder="Ej: Avenida Principal"
+                required
+              />
+              {errors.calle && <div className="invalid-feedback">{errors.calle}</div>}
             </div>
 
             {/* Comuna */}
@@ -387,17 +395,11 @@ const CrearObra = () => {
                 <option value="">
                   {formData.idRegion ? 'Selecciona una comuna' : 'Primero selecciona una región'}
                 </option>
-                {comunasFiltradas.map((comuna) => (
-                  <option key={comuna.idComuna} value={comuna.idComuna}>
-                    {comuna.nombreComuna}
-                  </option>
+                {comunasFiltradas.map((c) => (
+                  <option key={c.idComuna} value={c.idComuna}>{c.nombreComuna}</option>
                 ))}
               </select>
-              {errors.idComuna && (
-                <div className="invalid-feedback">
-                  {errors.idComuna}
-                </div>
-              )}
+              {errors.idComuna && <div className="invalid-feedback">{errors.idComuna}</div>}
             </div>
 
             {/* Planos y Presupuestos */}
@@ -414,7 +416,7 @@ const CrearObra = () => {
                 Se agregará Google Cloud Storage próximamente. Actualmente se guarda el nombre del archivo.
               </small>
               {archivoSeleccionado && (
-                <div className="mt-2 alert alert-info" role="alert">
+                <div className="mt-2 alert alert-info">
                   Archivo seleccionado: {archivoSeleccionado.name}
                 </div>
               )}
@@ -432,11 +434,7 @@ const CrearObra = () => {
                   onChange={handleInputChange}
                   required
                 />
-                {errors.fechaEntrega && (
-                  <div className="invalid-feedback">
-                    {errors.fechaEntrega}
-                  </div>
-                )}
+                {errors.fechaEntrega && <div className="invalid-feedback">{errors.fechaEntrega}</div>}
               </div>
               <div className="col-md-6">
                 <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Expiración de Garantía *</label>
@@ -448,11 +446,7 @@ const CrearObra = () => {
                   onChange={handleInputChange}
                   required
                 />
-                {errors.garantiaExpira && (
-                  <div className="invalid-feedback">
-                    {errors.garantiaExpira}
-                  </div>
-                )}
+                {errors.garantiaExpira && <div className="invalid-feedback">{errors.garantiaExpira}</div>}
               </div>
             </div>
 
@@ -476,7 +470,7 @@ const CrearObra = () => {
               )}
             </div>
 
-            {/* Botones de acción */}
+            {/* Botones */}
             <div className="d-flex justify-content-end gap-2 border-top pt-3">
               <button
                 type="button"
@@ -486,7 +480,13 @@ const CrearObra = () => {
               >
                 Cancelar
               </button>
-              <button type="submit" className="btn px-4 text-white" style={{ backgroundColor: '#0B3B60' }} disabled={loading}>
+              <button
+                type="submit"
+                className="btn px-4 text-white"
+                style={{ backgroundColor: '#0B3B60' }}
+                disabled={loading || !clienteSeleccionadoActivo}
+                title={!clienteSeleccionadoActivo ? 'El cliente seleccionado está Inactivo' : ''}
+              >
                 {loading ? 'Creando...' : <><FaFileContract className="me-2" /> Crear Obra</>}
               </button>
             </div>
