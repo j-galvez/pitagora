@@ -16,6 +16,9 @@ public class ClientesService {
     @Autowired
     private ClientesRepository clientesRepository;
 
+    @Autowired
+    private ObrasService obrasService;
+
     // CREATE - Crear cliente
     public Clientes crearCliente(Clientes cliente) {
         // Validación: nombreEmpresa es requerido
@@ -137,11 +140,17 @@ public class ClientesService {
         }
 
         if (clienteActualizado.getEstado() != null && !clienteActualizado.getEstado().isEmpty()) {
-            if (!clienteActualizado.getEstado().equals("Activo") && 
+            if (!clienteActualizado.getEstado().equals("Activo") &&
                 !clienteActualizado.getEstado().equals("Inactivo")) {
                 throw new IllegalArgumentException("Estado inválido. Debe ser: 'Activo' o 'Inactivo'");
             }
-            clienteExistente.setEstado(clienteActualizado.getEstado());
+            String estadoAnterior = clienteExistente.getEstado() != null
+                ? clienteExistente.getEstado() : "Activo";
+            String estadoNuevo = clienteActualizado.getEstado();
+            clienteExistente.setEstado(estadoNuevo);
+            if ("Inactivo".equals(estadoNuevo) && !"Inactivo".equalsIgnoreCase(estadoAnterior)) {
+                obrasService.inactivarObrasPorCliente(id);
+            }
         }
 
         return clientesRepository.save(clienteExistente);

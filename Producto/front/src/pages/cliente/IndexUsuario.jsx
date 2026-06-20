@@ -6,6 +6,7 @@ import CardObservacion from '../../components/CardObservacion';
 import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
 import { ticketsService } from '../../services/ticketsService';
 import { observacionesService } from '../../services/observacionesService';
+import { puedeCrearTicketOuObservacion, mensajeBloqueoCreacion } from '../../utils/estadoEntidades';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -37,6 +38,7 @@ export default function IndexUsuario() {
   const [vistaActiva, setVistaActiva] = useState('activas');
   const [ticketSeleccionadoId, setTicketSeleccionadoId] = useState(null);
   const [nombresObra, setNombresObra] = useState({});
+  const [obraUsuario, setObraUsuario] = useState(null);
   const [observaciones, setObservaciones] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingObservaciones, setLoadingObservaciones] = useState(false);
@@ -47,11 +49,32 @@ export default function IndexUsuario() {
 
   const usuarioLogueado = JSON.parse(localStorage.getItem('usuario')) || {};
   const idUsuario = usuarioLogueado.idUsuario || usuarioLogueado.id_usuario;
+  const idObraUsuario = usuarioLogueado.idObra || usuarioLogueado.id_obra;
+
+  const puedeCrear = puedeCrearTicketOuObservacion(obraUsuario);
+  const mensajeBloqueo = obraUsuario ? mensajeBloqueoCreacion(obraUsuario) : '';
 
   const ticketsActivos = todosLosTickets.filter(isTicketActivo);
   const ticketsTerminados = todosLosTickets.filter(isTicketTerminado);
   const ticketSeleccionado =
     todosLosTickets.find((t) => getTicketId(t) === ticketSeleccionadoId) ?? null;
+
+  const cargarObraUsuario = async () => {
+    if (!idObraUsuario) {
+      setObraUsuario(null);
+      return;
+    }
+    try {
+      const response = await fetch(`${API_URL}/obras/${idObraUsuario}`);
+      if (response.ok) {
+        setObraUsuario(await response.json());
+      } else {
+        setObraUsuario(null);
+      }
+    } catch {
+      setObraUsuario(null);
+    }
+  };
 
   const cargarNombresObra = async (tickets) => {
     const desdeSesion =
@@ -134,6 +157,7 @@ export default function IndexUsuario() {
     setNombresObra({});
 
     try {
+      await cargarObraUsuario();
       const data = await ticketsService.getTicketsByUsuario(idUsuario);
       const tickets = data || [];
       setTodosLosTickets(tickets);
@@ -163,7 +187,7 @@ export default function IndexUsuario() {
     ? new Date(ticketSeleccionado.fechaCreacion || ticketSeleccionado.fecha_creacion).toLocaleDateString()
     : '';
   const esTicketActivoSeleccionado = ticketSeleccionado && isTicketActivo(ticketSeleccionado);
-  const mostrarAgregarObservacion = vistaActiva === 'activas' && esTicketActivoSeleccionado;
+  const mostrarAgregarObservacion = vistaActiva === 'activas' && esTicketActivoSeleccionado && puedeCrear;
 
   const renderObservaciones = () => {
     if (loadingObservaciones) {
@@ -285,7 +309,7 @@ export default function IndexUsuario() {
                   <i className="bi bi-plus-lg"></i>
                   <span>Agregar Observación</span>
                 </button>
-              ) : vistaActiva === 'activas' && ticketsActivos.length === 0 ? (
+              ) : vistaActiva === 'activas' && ticketsActivos.length === 0 && puedeCrear ? (
                 <button
                   className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
                   onClick={() => navigate('/crear-ticket')}
@@ -298,6 +322,13 @@ export default function IndexUsuario() {
             </div>
 
             {error && <div className="alert alert-danger">{error}</div>}
+
+            {!loading && obraUsuario && !puedeCrear && (
+              <div className="alert alert-warning d-flex align-items-start mb-4">
+                <i className="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+                <div>{mensajeBloqueo}</div>
+              </div>
+            )}
 
             {loading ? (
               <div className="text-center p-5">
@@ -335,13 +366,17 @@ export default function IndexUsuario() {
                       <div className="alert alert-light border text-center py-5">
                         <i className="bi bi-file-earmark-plus fs-1 d-block mb-3 text-secondary"></i>
                         <p className="mb-3">No tienes un ticket activo en este momento.</p>
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => navigate('/crear-ticket')}
-                          style={{ backgroundColor: '#003860', borderColor: '#003860' }}
-                        >
-                          Crear nuevo ticket
-                        </button>
+                        {puedeCrear ? (
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => navigate('/crear-ticket')}
+                            style={{ backgroundColor: '#003860', borderColor: '#003860' }}
+                          >
+                            Crear nuevo ticket
+                          </button>
+                        ) : (
+                          <p className="text-secondary mb-0 small">{mensajeBloqueo}</p>
+                        )}
                       </div>
                     )
                 )}

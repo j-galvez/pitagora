@@ -16,6 +16,7 @@ public interface ObraDTO {
     // Los campos cruzados con otras tablas
     Integer getIdCliente();
     String getNombreEmpresa();
+    String getEstadoCliente();
     
     Integer getIdRegion();
     String getNombreRegion();

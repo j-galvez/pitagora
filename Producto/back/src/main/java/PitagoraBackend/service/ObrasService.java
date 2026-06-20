@@ -35,6 +35,12 @@ public class ObrasService {
         }
     }
 
+    public void validarObraOperableParaCreacion(Integer idObra) {
+        Obras obra = obtenerObraById(idObra);
+        validarObraActiva(idObra);
+        validarClienteActivo(obra.getIdCliente());
+    }
+
     // CREATE - Crear obra
     public Obras crearObras(Obras obras) {
         // Validación 1: id_cliente es requerido
@@ -67,8 +73,8 @@ public class ObrasService {
         // Validar que el estado sea válido
         if (!obras.getEstadoObra().equals("Activa") &&
             !obras.getEstadoObra().equals("Garantía Vencida") &&
-            !obras.getEstadoObra().equals("Cerrada")) {
-            throw new IllegalArgumentException("Estado inválido. Debe ser: 'Activa', 'Garantía Vencida' o 'Cerrada'");
+            !obras.getEstadoObra().equals("Inactiva")) {
+            throw new IllegalArgumentException("Estado inválido. Debe ser: 'Activa', 'Garantía Vencida' o 'Inactiva'");
         }
 
         // La fecha_creacion se establece automáticamente por la BD
@@ -147,8 +153,8 @@ public class ObrasService {
             // Validar que el estado sea válido
             if (!obrasActualizado.getEstadoObra().equals("Activa") &&
                 !obrasActualizado.getEstadoObra().equals("Garantía Vencida") &&
-                !obrasActualizado.getEstadoObra().equals("Cerrada")) {
-                throw new IllegalArgumentException("Estado inválido. Debe ser: 'Activa', 'Garantía Vencida' o 'Cerrada'");
+                !obrasActualizado.getEstadoObra().equals("Inactiva")) {
+                throw new IllegalArgumentException("Estado inválido. Debe ser: 'Activa', 'Garantía Vencida' o 'Inactiva'");
             }
             obraExistente.setEstadoObra(obrasActualizado.getEstadoObra());
         }
@@ -177,12 +183,19 @@ public class ObrasService {
         obrasRepository.deleteById(id);
     }
 
+    public void inactivarObrasPorCliente(Integer idCliente) {
+        obrasRepository.findByIdCliente(idCliente).forEach(obra -> {
+            obra.setEstadoObra("Inactiva");
+            obrasRepository.save(obra);
+        });
+    }
+
     // MÉTODOS ADICIONALES ÚTILES
 
     // Obtener obras por estado
     public List<Obras> obtenerObrasPorEstado(String estado) {
         // Validar estado
-        if (!estado.equals("Activa") && !estado.equals("Garantía Vencida") && !estado.equals("Cerrada")) {
+        if (!estado.equals("Activa") && !estado.equals("Garantía Vencida") && !estado.equals("Inactiva")) {
             throw new IllegalArgumentException("Estado inválido");
         }
         // Necesitarás agregar este método en ObrasRepository:

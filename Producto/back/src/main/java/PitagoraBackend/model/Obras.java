@@ -59,7 +59,7 @@ public class Obras {
     private LocalDate garantiaExpira;
 
     @Column(name = "estado_obra", nullable = false, length = 20)
-    private String estadoObra; // 'Activa', 'Garantía Vencida', 'Cerrada'
+    private String estadoObra; // 'Activa', 'Garantía Vencida', 'Inactiva'
 
     @Column(name = "fecha_creacion", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaCreacion;

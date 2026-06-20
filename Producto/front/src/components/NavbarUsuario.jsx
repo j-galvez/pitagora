@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { puedeCrearTicketOuObservacion } from '../utils/estadoEntidades';
 
 const API_URL = 'http://localhost:8080/api';
 const ACTIVE_TICKET_CACHE_PREFIX = 'pitagora_has_active_ticket_';
@@ -37,25 +38,31 @@ export default function NavbarUsuario({ usuario }) {
   const location = useLocation();
   const idUsuario = getIdUsuario(usuario);
   const [nombreObra, setNombreObra] = useState(() => getNombreObraDesdeUsuario(usuario));
+  const [obraUsuario, setObraUsuario] = useState(null);
   const [hasActiveTicket, setHasActiveTicket] = useState(() => leerTicketActivoCache(idUsuario));
 
-  useEffect(() => {
-    const desdeSesion = getNombreObraDesdeUsuario(usuario);
-    if (desdeSesion) {
-      setNombreObra(desdeSesion);
-      return;
-    }
+  const puedeCrear = puedeCrearTicketOuObservacion(obraUsuario);
+  const mostrarCrearTicket = hasActiveTicket === false && puedeCrear;
+  const mostrarCrearObservacion = puedeCrear;
 
+  useEffect(() => {
     const idObra = getIdObraDesdeUsuario(usuario);
     if (!idObra) {
       setNombreObra('');
+      setObraUsuario(null);
       return;
     }
 
     fetch(`${API_URL}/obras/${idObra}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data) => setNombreObra(data.nombreObra || data.nombre_obra || ''))
-      .catch(() => setNombreObra(''));
+      .then((data) => {
+        setObraUsuario(data);
+        setNombreObra(data.nombreObra || data.nombre_obra || getNombreObraDesdeUsuario(usuario) || '');
+      })
+      .catch(() => {
+        setObraUsuario(null);
+        setNombreObra(getNombreObraDesdeUsuario(usuario) || '');
+      });
   }, [usuario]);
 
   // Verificar si el usuario tiene un ticket activo (abierto o en proceso)
@@ -81,8 +88,6 @@ export default function NavbarUsuario({ usuario }) {
 
     verificarTicketActivo();
   }, [idUsuario, location.pathname]); // Re-verificar cuando cambia la ruta
-
-  const mostrarCrearTicket = hasActiveTicket === false;
 
   const handleLogout = () => {
     if (idUsuario) {
@@ -153,6 +158,7 @@ export default function NavbarUsuario({ usuario }) {
             </Link>
           </li>
         )}
+        {mostrarCrearObservacion && (
         <li className="nav-item mb-2">
           <Link 
             to="/crear-observacion" 
@@ -162,6 +168,7 @@ export default function NavbarUsuario({ usuario }) {
             <i className="bi bi-search me-2"></i> Crear Observación
           </Link>
         </li>
+        )}
         <li className="nav-item">
           <Link 
             to="/mensajes" 

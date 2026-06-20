@@ -6,7 +6,7 @@ import NavbarAdmin from '../../components/NavbarAdmin';
 import Footer from '../../components/Footer';
 import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
 import { observacionesService } from '../../services/observacionesService';
-import { esObraActiva } from '../../utils/estadoEntidades';
+import { puedeCrearTicketOuObservacion } from '../../utils/estadoEntidades';
 
 const MAX_FOTOS = 2;
 
@@ -174,12 +174,12 @@ export default function CrearObservacion() {
         const est = (t.estadoGeneral || t.estado_general || '').toLowerCase();
         const idObra = t.idObra || t.id_obra;
         const obra = mapaObras[idObra];
-        return (est === 'abierto' || est === 'en proceso') && obra && esObraActiva(obra);
+        return (est === 'abierto' || est === 'en proceso') && obra && puedeCrearTicketOuObservacion(obra);
       });
       setTickets(ticketsActivos);
 
       if (urlTicketId && !ticketsActivos.some(t => String(t.idTicket || t.id_ticket) === String(urlTicketId))) {
-        setError('El ticket seleccionado pertenece a una obra inactiva o no está disponible.');
+        setError('El ticket seleccionado pertenece a una obra o cliente inactivo, o no está disponible.');
         setSelectedTicketId('');
       }
     } catch (err) {
@@ -259,6 +259,17 @@ export default function CrearObservacion() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+
+    const idObraTicket = tickets.find(
+      (t) => String(t.idTicket || t.id_ticket) === String(selectedTicketId)
+    );
+    const obraTicket = obrasPorId[idObraTicket?.idObra || idObraTicket?.id_obra];
+    if (!isAdmin && obraTicket && !puedeCrearTicketOuObservacion(obraTicket)) {
+      setError('No se pueden crear observaciones porque la obra o el cliente está inactivo.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (nuevasObservaciones.length === 0) {
       setError('Debes agregar al menos una observación nueva');
       window.scrollTo({ top: 0, behavior: 'smooth' });

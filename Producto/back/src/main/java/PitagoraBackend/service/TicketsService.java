@@ -7,7 +7,6 @@ import PitagoraBackend.repository.UsuariosRepository;
 import PitagoraBackend.repository.ObrasRepository;
 import PitagoraBackend.model.Tickets;
 import PitagoraBackend.model.Usuarios;
-import PitagoraBackend.model.Obras;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -24,13 +23,8 @@ public class TicketsService {
     @Autowired
     private ObrasRepository obrasRepository;
 
-    private void validarObraActiva(Integer idObra) {
-        Obras obra = obrasRepository.findById(idObra)
-            .orElseThrow(() -> new IllegalArgumentException("La obra no existe con ID: " + idObra));
-        if (obra.getEstadoObra() == null || !obra.getEstadoObra().equalsIgnoreCase("Activa")) {
-            throw new IllegalArgumentException("No se puede crear un ticket para una obra inactiva.");
-        }
-    }
+    @Autowired
+    private ObrasService obrasService;
 
     private void validarUsuarioActivo(Integer idUsuario, String contexto) {
         Usuarios usuario = usuariosRepository.findById(idUsuario)
@@ -61,7 +55,7 @@ public class TicketsService {
         if (!obrasRepository.existsById(tickets.getIdObra())) {
             throw new IllegalArgumentException("La obra no existe con ID: " + tickets.getIdObra());
         }
-        validarObraActiva(tickets.getIdObra());
+        obrasService.validarObraOperableParaCreacion(tickets.getIdObra());
         
         // Validación 5: Verificar que el usuario creador existe y está activo
         if (!usuariosRepository.existsById(tickets.getIdUsuarioCreador())) {

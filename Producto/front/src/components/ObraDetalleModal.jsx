@@ -67,7 +67,7 @@ const ObraDetalleModal = ({ show, onHide, idObra }) => {
         return 'success';
       case 'garantía vencida':
         return 'warning';
-      case 'cerrada':
+      case 'inactiva':
         return 'secondary';
       default:
         return 'primary';

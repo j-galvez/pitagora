@@ -4,7 +4,7 @@ import { FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
 import NavbarUsuario from '../../components/NavbarUsuario';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import Footer from '../../components/Footer';
-import { esClienteActivo, esObraActiva, esUsuarioActivo } from '../../utils/estadoEntidades';
+import { esClienteActivo, esObraActiva, esUsuarioActivo, puedeCrearTicketOuObservacion, mensajeBloqueoCreacion } from '../../utils/estadoEntidades';
 
 export default function CrearTicket() {
   const navigate = useNavigate();
@@ -27,6 +27,7 @@ export default function CrearTicket() {
   // Estado para el nombre de la obra (lo buscamos si no viene en el login)
   const [nombreObraReal, setNombreObraReal] = useState(usuarioLogueado.nombre_obra || usuarioLogueado.nombreObra || '');
   const [nombreClienteReal, setNombreClienteReal] = useState('');
+  const [obraUsuario, setObraUsuario] = useState(null);
 
   const getObraId = (obra) => obra?.idObra || obra?.id_obra;
   const getClienteId = (cliente) => cliente?.idCliente || cliente?.id_cliente;
@@ -38,6 +39,8 @@ export default function CrearTicket() {
   });
 
   const clientesActivos = clientes.filter(esClienteActivo);
+
+  const puedeCrear = isAdmin || puedeCrearTicketOuObservacion(obraUsuario);
 
   const [formData, setFormData] = useState({
     idObra: isAdmin ? '' : (idObraActual || ''),
@@ -71,11 +74,11 @@ export default function CrearTicket() {
         const res = await fetch(`http://localhost:8080/api/obras/${idObraActual}`);
         if (!res.ok) throw new Error('Error al cargar obra');
         const data = await res.json();
+        setObraUsuario(data);
         setNombreObraReal(data.nombreObra || data.nombre_obra || '');
         setNombreClienteReal(data.nombreEmpresa || data.nombre_empresa || '');
-        const estadoObra = data.estadoObra || data.estado_obra;
-        if (estadoObra && estadoObra !== 'Activa') {
-          setError('Tu obra no está activa. No puedes crear nuevas solicitudes.');
+        if (!puedeCrearTicketOuObservacion(data)) {
+          setError(mensajeBloqueoCreacion(data));
         }
       } catch (err) {
         console.error('Error al obtener datos de la obra:', err);
@@ -172,7 +175,7 @@ export default function CrearTicket() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isAdmin && error) {
+    if (!isAdmin && !puedeCrear) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -370,7 +373,7 @@ export default function CrearTicket() {
                   type="submit" 
                   className="btn px-4 text-white fw-bold"
                   style={{ backgroundColor: '#0B3B60' }}
-                  disabled={loading}
+                  disabled={loading || (!isAdmin && !puedeCrear)}
                 >
                   {loading ? (
                     <>

@@ -376,7 +376,7 @@ const EditarObra = () => {
               {errors.idComuna && <div className="invalid-feedback">{errors.idComuna}</div>}
             </div>
 
-            {/* Planos y Presupuestos */}
+            {/* Planos y Presupuestos — pendiente de implementación (Cloud Storage)
             <div className="mb-3">
               <label className="form-label text-secondary fw-semibold" style={{ fontSize: '13px' }}>Planos y Presupuestos</label>
               <input
@@ -389,6 +389,7 @@ const EditarObra = () => {
               />
               <small className="form-text text-muted">Integración con Cloud Storage próximamente.</small>
             </div>
+            */}
 
             {/* Fechas */}
             <div className="row g-3 mb-4">
@@ -429,9 +430,9 @@ const EditarObra = () => {
               >
                 <option value="Activa">Activa</option>
                 <option value="Garantía Vencida">Garantía Vencida</option>
-                <option value="Cerrada">Cerrada</option>
+                <option value="Inactiva">Inactiva</option>
               </select>
-              {(formData.estadoObra === 'Cerrada' || formData.estadoObra === 'Garantía Vencida') && (
+              {(formData.estadoObra === 'Inactiva' || formData.estadoObra === 'Garantía Vencida') && (
                 <div className="alert alert-warning mt-2 py-2" style={{ fontSize: '13px' }}>
                   <strong>Atención:</strong> Una obra con estado "{formData.estadoObra}" no permitirá crear nuevos tickets u observaciones.
                 </div>

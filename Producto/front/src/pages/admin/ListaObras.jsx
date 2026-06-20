@@ -93,7 +93,7 @@ const ListaObras = () => {
     const estado = obra.estadoObra || obra.estado_obra;
     if (activeTab === 'Activas') return matchesSearch && estado === 'Activa';
     if (activeTab === 'Garantía Vencida') return matchesSearch && estado === 'Garantía Vencida';
-    if (activeTab === 'Cerradas') return matchesSearch && estado === 'Cerrada';
+    if (activeTab === 'Inactivas') return matchesSearch && estado === 'Inactiva';
     return matchesSearch;
   });
 
@@ -143,7 +143,7 @@ const ListaObras = () => {
         return 'bg-success';
       case 'garantía vencida':
         return 'bg-warning text-dark';
-      case 'cerrada':
+      case 'inactiva':
         return 'bg-secondary';
       default:
         return 'bg-primary';
@@ -198,7 +198,7 @@ const ListaObras = () => {
               </div>
             </div>
             <div className="col-md-6 d-flex justify-content-md-end gap-1 flex-wrap">
-              {['Todos', 'Activas', 'Garantía Vencida', 'Cerradas'].map((tab) => (
+              {['Todos', 'Activas', 'Garantía Vencida', 'Inactivas'].map((tab) => (
                 <button
                   key={tab}
                   className={`btn btn-sm px-3 ${activeTab === tab ? 'btn-dark' : 'btn-outline-secondary'}`}

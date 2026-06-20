@@ -70,8 +70,8 @@ const ClienteDetalleModal = ({ show, onHide, idCliente }) => {
         return <Badge bg="success">Activa</Badge>;
       case 'garantía vencida':
         return <Badge bg="warning" text="dark">Garantía Vencida</Badge>;
-      case 'cerrada':
-        return <Badge bg="secondary">Cerrada</Badge>;
+      case 'inactiva':
+        return <Badge bg="secondary">Inactiva</Badge>;
       default:
         return <Badge bg="primary">{estado}</Badge>;
     }
@@ -83,8 +83,8 @@ const ClienteDetalleModal = ({ show, onHide, idCliente }) => {
   const obrasEnGarantia = obras.filter(obra => 
     obra.estadoObra?.toLowerCase() === 'garantía vencida'
   );
-  const obrasCerradas = obras.filter(obra => 
-    obra.estadoObra?.toLowerCase() === 'cerrada'
+  const obrasInactivas = obras.filter(obra =>
+    obra.estadoObra?.toLowerCase() === 'inactiva'
   );
 
   const handleVerObra = (idObra) => {
@@ -230,8 +230,8 @@ const ClienteDetalleModal = ({ show, onHide, idCliente }) => {
                   </div>
                   <div className="col-md-4">
                     <div className="p-3 bg-secondary bg-opacity-10 rounded">
-                      <h3 className="text-secondary mb-0">{obrasCerradas.length}</h3>
-                      <small className="text-muted">Cerradas</small>
+                      <h3 className="text-secondary mb-0">{obrasInactivas.length}</h3>
+                      <small className="text-muted">Inactivas</small>
                     </div>
                   </div>
                 </div>

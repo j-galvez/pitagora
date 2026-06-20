@@ -5,7 +5,7 @@
  *
  * Reglas de negocio (CU-17):
  *   - Cliente "Inactivo"  → no se puede crear obra, usuario, ticket ni observación asociados.
- *   - Obra "Cerrada" o "Garantía Vencida" → no se puede crear ticket ni observación asociados.
+ *   - Obra "Inactiva" o "Garantía Vencida" → no se puede crear ticket ni observación asociados.
  */
 
 import { useState, useCallback } from 'react';

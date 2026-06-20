@@ -10,7 +10,6 @@ import PitagoraBackend.repository.CostosObservacionRepository;
 import PitagoraBackend.repository.EvidenciasRepository;
 import PitagoraBackend.repository.ObservacionesRepository;
 import PitagoraBackend.repository.TicketsRepository;
-import PitagoraBackend.repository.ObrasRepository;
 import PitagoraBackend.model.Tickets;
 
 import java.io.IOException;
@@ -29,7 +28,7 @@ public class ObservacionesService {
     private TicketsRepository ticketsRepository;
 
     @Autowired
-    private ObrasRepository obrasRepository;
+    private ObrasService obrasService;
 
     @Autowired
     private EvidenciasRepository evidenciasRepository;
@@ -68,12 +67,8 @@ public class ObservacionesService {
         Tickets ticket = ticketsRepository.findById(observaciones.getIdTicket())
             .orElseThrow(() -> new IllegalArgumentException("El ticket no existe con ID: " + observaciones.getIdTicket()));
 
-        var obra = obrasRepository.findById(ticket.getIdObra())
-            .orElseThrow(() -> new IllegalArgumentException("La obra asociada al ticket no existe"));
-        if (obra.getEstadoObra() == null || !obra.getEstadoObra().equalsIgnoreCase("Activa")) {
-            throw new IllegalArgumentException("No se pueden crear observaciones en una obra inactiva.");
-        }
-        
+        obrasService.validarObraOperableParaCreacion(ticket.getIdObra());
+
         // Validación 2: id_categoria es requerido
         if (observaciones.getIdCategoria() == null) {
             throw new IllegalArgumentException("El ID de la categoría es requerido");

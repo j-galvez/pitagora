@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import PageTitle from './components/PageTitle';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css'; // npm install bootstrap-icons // npm install react-icons --save
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -29,6 +30,8 @@ import EditarObra from './pages/admin/EditarObra';
 
 function App() {
   return (
+    <>
+    <PageTitle />
     <Routes>
       {/* Rutas de Administrador */}
       <Route path="/admin-dashboard" element={<ProtectedRoute requiredRole="admin"><IndexAdmin /></ProtectedRoute>} />
@@ -73,6 +76,7 @@ function App() {
         }
       />
     </Routes>
+    </>
   );
 }
 
