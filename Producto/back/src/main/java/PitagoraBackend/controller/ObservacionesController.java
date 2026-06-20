@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import PitagoraBackend.model.Observaciones;
 import PitagoraBackend.dto.HiloComunicacionDTO;
+import PitagoraBackend.dto.ObservacionActualizadaResponse;
 import lombok.extern.slf4j.Slf4j;
 import PitagoraBackend.service.ObservacionesService;
 import PitagoraBackend.service.HiloComunicacionService;
@@ -63,8 +64,8 @@ public class ObservacionesController {
     @PutMapping("/{id_observacion}")
     public ResponseEntity<?> actualizar(@PathVariable("id_observacion") Integer id_observacion, @RequestBody Observaciones observacion) {
         try {
-            Observaciones actualizada = observacionesService.actualizarObservaciones(id_observacion, observacion);
-            return ResponseEntity.ok(actualizada);
+            ObservacionActualizadaResponse resultado = observacionesService.actualizarObservaciones(id_observacion, observacion);
+            return ResponseEntity.ok(resultado);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -152,7 +153,8 @@ public class ObservacionesController {
             update.setConfirmacionCliente("aceptado");
             update.setTokenAceptacion(null);
 
-            Observaciones actualizada = observacionesService.actualizarObservaciones(id_observacion, update);
+            ObservacionActualizadaResponse resultado = observacionesService.actualizarObservaciones(id_observacion, update);
+            Observaciones actualizada = resultado.getObservacion();
             log.info("Observación {} aceptada y actualizada: estado={}, confirmacion={}", id_observacion, actualizada.getEstadoObservacion(), actualizada.getConfirmacionCliente());
             return ResponseEntity.ok("Gracias. La observación ha sido cerrada y aceptada.");
         } catch (IllegalArgumentException e) {
@@ -177,7 +179,8 @@ public class ObservacionesController {
             update.setConfirmacionCliente("rechazado");
             update.setTokenAceptacion(null);
 
-            Observaciones actualizada = observacionesService.actualizarObservaciones(id_observacion, update);
+            ObservacionActualizadaResponse resultado = observacionesService.actualizarObservaciones(id_observacion, update);
+            Observaciones actualizada = resultado.getObservacion();
             log.info("Observación {} marcada como rechazada por cliente: confirmacion={}", id_observacion, actualizada.getConfirmacionCliente());
             // Notify admins specifically about the rejection so they can act
             try {

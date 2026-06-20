@@ -38,6 +38,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
   const [categoria, setCategoria] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [advertenciaNotificacion, setAdvertenciaNotificacion] = useState('');
 
   const [activeTab, setActiveTab] = useState('general');
   const [mensajes, setMensajes] = useState([]);
@@ -90,6 +91,7 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
     limpiarPreview();
     setNuevoEstado('');
     setEstadoOriginal('');
+    setAdvertenciaNotificacion('');
     onHide();
   };
 
@@ -203,12 +205,16 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
 
       if (hayCambioEstado) {
         const idObs = observacion?.idObservacion || observacion?.id_observacion || idObservacion;
-        const actualizada = await observacionesService.updateObservacion(idObs, {
-          estadoObservacion: nuevoEstado,
-        });
+        const { observacion: actualizada, advertenciaNotificacion: advertencia } =
+          await observacionesService.updateObservacion(idObs, {
+            estadoObservacion: nuevoEstado,
+          });
         setObservacion(actualizada);
         const nuevoEstadoPersistido = actualizada?.estadoObservacion || actualizada?.estado_observacion || nuevoEstado;
         setEstadoOriginal(nuevoEstadoPersistido);
+        if (advertencia) {
+          setAdvertenciaNotificacion(advertencia);
+        }
         onObservacionActualizada?.(actualizada);
       }
 
@@ -458,6 +464,17 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
       )}
 
       <Modal.Body style={{ minHeight: '60vh', maxHeight: '60vh', overflowY: 'auto' }}>
+        {advertenciaNotificacion && (
+          <div className="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+            {advertenciaNotificacion}
+            <button
+              type="button"
+              className="btn-close"
+              aria-label="Cerrar"
+              onClick={() => setAdvertenciaNotificacion('')}
+            />
+          </div>
+        )}
         {loading ? (
           <div className="text-center py-5">
             <Spinner animation="border" variant="primary" />

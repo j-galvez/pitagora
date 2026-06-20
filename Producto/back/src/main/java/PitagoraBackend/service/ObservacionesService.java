@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import PitagoraBackend.dto.ObservacionActualizadaResponse;
 import PitagoraBackend.model.Evidencias;
 import PitagoraBackend.model.Observaciones;
 import PitagoraBackend.repository.CostosObservacionRepository;
@@ -217,8 +218,11 @@ public class ObservacionesService {
         observacion.setCosto(total != null ? total : 0L);
     }
 
+    private static final String ADVERTENCIA_NOTIFICACION_FALLIDA =
+            "El cambio de estado se guardó correctamente, pero no se pudo enviar la notificación por correo.";
+
     // UPDATE - Actualizar observación
-    public Observaciones actualizarObservaciones(Integer id, Observaciones observacionesActualizado) {
+    public ObservacionActualizadaResponse actualizarObservaciones(Integer id, Observaciones observacionesActualizado) {
         // Verificar que la observación exista
         Observaciones observacionExistente = obtenerObservacionById(id);
         String previoEstado = observacionExistente.getEstadoObservacion();
@@ -311,24 +315,26 @@ public class ObservacionesService {
 
         // Notificar si hubo cambio de estado o comentario administrativo.
         // Si el estado cambió, enviar sólo una notificación; no repetirla por el comentario.
+        String advertenciaNotificacion = null;
         try {
             boolean estadoCambiado = observacionesActualizado.getEstadoObservacion() != null && !observacionesActualizado.getEstadoObservacion().equalsIgnoreCase(previoEstado);
             boolean comentarioAdminCambiado = observacionesActualizado.getComentarioAdmin() != null && !observacionesActualizado.getComentarioAdmin().equals(previoComentarioAdmin);
 
-            if (estadoCambiado) {
-                notificationService.notificarCambioEstado(saved, previoEstado);
-            } else if (comentarioAdminCambiado) {
-                notificationService.notificarCambioEstado(saved, previoEstado);
+            if (estadoCambiado || comentarioAdminCambiado) {
+                boolean notificacionOk = notificationService.notificarCambioEstado(saved, previoEstado);
+                if (!notificacionOk) {
+                    advertenciaNotificacion = ADVERTENCIA_NOTIFICACION_FALLIDA;
+                }
             }
         } catch (Exception e) {
-            // ignorar fallos de notificación
+            advertenciaNotificacion = ADVERTENCIA_NOTIFICACION_FALLIDA;
         }
 
         // Actualizar el costo total y estado del ticket
         actualizarCostoTotalTicket(saved.getIdTicket());
         actualizarEstadoGeneralTicket(saved.getIdTicket());
         
-        return saved;
+        return new ObservacionActualizadaResponse(saved, advertenciaNotificacion);
     }
 
     // DELETE - Eliminar observación

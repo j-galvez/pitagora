@@ -120,7 +120,11 @@ export const observacionesService = {
         throw new Error('Error al actualizar la observación');
       }
       
-      return await response.json();
+      const data = await response.json();
+      return {
+        observacion: data.observacion ?? data,
+        advertenciaNotificacion: data.advertenciaNotificacion ?? null,
+      };
     } catch (error) {
       console.error('Error en updateObservacion:', error);
       throw error;

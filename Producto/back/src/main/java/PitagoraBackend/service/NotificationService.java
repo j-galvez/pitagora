@@ -171,7 +171,10 @@ public class NotificationService {
         }
     }
 
-    public void notificarCambioEstado(Observaciones obs, String anteriorEstado) {
+    public boolean notificarCambioEstado(Observaciones obs, String anteriorEstado) {
+        int intentos = 0;
+        int exitos = 0;
+
         String subject = buildSubject(obs);
         String title = "Cambio de estado de observación";
         StringBuilder bodyBuilder = new StringBuilder();
@@ -192,14 +195,18 @@ public class NotificationService {
 
         // Enviar a creador
         if (obs.getIdUsuarioCreador() != null) {
-            usuariosRepository.findById(obs.getIdUsuarioCreador()).ifPresent(u -> {
+            Optional<Usuarios> creadorOpt = usuariosRepository.findById(obs.getIdUsuarioCreador());
+            if (creadorOpt.isPresent()) {
+                intentos++;
+                Usuarios u = creadorOpt.get();
                 try {
                     emailService.enviarCorreoHtml(u.getCorreo(), subject, buildHtml(obs, title, finalUserBody));
                     guardarNotificacionEnviada(obs.getIdObservacion(), u.getCorreo(), subject, "cambio_estado");
+                    exitos++;
                 } catch (Exception e) {
                     log.error("Error enviando correo de cambio de estado al creador {}: {}", u.getCorreo(), e.getMessage(), e);
                 }
-            });
+            }
         }
 
         // Enviar a administradores sin opciones de aceptación
@@ -216,15 +223,19 @@ public class NotificationService {
             log.warn("No se encontró ningún administrador para notificar el cambio de estado de observación {}", obs.getIdObservacion());
         }
         for (Usuarios admin : admins) {
+            intentos++;
             try {
                 log.info("Enviando correo de cambio de estado al administrador {}", admin.getCorreo());
                 String adminName = admin.getNombre() != null && !admin.getNombre().isEmpty() ? admin.getNombre() : "administrador";
                 emailService.enviarCorreoHtml(admin.getCorreo(), subject, buildHtml(obs, title, adminBody, adminName));
                 guardarNotificacionEnviada(obs.getIdObservacion(), admin.getCorreo(), subject, "cambio_estado");
+                exitos++;
             } catch (Exception e) {
                 log.error("Error enviando correo de cambio de estado al administrador {}: {}", admin.getCorreo(), e.getMessage(), e);
             }
         }
+
+        return intentos == 0 || exitos == intentos;
     }
 
     public void notificarMensajeCreado(Mensajes mensaje) {

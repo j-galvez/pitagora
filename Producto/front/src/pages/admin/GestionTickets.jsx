@@ -5,6 +5,7 @@ import { FaSearch, FaSync, FaChevronDown, FaChevronUp, FaPlus, FaUser, FaBuildin
 import AdminLayout from '../../components/AdminLayout';
 import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
 import CostosObservacionModal from '../../components/CostosObservacionModal';
+import { observacionesService } from '../../services/observacionesService';
 
 const GestionTickets = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ const GestionTickets = () => {
   const [activeTab, setActiveTab] = useState('Todos');
   const [ticketsExpandidos, setTicketsExpandidos] = useState(new Set());
   const [loadingAccion, setLoadingAccion] = useState(false);
+  const [advertenciaNotificacion, setAdvertenciaNotificacion] = useState('');
   
   // Estado para Modal de Detalle (Compañero)
   const [showObsModal, setShowObsModal] = useState(false);
@@ -312,29 +314,25 @@ const GestionTickets = () => {
     const idObs = obsParaCambio.idObservacion || obsParaCambio.id_observacion;
     
     try {
-      const response = await fetch(`http://localhost:8080/api/observaciones/${idObs}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const { observacion: actualizada, advertenciaNotificacion: advertencia } =
+        await observacionesService.updateObservacion(idObs, {
           estadoObservacion: nuevoEstado,
-          comentarioAdmin: comentarioAdmin
-        })
-      });
-      
-      if (response.ok) {
-        const idTicket = obsParaCambio.idTicket || obsParaCambio.id_ticket;
-        const actualizadas = todasObservaciones.map(o =>
-          (o.idObservacion || o.id_observacion) === idObs
-            ? { ...o, estadoObservacion: nuevoEstado, comentarioAdmin: comentarioAdmin }
-            : o
-        );
-        setTodasObservaciones(actualizadas);
-        if (idTicket) sincronizarEstadoTicket(idTicket, actualizadas);
-        await cargarTickets();
-        setShowStatusModal(false);
-      } else {
-        alert('Error al actualizar el estado');
-      }
+          comentarioAdmin: comentarioAdmin,
+        });
+
+      const idTicket = obsParaCambio.idTicket || obsParaCambio.id_ticket;
+      const estadoPersistido = actualizada?.estadoObservacion || actualizada?.estado_observacion || nuevoEstado;
+      const comentarioPersistido = actualizada?.comentarioAdmin || actualizada?.comentario_admin || comentarioAdmin;
+      const actualizadas = todasObservaciones.map(o =>
+        (o.idObservacion || o.id_observacion) === idObs
+          ? { ...o, estadoObservacion: estadoPersistido, comentarioAdmin: comentarioPersistido }
+          : o
+      );
+      setTodasObservaciones(actualizadas);
+      if (idTicket) sincronizarEstadoTicket(idTicket, actualizadas);
+      await cargarTickets();
+      setShowStatusModal(false);
+      setAdvertenciaNotificacion(advertencia || '');
     } catch (err) { 
       console.error(err);
       alert('Error de conexión al actualizar');
@@ -408,6 +406,18 @@ const GestionTickets = () => {
           </p>
 
           {error && <div className="alert alert-danger">{error}</div>}
+
+          {advertenciaNotificacion && (
+            <div className="alert alert-warning alert-dismissible fade show" role="alert">
+              {advertenciaNotificacion}
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Cerrar"
+                onClick={() => setAdvertenciaNotificacion('')}
+              />
+            </div>
+          )}
 
           {/* Filtros Estilo Gestión Usuarios */}
           <div className="row g-3 mb-4 align-items-center justify-content-between">
