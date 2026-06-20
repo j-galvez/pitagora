@@ -1,33 +1,89 @@
 # Pitágora
 
-Aplicación web para centralizar y automatizar la gestión de postventa de la Constructora Pitágora. Organiza reclamos bajo un modelo de **tickets por obra**, con seguimiento de observaciones, evidencias, notificaciones y dashboard de estadísticas.
+![Java](https://img.shields.io/badge/Java-17-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-green)
+![React](https://img.shields.io/badge/React-19-blue)
+![MySQL](https://img.shields.io/badge/MySQL-8-blue)
+
+Aplicación web para centralizar y automatizar la gestión de postventa de la **Constructora Pitágora**. Organiza reclamos bajo un modelo de **tickets por obra**, con seguimiento de observaciones, evidencias, mensajería, notificaciones por correo y dashboard de estadísticas.
+
+## Tabla de contenidos
+
+- [Acerca del proyecto](#acerca-del-proyecto)
+- [Arquitectura](#arquitectura)
+- [Stack](#stack)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Requisitos previos](#requisitos-previos)
+- [Configuración](#configuración)
+- [Instalación](#instalación)
+- [Ejecución en local](#ejecución-en-local)
+- [Roles y rutas](#roles-y-rutas)
+- [Funcionalidades principales](#funcionalidades-principales)
+- [API REST](#api-rest)
+- [Scripts útiles](#scripts-útiles)
+- [Documentación adicional](#documentación-adicional)
+- [Seguridad](#seguridad)
+- [Contribuir](#contribuir)
+- [Licencia](#licencia)
+
+## Acerca del proyecto
+
+Pitágora digitaliza el flujo de postventa en obras de construcción:
+
+- Los **clientes** crean tickets y observaciones sobre fallas detectadas en sus obras.
+- Los **administradores** gestionan usuarios, clientes, obras, tickets y el seguimiento completo de cada reclamo.
+- El sistema registra evidencias fotográficas, mensajes, costos, bitácora y envía notificaciones automáticas.
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+  subgraph client [Frontend]
+    React["React 19 + Vite :5173"]
+  end
+  subgraph server [Backend]
+    API["Spring Boot API :8080"]
+  end
+  subgraph infra [Infraestructura]
+    MySQL[(MySQL 8)]
+    GCS[Google Cloud Storage]
+    SMTP[SMTP]
+  end
+  React -->|"/api"| API
+  API --> MySQL
+  API --> GCS
+  API --> SMTP
+```
 
 ## Stack
 
 | Capa | Tecnología |
 |------|------------|
-| Backend | Java 17, Spring Boot 3, Gradle |
-| Frontend | React 19, Vite, Bootstrap |
-| Base de datos | MySQL 8 |
-| Cloud | Google Cloud (Cloud SQL, Cloud Storage) |
+| Backend | Java 17, Spring Boot 3.5, Gradle |
+| Frontend | React 19, Vite 8, React Router 7, Bootstrap 5 |
+| Base de datos | MySQL 8 (local en desarrollo, Cloud SQL en producción) |
+| Almacenamiento | Google Cloud Storage (evidencias) |
+| Correo | Spring Mail (SMTP) |
+| Exportación | jsPDF, xlsx |
 
 ## Estructura del repositorio
 
 ```
 pitagora/
 ├── Producto/
-│   ├── back/          # API REST (Spring Boot)
-│   └── front/         # Cliente web (React + Vite)
-├── Documentación/     # Documentación del proyecto
-├── Gestión/           # Planificación y gestión
-└── sql_scripts/       # Scripts SQL adicionales en la raíz
+│   ├── back/                    # API REST (Spring Boot)
+│   │   └── sql_scripts/         # Dump de la base de datos
+│   └── front/                   # Cliente web (React + Vite)
+├── Documentación/               # Manuales, mockups y actas
+└── Gestión/                     # Planificación del proyecto
 ```
 
 ## Requisitos previos
 
 - **Java 17**
-- **Node.js** (npm)
+- **Node.js** y **npm**
 - **MySQL 8** (local o Cloud SQL)
+- **Credenciales GCP** (para subida de evidencias)
 - **Git**
 
 Verificar instalación:
@@ -42,38 +98,56 @@ npm -v
 
 ### Base de datos
 
-Los scripts de creación y datos de prueba están en `Producto/back/sql_scripts/`. Orden sugerido:
+La aplicación se conecta a MySQL mediante JDBC estándar (`spring.datasource.url`). No hay dependencias específicas de Google para la base de datos: **cualquier instancia MySQL 8 funciona**. En producción el proyecto está desplegado sobre **Cloud SQL** (MySQL gestionado en GCP); para desarrollo local basta con MySQL en tu máquina.
 
-1. `01_create_tables.sql` — creación de tablas
-2. `02_create_logic.sql` — lógica adicional
-3. `03_seed_comunas_chile.sql` — datos de regiones/comunas (si aplica)
-4. `03_insert_test_data.sql` — datos de prueba (opcional)
+El esquema y los datos de prueba están en un único dump en [`Producto/back/sql_scripts/`](Producto/back/sql_scripts/):
+
+| Archivo | Descripción |
+|---------|-------------|
+| `Cloud_SQL_Export_2026-06-20 (11-48-12).sql` | Dump completo de `sistema_postventa_pitagora` (tablas + datos) |
+
+Importar la base de datos:
+
+```bash
+mysql -u TU_USUARIO -p < "Producto/back/sql_scripts/Cloud_SQL_Export_2026-06-20 (11-48-12).sql"
+```
+
+> El nombre del archivo contiene espacios y paréntesis; usa comillas en la ruta.
+
+**Conexión en `application.properties`:**
+
+| Entorno | Ejemplo de URL |
+|---------|----------------|
+| Desarrollo (MySQL local) | `jdbc:mysql://localhost:3306/sistema_postventa_pitagora` |
+| Producción (Cloud SQL) | `jdbc:mysql://IP_O_HOST:3306/sistema_postventa_pitagora?useSSL=true&serverTimezone=UTC` |
+
+Solo cambia `spring.datasource.url`, usuario y contraseña según dónde corra MySQL.
 
 ### Backend (`Producto/back/`)
 
-Crear `src/main/resources/application.properties` (no se sube al repositorio). Ejemplo mínimo:
+1. Copiar la plantilla de configuración:
 
-```properties
-# Base de datos
-spring.datasource.url=jdbc:mysql://localhost:3306/pitagora
-spring.datasource.username=TU_USUARIO
-spring.datasource.password=TU_PASSWORD
-spring.jpa.hibernate.ddl-auto=validate
-
-# Google Cloud Storage (evidencias)
-gcp.bucket.name=tu-bucket
-gcp.config.path=file:./gcp-credentials.json
-
-# Correo (opcional, para bienvenida y recuperación de contraseña)
-spring.mail.host=smtp.tu-proveedor.com
-spring.mail.port=587
-spring.mail.username=tu-correo
-spring.mail.password=tu-password
-app.mail.from=noreply@pitagora.com
-app.site.url=http://localhost:5173
+```bash
+cp Producto/back/src/main/resources/application.properties.example \
+   Producto/back/src/main/resources/application.properties
 ```
 
-Colocar las credenciales de GCP en `Producto/back/gcp-credentials.json` (también ignorado por Git).
+2. Completar los valores en `application.properties` (base de datos, correo, GCP).
+
+3. Colocar las credenciales de GCP en `Producto/back/gcp-credentials.json`.
+
+Ambos archivos están en `.gitignore` y **no deben subirse al repositorio**.
+
+Propiedades principales:
+
+| Propiedad | Descripción |
+|-----------|-------------|
+| `spring.datasource.*` | Conexión a MySQL |
+| `spring.jpa.hibernate.ddl-auto` | Usar `none` o `validate` (no `create`) |
+| `spring.servlet.multipart.max-file-size` | Límite por imagen (10 MB) |
+| `spring.mail.*` | SMTP para bienvenida, recuperación de contraseña y recordatorios |
+| `app.site.url` | URL del frontend (enlaces en correos) |
+| `gcp.bucket.name` / `gcp.config.path` | Bucket y credenciales de GCS |
 
 ### Frontend (`Producto/front/`)
 
@@ -115,6 +189,44 @@ npm run dev
 
 Abrir [http://localhost:5173](http://localhost:5173) en el navegador.
 
+## Roles y rutas
+
+| Rol | Descripción | Rutas principales |
+|-----|-------------|-------------------|
+| `admin` | Panel de administración completo | `/admin-dashboard`, `/admin/tickets`, `/admin/clientes`, `/admin/obras`, `/admin/usuarios`, `/admin/reportes`, `/admin/buscar` |
+| `usuario` | Cliente con acceso a sus obras | `/dashboard`, `/perfil`, `/crear-ticket`, `/crear-observacion`, `/mensajes` |
+
+Rutas públicas: `/login`, `/reset-password`.
+
+## Funcionalidades principales
+
+- Login, recuperación y restablecimiento de contraseña
+- CRUD de usuarios, clientes y obras
+- Creación y seguimiento de tickets y observaciones
+- Evidencias fotográficas en Google Cloud Storage (máx. 10 MB por imagen, hasta 2 por observación)
+- Mensajería por observación y bandeja de correos entrantes
+- Costos desglosados por observación
+- Notificaciones por correo y recordatorios programados de aceptación
+- Dashboard con KPIs, top de fallas y gráficos
+- Reportes de bitácora por obra
+- Buscador global
+
+## API REST
+
+Prefijo base: `http://localhost:8080/api`
+
+| Recurso | Controller |
+|---------|------------|
+| `/usuarios` | Login, CRUD, recuperación de contraseña |
+| `/clientes`, `/obras`, `/tickets`, `/observaciones` | Gestión del dominio principal |
+| `/evidencias`, `/mensajes`, `/costos-observacion` | Adjuntos, chat y costos |
+| `/dashboard` | Estadísticas y gráficos |
+| `/reportes`, `/buscador` | Reportes y búsqueda global |
+| `/correos-entrantes`, `/webhook/email` | Correos entrantes |
+| `/regiones`, `/comunas`, `/categorias` | Catálogos |
+
+Documentación técnica del dashboard: [`Producto/front/src/components/dashboard/README.md`](Producto/front/src/components/dashboard/README.md).
+
 ## Scripts útiles
 
 | Comando | Ubicación | Descripción |
@@ -124,23 +236,29 @@ Abrir [http://localhost:5173](http://localhost:5173) en el navegador.
 | `npm run dev` | `Producto/front` | Servidor de desarrollo |
 | `npm run build` | `Producto/front` | Build de producción |
 | `npm run lint` | `Producto/front` | Linter |
+| `npm run preview` | `Producto/front` | Vista previa del build |
 
 ## Documentación adicional
 
-- [`Producto/back/EJEMPLOS_API.md`](Producto/back/EJEMPLOS_API.md) — ejemplos de endpoints REST
-- [`Producto/back/ENTIDADES_MODELO.md`](Producto/back/ENTIDADES_MODELO.md) — modelo de datos
-- [`Producto/GCP_RECOMENDACIONES_DESPLIEGUE.md`](Producto/GCP_RECOMENDACIONES_DESPLIEGUE.md) — despliegue en Google Cloud
-- [`Casos de uso.md`](Casos%20de%20uso.md) — estado de funcionalidades
+Documentos en la carpeta [`Documentación/`](Documentación/):
 
-## Funcionalidades principales
+| Documento | Contenido |
+|-----------|-----------|
+| `Manual de usuario [Usuario] Pitagora.docx` | Guía para usuarios finales |
+| `Manual de instalación y despliegue.docx` | Instalación y despliegue |
+| `Mockups.docx` | Diseños de interfaz |
+| `Casos de Uso/Plantillas Casos de Uso.docx` | Casos de uso del sistema |
+| `Actas de Reunion/` | Actas de reuniones del proyecto |
 
-- Login y recuperación de contraseña
-- Gestión de usuarios, clientes y obras
-- Creación y seguimiento de tickets y observaciones
-- Evidencias (almacenamiento en GCS)
-- Mensajería y notificaciones por correo
-- Dashboard y estadísticas
-- Costos por observación
+## Seguridad
+
+**Nunca commitear** los siguientes archivos:
+
+- `Producto/back/src/main/resources/application.properties`
+- `Producto/back/gcp-credentials.json`
+- Archivos `.env` con credenciales
+
+Estos archivos ya están listados en `.gitignore`. Solicita las credenciales al equipo antes de configurar tu entorno local.
 
 ## Contribuir
 
