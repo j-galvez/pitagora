@@ -16,6 +16,10 @@ import java.util.UUID;
 @Service
 public class ImageStorageService {
 
+    public static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024 * 1024;
+    public static final String MENSAJE_IMAGEN_MUY_GRANDE =
+            "La imagen supera el tamaño máximo permitido (10 MB). Seleccione un archivo de menor tamaño.";
+
     @Value("${gcp.bucket.name}")
     private String bucketName;
 
@@ -28,7 +32,15 @@ public class ImageStorageService {
         this.resourceLoader = resourceLoader;
     }
 
+    public static void validarTamanoImagen(MultipartFile archivo) {
+        if (archivo != null && !archivo.isEmpty() && archivo.getSize() > MAX_IMAGE_SIZE_BYTES) {
+            throw new IllegalArgumentException(MENSAJE_IMAGEN_MUY_GRANDE);
+        }
+    }
+
     public String subirImagen(MultipartFile archivo) throws IOException {
+        validarTamanoImagen(archivo);
+
         // Cargar credenciales dinámicamente
         Resource resource = resourceLoader.getResource(configPath);
         Storage storage = StorageOptions.newBuilder()

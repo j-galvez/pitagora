@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { esObraActiva } from '../utils/estadoEntidades';
+import { validarCamposObligatoriosUsuario } from '../utils/usuarioValidations';
 import CambiarPasswordSection from './CambiarPasswordSection';
 
 const UsuarioForm = ({
@@ -11,6 +12,7 @@ const UsuarioForm = ({
   error,
   onSubmit,
   onCancel,
+  setError,
   tieneTickets = false,
   isAdminView = true,
 }) => {
@@ -102,6 +104,21 @@ const UsuarioForm = ({
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    const result = validarCamposObligatoriosUsuario(formData, {
+      requireObra: isAdminView && formData.rol === 'usuario' && !tieneTickets,
+    });
+    if (!result.ok) {
+      setValidationErrors(result.fieldErrors);
+      setError?.(result.message);
+      return;
+    }
+    setValidationErrors({});
+    setError?.('');
+    onSubmit(e);
+  };
+
   const renderField = ({ label, name, type = 'text', placeholder = '', options = null, readOnly = false, disabled = false, helpText = '' }) => {
     const value = formData[name] != null ? String(formData[name]) : '';
 
@@ -172,7 +189,7 @@ const UsuarioForm = ({
           </div>
         )}
 
-        <form onSubmit={onSubmit}>
+        <form onSubmit={handleFormSubmit}>
           <div className="row g-3 mb-3">
             {renderField({ label: 'Nombre', name: 'nombre' })}
             {renderField({ label: 'Apellido paterno', name: 'apellidoPaterno' })}

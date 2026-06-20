@@ -5,6 +5,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import UsuarioForm from '../../components/UsuarioForm';
 import AdminLayout from '../../components/AdminLayout';
+import { validarCamposObligatoriosUsuario } from '../../utils/usuarioValidations';
 
 const EditarUsuario = () => {
   const { id_usuario } = useParams();
@@ -82,8 +83,17 @@ const EditarUsuario = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setLoading(true);
     setError('');
+
+    const validation = validarCamposObligatoriosUsuario(formData, {
+      requireObra: formData.rol === 'usuario' && !tieneTickets,
+    });
+    if (!validation.ok) {
+      setError(validation.message);
+      return;
+    }
+
+    setLoading(true);
 
     try {
       // Si el usuario tiene tickets, no permitir cambiar la obra
@@ -186,6 +196,7 @@ const EditarUsuario = () => {
           setFormData={setFormData}
           loading={loading}
           error={error}
+          setError={setError}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           tieneTickets={tieneTickets}

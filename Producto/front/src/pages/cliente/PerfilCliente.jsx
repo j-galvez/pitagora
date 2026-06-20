@@ -169,6 +169,7 @@ const PerfilCliente = () => {
               setFormData={setFormData}
               loading={loading}
               error={error}
+              setError={setError}
               onSubmit={handleSubmit}
               onCancel={handleCancel}
               isAdminView={false}

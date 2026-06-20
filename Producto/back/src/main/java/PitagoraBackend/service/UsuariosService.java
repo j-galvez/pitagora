@@ -43,24 +43,7 @@ public class UsuariosService {
         }
         usuarios.setRun(runLimpio);
 
-        if (usuarios.getNombre() == null || usuarios.getNombre().isEmpty()) {
-            throw new IllegalArgumentException("El nombre es requerido");
-        }
-
-        if (usuarios.getApellidoPaterno() == null || usuarios.getApellidoPaterno().isEmpty()) {
-            throw new IllegalArgumentException("El apellido paterno es requerido");
-        }
-
-        if (usuarios.getApellidoMaterno() == null || usuarios.getApellidoMaterno().isEmpty()) {
-            throw new IllegalArgumentException("El apellido materno es requerido");
-        }
-
-        if (usuarios.getCorreo() == null || usuarios.getCorreo().isEmpty()) {
-            throw new IllegalArgumentException("El correo es requerido");
-        }
-        if (!validarCorreo(usuarios.getCorreo())) {
-            throw new IllegalArgumentException("El correo es inválido");
-        }
+        validarCamposObligatorios(usuarios);
 
         // Verificar que el correo no exista
         if (usuariosRepository.existsByCorreo(usuarios.getCorreo())) {
@@ -78,35 +61,8 @@ public class UsuariosService {
 
         String passwordPlano = usuarios.getPassword();
 
-        if (usuarios.getRol() == null || usuarios.getRol().isEmpty()) {
-            throw new IllegalArgumentException("El rol es requerido");
-        }
-        if (!usuarios.getRol().equals("admin") && !usuarios.getRol().equals("usuario")) {
-            throw new IllegalArgumentException("Rol inválido. Debe ser: 'admin' o 'usuario'");
-        }
-
-        if (usuarios.getRol().equals("usuario") && usuarios.getIdObra() == null) {
-            throw new IllegalArgumentException("Para el rol usuario debe asignarse una obra");
-        }
-
         if (usuarios.getIdObra() != null) {
             validarObraActiva(usuarios.getIdObra());
-        }
-
-        if (usuarios.getTelefono() != null && !usuarios.getTelefono().isEmpty() && !validarTelefono(usuarios.getTelefono())) {
-            throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos");
-        }
-
-        if (usuarios.getDireccionCalle() == null || usuarios.getDireccionCalle().isEmpty()) {
-            throw new IllegalArgumentException("La calle es requerida");
-        }
-
-        if (usuarios.getIdRegion() == null) {
-            throw new IllegalArgumentException("La región es requerida");
-        }
-
-        if (usuarios.getIdComuna() == null) {
-            throw new IllegalArgumentException("La comuna es requerida");
         }
 
         if (usuarios.getEstado() == null || usuarios.getEstado().isEmpty()) {
@@ -167,20 +123,32 @@ public class UsuariosService {
             usuarioExistente.setRun(runLimpio);
         }
 
-        if (usuariosActualizado.getNombre() != null && !usuariosActualizado.getNombre().isEmpty()) {
+        if (usuariosActualizado.getNombre() != null) {
+            if (usuariosActualizado.getNombre().trim().isEmpty()) {
+                throw new IllegalArgumentException("El nombre es requerido");
+            }
             usuarioExistente.setNombre(usuariosActualizado.getNombre());
         }
 
-        if (usuariosActualizado.getApellidoPaterno() != null && !usuariosActualizado.getApellidoPaterno().isEmpty()) {
+        if (usuariosActualizado.getApellidoPaterno() != null) {
+            if (usuariosActualizado.getApellidoPaterno().trim().isEmpty()) {
+                throw new IllegalArgumentException("El apellido paterno es requerido");
+            }
             usuarioExistente.setApellidoPaterno(usuariosActualizado.getApellidoPaterno());
         }
 
-        if (usuariosActualizado.getApellidoMaterno() != null && !usuariosActualizado.getApellidoMaterno().isEmpty()) {
+        if (usuariosActualizado.getApellidoMaterno() != null) {
+            if (usuariosActualizado.getApellidoMaterno().trim().isEmpty()) {
+                throw new IllegalArgumentException("El apellido materno es requerido");
+            }
             usuarioExistente.setApellidoMaterno(usuariosActualizado.getApellidoMaterno());
         }
 
-        if (usuariosActualizado.getCorreo() != null && !usuariosActualizado.getCorreo().isEmpty()) {
-            if (!usuarioExistente.getCorreo().equals(usuariosActualizado.getCorreo()) && 
+        if (usuariosActualizado.getCorreo() != null) {
+            if (usuariosActualizado.getCorreo().trim().isEmpty()) {
+                throw new IllegalArgumentException("El correo es requerido");
+            }
+            if (!usuarioExistente.getCorreo().equals(usuariosActualizado.getCorreo()) &&
                 usuariosRepository.existsByCorreo(usuariosActualizado.getCorreo())) {
                 throw new IllegalArgumentException("El correo ya está registrado");
             }
@@ -190,14 +158,20 @@ public class UsuariosService {
             usuarioExistente.setCorreo(usuariosActualizado.getCorreo());
         }
 
-        if (usuariosActualizado.getTelefono() != null && !usuariosActualizado.getTelefono().isEmpty()) {
+        if (usuariosActualizado.getTelefono() != null) {
+            if (usuariosActualizado.getTelefono().trim().isEmpty()) {
+                throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos");
+            }
             if (!validarTelefono(usuariosActualizado.getTelefono())) {
                 throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos");
             }
             usuarioExistente.setTelefono(usuariosActualizado.getTelefono());
         }
 
-        if (usuariosActualizado.getDireccionCalle() != null && !usuariosActualizado.getDireccionCalle().isEmpty()) {
+        if (usuariosActualizado.getDireccionCalle() != null) {
+            if (usuariosActualizado.getDireccionCalle().trim().isEmpty()) {
+                throw new IllegalArgumentException("La calle es requerida");
+            }
             usuarioExistente.setDireccionCalle(usuariosActualizado.getDireccionCalle());
         }
 
@@ -209,7 +183,10 @@ public class UsuariosService {
             usuarioExistente.setIdComuna(usuariosActualizado.getIdComuna());
         }
 
-        if (usuariosActualizado.getRol() != null && !usuariosActualizado.getRol().isEmpty()) {
+        if (usuariosActualizado.getRol() != null) {
+            if (usuariosActualizado.getRol().trim().isEmpty()) {
+                throw new IllegalArgumentException("El rol es requerido");
+            }
             usuarioExistente.setRol(usuariosActualizado.getRol());
         }
 
@@ -221,6 +198,8 @@ public class UsuariosService {
         if (usuariosActualizado.getEstado() != null && !usuariosActualizado.getEstado().isEmpty()) {
             usuarioExistente.setEstado(usuariosActualizado.getEstado());
         }
+
+        validarCamposObligatorios(usuarioExistente);
 
         return usuariosRepository.save(usuarioExistente);
     }
@@ -299,6 +278,57 @@ public class UsuariosService {
         Random random = new Random();
         int valor = 100000 + random.nextInt(900000);
         return String.valueOf(valor);
+    }
+
+    private void validarCamposObligatorios(Usuarios usuarios) {
+        if (usuarios.getNombre() == null || usuarios.getNombre().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre es requerido");
+        }
+
+        if (usuarios.getApellidoPaterno() == null || usuarios.getApellidoPaterno().trim().isEmpty()) {
+            throw new IllegalArgumentException("El apellido paterno es requerido");
+        }
+
+        if (usuarios.getApellidoMaterno() == null || usuarios.getApellidoMaterno().trim().isEmpty()) {
+            throw new IllegalArgumentException("El apellido materno es requerido");
+        }
+
+        if (usuarios.getCorreo() == null || usuarios.getCorreo().trim().isEmpty()) {
+            throw new IllegalArgumentException("El correo es requerido");
+        }
+        if (!validarCorreo(usuarios.getCorreo())) {
+            throw new IllegalArgumentException("El correo es inválido");
+        }
+
+        if (usuarios.getRol() == null || usuarios.getRol().trim().isEmpty()) {
+            throw new IllegalArgumentException("El rol es requerido");
+        }
+        if (!usuarios.getRol().equals("admin") && !usuarios.getRol().equals("usuario")) {
+            throw new IllegalArgumentException("Rol inválido. Debe ser: 'admin' o 'usuario'");
+        }
+
+        if (usuarios.getRol().equals("usuario") && usuarios.getIdObra() == null) {
+            throw new IllegalArgumentException("Para el rol usuario debe asignarse una obra");
+        }
+
+        if (usuarios.getTelefono() == null || usuarios.getTelefono().trim().isEmpty()) {
+            throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos");
+        }
+        if (!validarTelefono(usuarios.getTelefono())) {
+            throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos");
+        }
+
+        if (usuarios.getDireccionCalle() == null || usuarios.getDireccionCalle().trim().isEmpty()) {
+            throw new IllegalArgumentException("La calle es requerida");
+        }
+
+        if (usuarios.getIdRegion() == null) {
+            throw new IllegalArgumentException("La región es requerida");
+        }
+
+        if (usuarios.getIdComuna() == null) {
+            throw new IllegalArgumentException("La comuna es requerida");
+        }
     }
 
     private boolean validarCorreo(String correo) {

@@ -7,6 +7,7 @@ import Footer from '../../components/Footer';
 import ObservacionDetalleModal from '../../components/ObservacionDetalleModal';
 import { observacionesService } from '../../services/observacionesService';
 import { puedeCrearTicketOuObservacion } from '../../utils/estadoEntidades';
+import { esImagenValida, MENSAJE_IMAGEN_MUY_GRANDE } from '../../utils/uploadLimits';
 
 const MAX_FOTOS = 2;
 
@@ -214,6 +215,12 @@ export default function CrearObservacion() {
       return;
     }
 
+    if (newObservation.fotos.some((foto) => !esImagenValida(foto))) {
+      setError(MENSAJE_IMAGEN_MUY_GRANDE);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setNuevasObservaciones([...nuevasObservaciones, { ...newObservation, id: Date.now() }]);
     setIsAddingObservation(false);
     setNewObservation({
@@ -233,6 +240,13 @@ export default function CrearObservacion() {
 
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files);
+    const archivoInvalido = files.find((file) => !esImagenValida(file));
+    if (archivoInvalido) {
+      setError(MENSAJE_IMAGEN_MUY_GRANDE);
+      e.target.value = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (newObservation.fotos.length + files.length > MAX_FOTOS) {
       setError(`Máximo ${MAX_FOTOS} fotos por observación`);
       e.target.value = '';

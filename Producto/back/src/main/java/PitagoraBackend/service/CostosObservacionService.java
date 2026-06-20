@@ -19,6 +19,9 @@ import PitagoraBackend.repository.UsuariosRepository;
 @Service
 public class CostosObservacionService {
 
+    private static final int MAX_MONTO_DIGITOS = 8;
+    private static final long MAX_MONTO_VALOR = 99_999_999L;
+
     @Autowired
     private CostosObservacionRepository costosObservacionRepository;
 
@@ -69,9 +72,7 @@ public class CostosObservacionService {
                 .orElseThrow(() -> new IllegalArgumentException("El costo no existe con ID: " + idCosto));
 
         if (costoActualizado.getMonto() != null) {
-            if (costoActualizado.getMonto() < 0) {
-                throw new IllegalArgumentException("El monto no puede ser negativo");
-            }
+            validarMonto(costoActualizado.getMonto());
             costoExistente.setMonto(costoActualizado.getMonto());
         }
 
@@ -121,15 +122,22 @@ public class CostosObservacionService {
             throw new IllegalArgumentException("El monto es requerido");
         }
 
-        if (costo.getMonto() < 0) {
-            throw new IllegalArgumentException("El monto no puede ser negativo");
-        }
+        validarMonto(costo.getMonto());
 
         if (costo.getDescripcion() == null || costo.getDescripcion().trim().isEmpty()) {
             throw new IllegalArgumentException("La descripción es requerida");
         }
 
         costo.setDescripcion(costo.getDescripcion().trim());
+    }
+
+    private void validarMonto(Long monto) {
+        if (monto == null || monto <= 0) {
+            throw new IllegalArgumentException("Ingresa un monto mayor a 0");
+        }
+        if (monto > MAX_MONTO_VALOR || String.valueOf(monto).length() > MAX_MONTO_DIGITOS) {
+            throw new IllegalArgumentException("El monto no puede superar 8 dígitos");
+        }
     }
 
     private CostoObservacionDTO toDTO(CostosObservacion costo) {

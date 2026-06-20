@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaEdit, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
 import { costosObservacionService } from '../services/costosObservacionService';
+import {
+  formatInputMonto,
+  parseMonto,
+  esMontoValido,
+  MENSAJE_MONTO_MAX_DIGITOS,
+} from '../utils/costoLimits';
 
 const formatMoneda = (valor) => {
   if (valor === null || valor === undefined) return '$ 0';
@@ -10,13 +16,6 @@ const formatMoneda = (valor) => {
     minimumFractionDigits: 0,
   }).format(valor);
 };
-
-const formatInputMil = (valor) => {
-  const num = String(valor).replace(/\D/g, '');
-  return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-};
-
-const parseMonto = (valorFormateado) => parseInt(valorFormateado.replace(/\./g, ''), 10) || 0;
 
 const CostosObservacionModal = ({ show, onHide, observacion, onCostosActualizados }) => {
   const [costos, setCostos] = useState([]);
@@ -86,8 +85,8 @@ const CostosObservacionModal = ({ show, onHide, observacion, onCostosActualizado
 
   const handleAgregar = async () => {
     const monto = parseMonto(nuevoMonto);
-    if (monto <= 0) {
-      setError('Ingresa un monto mayor a 0');
+    if (!esMontoValido(monto)) {
+      setError(monto <= 0 ? 'Ingresa un monto mayor a 0' : MENSAJE_MONTO_MAX_DIGITOS);
       return;
     }
     if (!nuevaDescripcion.trim()) {
@@ -121,7 +120,7 @@ const CostosObservacionModal = ({ show, onHide, observacion, onCostosActualizado
 
   const iniciarEdicion = (costo) => {
     setEditandoId(costo.idCosto);
-    setEditMonto(formatInputMil(String(costo.monto)));
+    setEditMonto(formatInputMonto(String(costo.monto)));
     setEditDescripcion(costo.descripcion);
     setError('');
   };
@@ -134,8 +133,8 @@ const CostosObservacionModal = ({ show, onHide, observacion, onCostosActualizado
 
   const guardarEdicion = async (idCosto) => {
     const monto = parseMonto(editMonto);
-    if (monto <= 0) {
-      setError('Ingresa un monto mayor a 0');
+    if (!esMontoValido(monto)) {
+      setError(monto <= 0 ? 'Ingresa un monto mayor a 0' : MENSAJE_MONTO_MAX_DIGITOS);
       return;
     }
     if (!editDescripcion.trim()) {
@@ -220,7 +219,8 @@ const CostosObservacionModal = ({ show, onHide, observacion, onCostosActualizado
                       className="form-control text-end"
                       placeholder="Monto"
                       value={nuevoMonto}
-                      onChange={(e) => setNuevoMonto(formatInputMil(e.target.value))}
+                      onChange={(e) => setNuevoMonto(formatInputMonto(e.target.value))}
+                      maxLength={11}
                       disabled={loadingAccion}
                     />
                   </div>
@@ -295,7 +295,8 @@ const CostosObservacionModal = ({ show, onHide, observacion, onCostosActualizado
                                     type="text"
                                     className="form-control text-end"
                                     value={editMonto}
-                                    onChange={(e) => setEditMonto(formatInputMil(e.target.value))}
+                                    onChange={(e) => setEditMonto(formatInputMonto(e.target.value))}
+                                    maxLength={11}
                                     disabled={loadingAccion}
                                   />
                                 </div>

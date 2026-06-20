@@ -23,6 +23,7 @@ import { evidenciasService } from '../services/evidenciasService';
 import ObservacionMensajesTab from './ObservacionMensajesTab';
 import ObservacionEvidenciasTab from './ObservacionEvidenciasTab';
 import ObservacionEstadoBar from './ObservacionEstadoBar';
+import { esImagenValida, MENSAJE_IMAGEN_MUY_GRANDE } from '../utils/uploadLimits';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -149,10 +150,15 @@ const ObservacionDetalleModal = ({ show, onHide, idObservacion, allowEstadoChang
   };
 
   const handleImagenSelect = (file) => {
+    if (!esImagenValida(file)) {
+      setError(MENSAJE_IMAGEN_MUY_GRANDE);
+      return;
+    }
     limpiarPreview();
     previewUrlRef.current = URL.createObjectURL(file);
     setImagenSeleccionada(file);
     setPreviewImagen(previewUrlRef.current);
+    setError('');
   };
 
   const hayCambioEstadoPendiente = () => {

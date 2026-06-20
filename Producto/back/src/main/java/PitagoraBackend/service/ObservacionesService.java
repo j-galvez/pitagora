@@ -170,6 +170,12 @@ public class ObservacionesService {
             throw new IllegalArgumentException("Máximo " + MAX_FOTOS + " fotos por observación");
         }
 
+        if (fotos != null) {
+            for (MultipartFile foto : fotos) {
+                ImageStorageService.validarTamanoImagen(foto);
+            }
+        }
+
         Observaciones nueva = crearObservaciones(observaciones);
 
         if (fotos != null) {
